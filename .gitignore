@@ -1,0 +1,84 @@
+# ==============================================================================
+# BIZFLOW PLATFORM ROOT GITIGNORE
+# ==============================================================================
+
+# OS files
+.DS_Store
+Thumbs.db
+*.db
+
+# Docker / Database files
+.docker/
+pgdata/
+redisdata/
+
+# ==============================================================================
+# BACKEND (.NET Core)
+# ==============================================================================
+# Build folders
+**/bin/
+**/obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# User settings
+**/appsettings.json
+!**/backend/src/BizFlow.WebApi/appsettings.json
+
+# ==============================================================================
+# FRONTEND (Next.js / Node.js)
+# ==============================================================================
+# Dependencies
+**/node_modules/
+
+# Next.js build folder
+**/.next/
+**/out/
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+
+# ==============================================================================
+# AI MICROSERVICE (Python)
+# ==============================================================================
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Virtual Environment
+**/venv/
+**/.venv/
+**/env/
+**/.env/
+
+# Vector database storage
+**/chroma_db/
+**/chromadb_data/
+
+# ==============================================================================
+# MOBILE (Flutter)
+# ==============================================================================
+# Tooling and builds
+**/.dart_tool/
+**/.packages
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+
+# IDE files
+**/.idea/
+**/*.iml
+
+# Crash logs
+flutter_*.log

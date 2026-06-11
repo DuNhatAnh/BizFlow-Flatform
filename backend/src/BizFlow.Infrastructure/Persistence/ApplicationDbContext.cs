@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Domain.Entities;
+using BizFlow.Domain.Enums;
 
 namespace BizFlow.Infrastructure.Persistence;
 
@@ -122,6 +123,80 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DocumentType).HasConversion<string>();
             entity.Property(e => e.AccountCategory).HasConversion<string>();
         });
+
+        // Seed default subscription plan
+        modelBuilder.Entity<SubscriptionPlan>().HasData(
+            new SubscriptionPlan
+            {
+                Id = 1,
+                Name = "Gói Chuyên Nghiệp",
+                Price = 500000.00m,
+                DurationMonths = 12,
+                Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed default tenants
+        var systemTenantId = Guid.Parse("00000000-0000-0000-0000-000000000000");
+        var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        modelBuilder.Entity<Tenant>().HasData(
+            new Tenant
+            {
+                Id = systemTenantId,
+                Name = "BizFlow System Tenant",
+                OwnerName = "System Admin",
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Tenant
+            {
+                Id = storeTenantId,
+                Name = "Cửa Hàng Tạp Hóa Bình Minh",
+                OwnerName = "Nguyễn Văn A",
+                SubscriptionPlanId = 1,
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed default users (Admin, Owner, Cashier)
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-111122223333"),
+                TenantId = systemTenantId,
+                Username = "admin@bizflow.com",
+                PasswordHash = "admin123", // In a real app, hash this password (e.g. BCrypt)
+                Fullname = "Quản Trị Viên Hệ Thống",
+                Role = UserRole.Admin,
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new User
+            {
+                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-444455556666"),
+                TenantId = storeTenantId,
+                Username = "owner@bizflow.com",
+                PasswordHash = "owner123",
+                Fullname = "Nguyễn Văn A",
+                Role = UserRole.Owner,
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new User
+            {
+                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999"),
+                TenantId = storeTenantId,
+                Username = "cashier@bizflow.com",
+                PasswordHash = "cashier123",
+                Fullname = "Trần Thị B",
+                Role = UserRole.Cashier,
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

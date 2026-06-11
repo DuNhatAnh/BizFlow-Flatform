@@ -18,8 +18,7 @@ class BizFlowApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00685F),
           primary: const Color(0xFF00685F),
-          background: const Color(0xFFF7F9FB),
-          surface: Colors.white,
+          surface: const Color(0xFFF7F9FB),
         ),
         fontFamily: 'Inter',
       ),
@@ -80,7 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(Icons.bolt, color: theme.colorScheme.primary, size: 20),
@@ -116,7 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: _buildStatCard(
                     title: 'Doanh thu',
                     value: '12.8M',
-                    color: Colors.emerald,
+                    color: Colors.teal,
                     icon: Icons.monetization_on_outlined,
                   ),
                 ),
@@ -144,7 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // AI Drafts Section
             Row(
-              mainAxisAlignment: MainAxisAlignment.between,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'Đơn hàng AI chờ duyệt',
@@ -177,16 +176,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.between,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               order['customer'],
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, py: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(0.1),
+                                color: theme.colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -209,7 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const Divider(height: 1),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.between,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               'Thanh toán: ${order['payment']}',
@@ -282,14 +281,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.side(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(height: 8),
@@ -393,7 +392,7 @@ class _VoiceAssistantSheetState extends State<VoiceAssistantSheet> {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _isRecording ? Colors.red.shade50 : theme.colorScheme.primary.withOpacity(0.08),
+                color: _isRecording ? Colors.red.shade50 : theme.colorScheme.primary.withValues(alpha: 0.08),
                 border: Border.all(
                   color: _isRecording ? Colors.red : theme.colorScheme.primary,
                   width: 2,

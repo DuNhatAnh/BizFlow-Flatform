@@ -11,7 +11,12 @@ import {
   Warehouse, 
   CreditCard, 
   Settings,
-  ChevronDown
+  ChevronDown,
+  Building2,
+  Gem,
+  FileSpreadsheet,
+  Mic,
+  PlusCircle
 } from "lucide-react";
 
 interface SidebarProps {
@@ -20,17 +25,60 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
-  const menuItems = [
-    { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-    { id: "revenue", label: "Doanh thu", icon: BarChart3 },
-    { id: "orders", label: "Đơn hàng", icon: ShoppingCart },
-    { id: "products", label: "Sản phẩm", icon: Package },
-    { id: "customers", label: "Khách hàng", icon: Users },
-    { id: "reports", label: "Báo cáo", icon: FileText },
-    { id: "inventory", label: "Kho hàng", icon: Warehouse },
-    { id: "debts", label: "Công nợ", icon: CreditCard },
-    { id: "settings", label: "Cài đặt", icon: Settings },
-  ];
+  const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem("bizflow_user");
+    if (stored) {
+      setUser(JSON.parse(stored));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+      localStorage.removeItem("bizflow_user");
+      window.location.href = "/login";
+    }
+  };
+
+  // Dynamically compute menu items based on role
+  const getMenuItems = () => {
+    if (!user) return [];
+
+    switch (user.username) {
+      case "admin@bizflow.com":
+        return [
+          { id: "overview", label: "Hệ thống tổng quan", icon: LayoutDashboard },
+          { id: "tenants", label: "Quản lý Tenant", icon: Building2 },
+          { id: "subscriptions", label: "Gói thuê bao SaaS", icon: Gem },
+          { id: "tt88-config", label: "Cấu hình sổ sách TT88", icon: FileSpreadsheet },
+          { id: "settings", label: "Thiết lập hệ thống", icon: Settings },
+        ];
+      case "cashier@bizflow.com":
+        return [
+          { id: "pos", label: "Bán hàng POS", icon: PlusCircle },
+          { id: "orders", label: "Đơn hàng của tôi", icon: ShoppingCart },
+          { id: "ai-drafts", label: "Đơn nháp AI", icon: Mic },
+          { id: "products", label: "Tra cứu sản phẩm", icon: Package },
+          { id: "debts", label: "Ghi nợ nhanh", icon: CreditCard },
+        ];
+      case "owner@bizflow.com":
+      default:
+        return [
+          { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
+          { id: "revenue", label: "Báo cáo doanh thu", icon: BarChart3 },
+          { id: "orders", label: "Đơn hàng POS", icon: ShoppingCart },
+          { id: "products", label: "Sản phẩm & Đơn vị", icon: Package },
+          { id: "customers", label: "Sổ nợ khách hàng", icon: Users },
+          { id: "reports", label: "Báo cáo TT88", icon: FileText },
+          { id: "inventory", label: "Quản lý kho hàng", icon: Warehouse },
+          { id: "debts", label: "Giao dịch công nợ", icon: CreditCard },
+          { id: "settings", label: "Cài đặt cửa hàng", icon: Settings },
+        ];
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <aside className="w-[260px] fixed top-0 left-0 bottom-0 bg-white border-r border-surface-container-high flex flex-col z-30">
@@ -79,17 +127,25 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
       {/* User Profile Card */}
       <div className="p-4 border-t border-surface-container-low">
-        <div className="flex items-center justify-between p-2 rounded-md hover:bg-surface-container-low cursor-pointer transition-colors">
+        <div 
+          onClick={handleLogout}
+          title="Bấm để đăng xuất"
+          className="flex items-center justify-between p-2 rounded-md hover:bg-error-container hover:text-error cursor-pointer transition-colors group"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold">
-              C
+            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold group-hover:bg-error group-hover:text-white">
+              {user ? user.fullname.charAt(0).toUpperCase() : "C"}
             </div>
             <div className="text-left">
-              <h4 className="text-sm font-semibold text-on-surface">Chủ cửa hàng</h4>
-              <p className="text-xs text-on-surface-variant">Vai trò: Chủ cửa hàng</p>
+              <h4 className="text-sm font-semibold text-on-surface group-hover:text-error">
+                {user ? user.fullname : "Chủ cửa hàng"}
+              </h4>
+              <p className="text-xs text-on-surface-variant group-hover:text-error/80">
+                Vai trò: {user ? user.roleName : "Chủ cửa hàng"}
+              </p>
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-on-surface-variant" />
+          <ChevronDown className="w-4 h-4 text-on-surface-variant group-hover:text-error" />
         </div>
       </div>
     </aside>
