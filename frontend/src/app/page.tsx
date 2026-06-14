@@ -34,7 +34,7 @@ export default function Home() {
   const [isDebt, setIsDebt] = useState(false);
   const [posSearch, setPosSearch] = useState("");
   
-  // Mock AI drafts loaded dynamically to simulate real-time API syncing
+  // Mock AI drafts loaded dynamically to simulate real-time API syncing (triggered by hot reload)
   const [aiDrafts, setAiDrafts] = useState([
     {
       id: "1",

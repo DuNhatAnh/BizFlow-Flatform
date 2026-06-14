@@ -12,6 +12,8 @@ public class InventoryTransaction
     public int Quantity { get; set; } // Số lượng thay đổi (tính theo base_unit)
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Guid? CreatedBy { get; set; }
+    public string? Note { get; set; }
+
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;

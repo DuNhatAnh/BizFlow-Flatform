@@ -36,7 +36,7 @@ class TextOrderRequest(BaseModel):
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "service": "BizFlow AI"}
+    return {"status": "healthy", "service": "BizFlow AI - Reloader Test"}
 
 @app.post("/api/text-order", response_model=OrderExtractionResponse)
 async def process_text_order(request: TextOrderRequest):
