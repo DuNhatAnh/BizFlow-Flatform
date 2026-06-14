@@ -13,6 +13,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bizflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 
   cache:
     image: redis:7-alpine
@@ -30,7 +37,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -42,13 +50,52 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
-      - db
-      - cache
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+
+  backend:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: bizflow_backend
+    restart: always
+    ports:
+      - "5178:5178"
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: dotnet watch run --non-interactive --project src/BizFlow.WebApi --urls=http://0.0.0.0:5178
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=bizflow_db;Username=postgres;Password=postgres
+      - ConnectionStrings__RedisConnection=cache:6379
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: bizflow_ai_service
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
+    volumes:
+      - ./ai-service:/app
 
 volumes:
   pgdata:
   redisdata:
+

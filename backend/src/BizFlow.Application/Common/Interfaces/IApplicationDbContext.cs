@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using BizFlow.Domain.Entities;
 
 namespace BizFlow.Application.Common.Interfaces;
@@ -18,5 +19,7 @@ public interface IApplicationDbContext
     DbSet<DebtTransaction> DebtTransactions { get; }
     DbSet<AccountingEntry> AccountingEntries { get; }
 
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
+

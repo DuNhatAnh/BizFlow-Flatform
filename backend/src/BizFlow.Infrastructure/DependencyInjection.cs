@@ -17,6 +17,7 @@ public static class DependencyInjection
                 builder => builder.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IOrderService, BizFlow.Infrastructure.Services.OrderService>();
 
         // Register Redis Cache
         services.AddStackExchangeRedisCache(options =>
@@ -27,3 +28,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

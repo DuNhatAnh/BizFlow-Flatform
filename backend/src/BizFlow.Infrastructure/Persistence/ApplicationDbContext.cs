@@ -138,8 +138,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         );
 
         // Seed default tenants
-        var systemTenantId = Guid.Parse("00000000-0000-0000-0000-000000000000");
+        var systemTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
         var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
 
         modelBuilder.Entity<Tenant>().HasData(
             new Tenant
@@ -199,8 +200,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         );
     }
 
+    public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        return await Database.BeginTransactionAsync(cancellationToken);
+    }
+
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return base.SaveChangesAsync(cancellationToken);
     }
 }
+

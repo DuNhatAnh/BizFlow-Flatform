@@ -199,16 +199,17 @@ ON CONFLICT DO NOTHING;
 -- Tenant: System + Demo store
 INSERT INTO tenants ("Id", "Name", "OwnerName", "SubscriptionPlanId", "IsActive", "CreatedAt")
 VALUES
-  ('00000000-0000-0000-0000-000000000000', 'BizFlow System Tenant',        'System Admin', NULL, TRUE, '2026-06-11 00:00:00'),
+  ('00000000-0000-0000-0000-000000000001', 'BizFlow System Tenant',        'System Admin', NULL, TRUE, '2026-06-11 00:00:00'),
   ('11111111-1111-1111-1111-111111111111', 'Cua Hang Tap Hoa Binh Minh',   'Nguyen Van A', 1,    TRUE, '2026-06-11 00:00:00')
 ON CONFLICT ("Id") DO NOTHING;
 
 -- 3 tài khoản phân quyền mặc định
 INSERT INTO users ("Id", "TenantId", "Username", "PasswordHash", "Fullname", "Role", "IsActive", "CreatedAt")
 VALUES
-  ('aaaabbbb-cccc-dddd-eeee-111122223333', '00000000-0000-0000-0000-000000000000', 'admin@bizflow.com',   'admin123',   'Quan Tri Vien He Thong', 'Admin',   TRUE, '2026-06-11 00:00:00'),
+  ('aaaabbbb-cccc-dddd-eeee-111122223333', '00000000-0000-0000-0000-000000000001', 'admin@bizflow.com',   'admin123',   'Quan Tri Vien He Thong', 'Admin',   TRUE, '2026-06-11 00:00:00'),
   ('aaaabbbb-cccc-dddd-eeee-444455556666', '11111111-1111-1111-1111-111111111111', 'owner@bizflow.com',   'owner123',   'Nguyen Van A',           'Owner',   TRUE, '2026-06-11 00:00:00'),
   ('aaaabbbb-cccc-dddd-eeee-777788889999', '11111111-1111-1111-1111-111111111111', 'cashier@bizflow.com', 'cashier123', 'Tran Thi B',             'Cashier', TRUE, '2026-06-11 00:00:00')
+
 ON CONFLICT ("Id") DO NOTHING;
 
 -- =============================================================
