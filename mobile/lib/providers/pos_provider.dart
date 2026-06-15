@@ -302,7 +302,6 @@ class PosProvider extends ChangeNotifier {
     // Parse logic locally for demonstration
     // "Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen"
     // Let's create a draft order in DB
-    String customerName = "Chú Ba";
     var customer = _customers.firstWhere(
       (c) => c.fullname.toLowerCase().contains("ba"),
       orElse: () => _customers.isNotEmpty ? _customers.first : Customer(id: '', tenantId: _tenantId!, fullname: 'Khách Lẻ', totalDebt: 0),

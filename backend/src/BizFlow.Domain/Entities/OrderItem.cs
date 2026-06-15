@@ -8,7 +8,7 @@ public class OrderItem
     public Guid OrderId { get; set; }
     public Guid ProductId { get; set; }
     public int? ProductUnitId { get; set; }
-    public int Quantity { get; set; } = 1;
+    public decimal Quantity { get; set; } = 1m;
     public decimal UnitPrice { get; set; } = 0.00m;
     public decimal TotalPrice { get; set; } = 0.00m;
 

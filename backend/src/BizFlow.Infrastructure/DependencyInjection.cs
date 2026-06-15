@@ -18,6 +18,7 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IOrderService, BizFlow.Infrastructure.Services.OrderService>();
+        services.AddScoped<BizFlow.Application.Interfaces.IProductService, BizFlow.Infrastructure.Services.ProductService>();
 
         // Register Redis Cache
         services.AddStackExchangeRedisCache(options =>

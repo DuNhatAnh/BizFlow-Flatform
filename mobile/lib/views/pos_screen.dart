@@ -157,7 +157,6 @@ class _POSScreenState extends State<POSScreen> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PosProvider>(context);
-    final theme = Theme.of(context);
 
     // Filter products based on category and search query
     final filteredProducts = provider.products.where((p) {

@@ -20,6 +20,6 @@ public interface IApplicationDbContext
     DbSet<AccountingEntry> AccountingEntries { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

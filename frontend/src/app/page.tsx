@@ -7,6 +7,7 @@ import MetricCard from "@/components/MetricCard";
 import RevenueChart from "@/components/RevenueChart";
 import TopProducts from "@/components/TopProducts";
 import AIInsight from "@/components/AIInsight";
+import ProductManagement from "@/components/ProductManagement";
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -489,6 +490,10 @@ export default function Home() {
       );
     }
 
+    if (activeTab === "products") {
+      return <ProductManagement />;
+    }
+
     return (
       <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
         <h2 className="text-xl font-bold text-on-surface">Tính năng đang phát triển</h2>
@@ -508,7 +513,7 @@ export default function Home() {
       <div className="pl-[260px] min-h-screen flex flex-col">
         <main className="flex-1 p-8 max-w-[1440px] mx-auto w-full">
           {/* Header section */}
-          <Header />
+          <Header showGreeting={activeTab === "overview"} />
 
           {/* Render content based on dynamic calculations */}
           <div className="mt-6">

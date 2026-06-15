@@ -77,25 +77,17 @@ class _AIDraftsScreenState extends State<AIDraftsScreen> {
                       // Payment Method
                       const Text('Phương thức thanh toán:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('Mặt', style: TextStyle(fontSize: 12)),
-                              value: 'Cash',
-                              groupValue: paymentMethod,
-                              onChanged: (val) => setDialogState(() => paymentMethod = val!),
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('Nợ', style: TextStyle(fontSize: 12)),
-                              value: 'Debt',
-                              groupValue: paymentMethod,
-                              onChanged: (val) => setDialogState(() => paymentMethod = val!),
-                            ),
-                          ),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment<String>(value: 'Cash', label: Text('Tiền mặt')),
+                          ButtonSegment<String>(value: 'Debt', label: Text('Ghi nợ')),
                         ],
+                        selected: {paymentMethod},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          setDialogState(() {
+                            paymentMethod = newSelection.first;
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
 

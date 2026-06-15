@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
@@ -190,8 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: const Icon(Icons.person_outline, color: navyColor),
                           filled: true,
                           fillColor: lightBg,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                             borderSide: BorderSide.none,
                           ),
                         ),
@@ -226,8 +225,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           filled: true,
                           fillColor: lightBg,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                             borderSide: BorderSide.none,
                           ),
                         ),

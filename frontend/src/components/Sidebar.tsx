@@ -16,7 +16,8 @@ import {
   Gem,
   FileSpreadsheet,
   Mic,
-  PlusCircle
+  PlusCircle,
+  Contact
 } from "lucide-react";
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
+  const [imageError, setImageError] = React.useState(false);
 
   React.useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
@@ -65,15 +67,14 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       case "owner@bizflow.com":
       default:
         return [
-          { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-          { id: "revenue", label: "Báo cáo doanh thu", icon: BarChart3 },
-          { id: "orders", label: "Đơn hàng POS", icon: ShoppingCart },
-          { id: "products", label: "Sản phẩm & Đơn vị", icon: Package },
-          { id: "customers", label: "Sổ nợ khách hàng", icon: Users },
-          { id: "reports", label: "Báo cáo TT88", icon: FileText },
-          { id: "inventory", label: "Quản lý kho hàng", icon: Warehouse },
-          { id: "debts", label: "Giao dịch công nợ", icon: CreditCard },
-          { id: "settings", label: "Cài đặt cửa hàng", icon: Settings },
+          { id: "overview", label: "Tổng quan Doanh thu", icon: LayoutDashboard },
+          { id: "pos", label: "Bán hàng (POS)", icon: PlusCircle },
+          { id: "products", label: "Hàng hóa & Đơn vị", icon: Package },
+          { id: "inventory", label: "Quản lý Kho hàng", icon: Warehouse },
+          { id: "customers", label: "Khách hàng & Công nợ", icon: Users },
+          { id: "staff", label: "Quản lý Nhân sự", icon: Contact },
+          { id: "reports", label: "Sổ sách Thuế (TT88)", icon: FileText },
+          { id: "settings", label: "Cài đặt Cửa hàng", icon: Settings },
         ];
     }
   };
@@ -89,17 +90,16 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           <img 
             src="/logo.png" 
             alt="BizFlow Logo" 
-            className="object-contain w-full h-full"
-            onError={(e) => {
-              // Fallback placeholder if logo.png doesn't exist yet
-              (e.target as HTMLElement).style.display = 'none';
-            }}
+            className={`object-contain w-full h-full ${imageError ? 'hidden' : 'block'}`}
+            onError={() => setImageError(true)}
           />
           {/* Logo fallback text */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center font-bold text-primary">
-            <span className="text-xl tracking-wider uppercase font-sans">BizFlow</span>
-            <span className="text-[10px] text-gray-400 font-normal">PLATFORM</span>
-          </div>
+          {imageError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center font-bold text-primary">
+              <span className="text-xl tracking-wider uppercase font-sans">BizFlow</span>
+              <span className="text-[10px] text-gray-400 font-normal">PLATFORM</span>
+            </div>
+          )}
         </div>
       </div>
 

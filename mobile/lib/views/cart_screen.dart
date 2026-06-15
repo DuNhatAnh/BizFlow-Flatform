@@ -13,7 +13,6 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   String _paymentMethod = 'Cash'; // Cash | Transfer | Debt
   String _customerSearchQuery = '';
-  bool _isSearchingCustomer = false;
 
   void _showAddCustomerDialog() {
     final provider = Provider.of<PosProvider>(context, listen: false);
