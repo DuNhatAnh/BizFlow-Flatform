@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductUnit> ProductUnits => Set<ProductUnit>();
+    public DbSet<ProductHistory> ProductHistories => Set<ProductHistory>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
@@ -73,6 +74,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("product_units");
             entity.Property(e => e.Price).HasPrecision(15, 2);
+        });
+
+        // 6.5. ProductHistory configurations
+        modelBuilder.Entity<ProductHistory>(entity =>
+        {
+            entity.ToTable("product_histories");
+            entity.HasOne(e => e.Product)
+                .WithMany() // Assuming we don't necessarily need a collection on Product entity to keep it simple, or we can add it. Let's assume we don't add navigation collection to Product to avoid loading large histories by default.
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // 7. InventoryTransaction configurations

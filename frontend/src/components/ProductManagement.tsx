@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  Search, Plus, Edit2, Trash2, Package, Tag, Filter, X, Save, AlertCircle
+  Search, Plus, Edit2, Trash2, Package, Tag, Filter, X, Save, AlertCircle,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FolderTree
 } from "lucide-react";
 
 interface ProductUnit {
@@ -23,27 +24,39 @@ interface Product {
   units: ProductUnit[];
 }
 
-const MOCK_CATEGORIES = [
-  { id: 1, name: "Vật liệu xây dựng" },
-  { id: 2, name: "Thiết bị điện" },
-  { id: 3, name: "Nước giải khát" },
-  { id: 4, name: "Hàng tạp hóa" }
-];
-
-const INITIAL_PRODUCTS: Product[] = [];
-
-const TENANT_ID = "11111111-1111-1111-1111-111111111111";
+const TENANT_ID = "11111111-1111-1111-1111-111111111111"; // Tạm thời dùng biến này
 const API_URL = "http://localhost:5178/api/products";
+const CATEGORY_API_URL = "http://localhost:5178/api/categories";
 
 export default function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<number>(0);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // History Pagination State
+  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
+  const historyItemsPerPage = 10;
+
+  // History State
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const HISTORY_API_URL = "http://localhost:5178/api/products/history/all";
+
+  // Category Management State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Custom UI States
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
@@ -58,7 +71,9 @@ export default function ProductManagement() {
   const fetchProducts = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_URL}?tenantId=${TENANT_ID}`);
+      const res = await fetch(`${API_URL}`, {
+        headers: { "X-Tenant-Id": TENANT_ID }
+      });
       if (res.ok) {
         const data = await res.json();
         // Ensure unit ids are always numbers (guard against hot-reload state)
@@ -80,7 +95,21 @@ export default function ProductManagement() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, [fetchProducts]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(CATEGORY_API_URL, {
+        headers: { "X-Tenant-Id": TENANT_ID }
+      });
+      if (res.ok) {
+        setCategories(await res.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories", error);
+    }
+  };
 
   // Filter logic
   const filteredProducts = products.filter(p => {
@@ -90,6 +119,33 @@ export default function ProductManagement() {
     return matchSearch && matchCat;
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    } else if (currentPage === 0 && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredProducts.length, currentPage, totalPages]);
+
+  const startIndex = Math.max(0, (currentPage - 1) * itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  // History Pagination Logic
+  const totalHistoryPages = Math.ceil(historyData.length / historyItemsPerPage);
+
+  useEffect(() => {
+    if (currentHistoryPage > totalHistoryPages && totalHistoryPages > 0) {
+      setCurrentHistoryPage(totalHistoryPages);
+    } else if (currentHistoryPage === 0 && totalHistoryPages > 0) {
+      setCurrentHistoryPage(1);
+    }
+  }, [historyData.length, currentHistoryPage, totalHistoryPages]);
+
+  const historyStartIndex = Math.max(0, (currentHistoryPage - 1) * historyItemsPerPage);
+  const paginatedHistory = historyData.slice(historyStartIndex, historyStartIndex + historyItemsPerPage);
+
   const handleOpenModal = (product?: Product) => {
     if (product) {
       setEditingProduct(JSON.parse(JSON.stringify(product))); // Deep copy
@@ -98,7 +154,7 @@ export default function ProductManagement() {
         id: "",
         code: "",
         name: "",
-        categoryId: MOCK_CATEGORIES[0].id,
+        categoryId: categories.length > 0 ? categories[0].id : 0,
         baseUnit: "",
         description: "",
         units: [
@@ -120,8 +176,9 @@ export default function ProductManagement() {
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
-          const res = await fetch(`${API_URL}/${id}?tenantId=${TENANT_ID}`, {
-            method: "DELETE"
+          const res = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+            headers: { "X-Tenant-Id": TENANT_ID }
           });
           if (res.ok) {
             setProducts(products.filter(p => p.id !== id));
@@ -177,9 +234,12 @@ export default function ProductManagement() {
         delete (payload as any).id; // Remove empty id for creation
 
         console.log("POST payload:", JSON.stringify(payload, null, 2));
-        const res = await fetch(`${API_URL}?tenantId=${TENANT_ID}`, {
+        const res = await fetch(`${API_URL}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Tenant-Id": TENANT_ID
+          },
           body: JSON.stringify(payload)
         });
 
@@ -193,9 +253,12 @@ export default function ProductManagement() {
       } else {
         // Update
         console.log("PUT payload:", JSON.stringify(sanitizedProduct, null, 2));
-        const res = await fetch(`${API_URL}/${editingProduct.id}?tenantId=${TENANT_ID}`, {
+        const res = await fetch(`${API_URL}/${editingProduct.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Tenant-Id": TENANT_ID
+          },
           body: JSON.stringify(sanitizedProduct)
         });
 
@@ -254,6 +317,24 @@ export default function ProductManagement() {
     setEditingProduct({ ...editingProduct, units: newUnits });
   };
 
+  const handleViewGlobalHistory = async () => {
+    setIsHistoryOpen(true);
+    setLoadingHistory(true);
+    setCurrentHistoryPage(1);
+    try {
+      const res = await fetch(HISTORY_API_URL, {
+        headers: { "X-Tenant-Id": TENANT_ID }
+      });
+      if (res.ok) {
+        setHistoryData(await res.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch global history", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header Area */}
@@ -262,13 +343,29 @@ export default function ProductManagement() {
           <h2 className="text-2xl font-bold text-on-surface">Danh mục Sản phẩm & Đơn vị tính</h2>
           <p className="text-sm text-on-surface-variant mt-1">Quản lý hàng hóa, tỷ lệ quy đổi và giá bán theo đơn vị</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          Thêm Sản phẩm mới
-        </button>
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <button 
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
+          >
+            <FolderTree className="w-5 h-5" />
+            Danh mục
+          </button>
+          <button 
+            onClick={handleViewGlobalHistory}
+            className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Package className="w-5 h-5" />
+            Lịch sử
+          </button>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Thêm Sản phẩm
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -295,7 +392,7 @@ export default function ProductManagement() {
             className="block w-full pl-9 pr-8 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer"
           >
             <option value={0}>Tất cả danh mục</option>
-            {MOCK_CATEGORIES.map(c => (
+            {categories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -303,11 +400,11 @@ export default function ProductManagement() {
       </div>
 
       {/* Product List */}
-      <div className="bg-white rounded-xl border border-surface-container-high shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low text-on-surface-variant border-b border-surface-container-high uppercase tracking-wider text-xs font-bold">
+      <div className="bg-white rounded-xl border border-surface-container-high shadow-card flex flex-col">
+        <div className="overflow-auto max-h-[500px]">
+          <table className="w-full text-left text-sm border-collapse relative">
+            <thead className="sticky top-0 z-10 bg-surface-container-low shadow-sm">
+              <tr className="text-on-surface-variant border-b border-surface-container-high uppercase tracking-wider text-xs font-bold">
                 <th className="p-4 w-16 text-center">STT</th>
                 <th className="p-4">Sản phẩm</th>
                 <th className="p-4">Danh mục</th>
@@ -317,7 +414,7 @@ export default function ProductManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container-low">
-              {filteredProducts.length === 0 ? (
+              {paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-on-surface-variant">
                     <Package className="w-12 h-12 mx-auto text-on-surface-variant/30 mb-3" />
@@ -325,9 +422,9 @@ export default function ProductManagement() {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((p, index) => (
+                paginatedProducts.map((p, index) => (
                   <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="p-4 text-center text-on-surface-variant font-medium">{index + 1}</td>
+                    <td className="p-4 text-center text-on-surface-variant font-medium">{startIndex + index + 1}</td>
                     <td className="p-4">
                       <div className="font-bold text-on-surface">{p.name}</div>
                       <div className="text-xs text-on-surface-variant mt-0.5 font-mono bg-surface-container-high inline-block px-1.5 py-0.5 rounded">{p.code || "N/A"}</div>
@@ -335,7 +432,7 @@ export default function ProductManagement() {
                     <td className="p-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
                         <Tag className="w-3 h-3" />
-                        {MOCK_CATEGORIES.find(c => c.id === p.categoryId)?.name}
+                        {categories.find(c => c.id === p.categoryId)?.name || 'Không xác định'}
                       </span>
                     </td>
                     <td className="p-4 font-semibold text-on-surface">{p.baseUnit}</td>
@@ -386,6 +483,54 @@ export default function ProductManagement() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {filteredProducts.length > 0 && (
+          <div className="p-4 border-t border-surface-container-high flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-low/30">
+            <div className="text-sm text-on-surface-variant">
+              Hiển thị <span className="font-bold text-on-surface">{startIndex + 1}</span> - <span className="font-bold text-on-surface">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> trong tổng số <span className="font-bold text-on-surface">{filteredProducts.length}</span> sản phẩm
+            </div>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setCurrentPage(1)} 
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                title="Đến trang đầu"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                title="Trang trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              <div className="px-4 py-1.5 text-sm font-bold text-on-surface bg-white border border-outline-variant rounded-lg mx-1 shadow-sm">
+                Trang {currentPage} / {totalPages || 1}
+              </div>
+
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                title="Trang tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(totalPages)} 
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                title="Đến trang cuối"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add / Edit Modal */}
@@ -435,11 +580,11 @@ export default function ProductManagement() {
                   <div>
                     <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Danh mục</label>
                     <select 
-                      value={editingProduct.categoryId}
+                      value={editingProduct.categoryId || 0}
                       onChange={(e) => setEditingProduct({...editingProduct, categoryId: Number(e.target.value)})}
                       className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary"
                     >
-                      {MOCK_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -627,6 +772,205 @@ export default function ProductManagement() {
             </div>
           )}
           <span className="font-medium">{toast.message}</span>
+        </div>
+      )}
+      {/* Render History Modal */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform transition-all scale-100 max-h-[85vh]">
+            <div className="flex justify-between items-center p-5 border-b bg-surface-container-low rounded-t-2xl">
+              <h3 className="text-lg font-bold text-slate-800">Lịch sử thao tác sản phẩm</h3>
+              <button onClick={() => setIsHistoryOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-5">
+              {loadingHistory ? (
+                <div className="text-center py-8 text-slate-500 flex flex-col items-center">
+                  <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-3"></div>
+                  Đang tải lịch sử...
+                </div>
+              ) : historyData.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">Chưa có lịch sử thay đổi nào.</div>
+              ) : (
+                <div className="space-y-4">
+                  {paginatedHistory.map((item, idx) => (
+                    <div key={idx} className="flex gap-4 p-4 border rounded-xl bg-slate-50 hover:border-primary/30 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary font-bold text-sm">{item.actionBy?.[0] || 'S'}</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-slate-800">{item.actionName}</span>
+                          <span className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString('vi-VN')}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 font-medium leading-relaxed">{item.changeDetails}</p>
+                        <p className="text-xs text-slate-400 mt-2">Người thực hiện: <span className="font-semibold">{item.actionBy}</span></p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* History Pagination Controls */}
+            {!loadingHistory && historyData.length > 0 && (
+              <div className="p-4 border-t border-surface-container-high flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-low/30 rounded-b-2xl">
+                <div className="text-sm text-on-surface-variant">
+                  Hiển thị <span className="font-bold text-on-surface">{historyStartIndex + 1}</span> - <span className="font-bold text-on-surface">{Math.min(historyStartIndex + historyItemsPerPage, historyData.length)}</span> / <span className="font-bold text-on-surface">{historyData.length}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setCurrentHistoryPage(1)} 
+                    disabled={currentHistoryPage === 1}
+                    className="p-1.5 rounded-lg border border-outline-variant hover:bg-white hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentHistoryPage(prev => Math.max(prev - 1, 1))} 
+                    disabled={currentHistoryPage === 1}
+                    className="p-1.5 rounded-lg border border-outline-variant hover:bg-white hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="px-4 py-1.5 text-sm font-bold text-on-surface bg-white border border-outline-variant rounded-lg mx-1 shadow-sm">
+                    {currentHistoryPage} / {totalHistoryPages || 1}
+                  </div>
+                  <button 
+                    onClick={() => setCurrentHistoryPage(prev => Math.min(prev + 1, totalHistoryPages))} 
+                    disabled={currentHistoryPage === totalHistoryPages || totalHistoryPages === 0}
+                    className="p-1.5 rounded-lg border border-outline-variant hover:bg-white hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentHistoryPage(totalHistoryPages)} 
+                    disabled={currentHistoryPage === totalHistoryPages || totalHistoryPages === 0}
+                    className="p-1.5 rounded-lg border border-outline-variant hover:bg-white hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Render Category Management Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col transform transition-all scale-100 max-h-[85vh]">
+            <div className="flex justify-between items-center p-5 border-b bg-surface-container-low rounded-t-2xl">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <FolderTree className="w-5 h-5 text-primary" />
+                Quản lý Danh mục
+              </h3>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Nhập tên danh mục mới..."
+                  className="flex-1 px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary"
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && newCategoryName.trim()) {
+                      setIsSavingCategory(true);
+                      try {
+                        const res = await fetch(CATEGORY_API_URL, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
+                          body: JSON.stringify({ name: newCategoryName.trim() })
+                        });
+                        if (res.ok) {
+                          setNewCategoryName("");
+                          await fetchCategories();
+                          showToast("Thêm danh mục thành công!");
+                        } else {
+                          showToast("Thêm thất bại", "error");
+                        }
+                      } finally {
+                        setIsSavingCategory(false);
+                      }
+                    }
+                  }}
+                />
+                <button 
+                  onClick={async () => {
+                    if (!newCategoryName.trim()) return;
+                    setIsSavingCategory(true);
+                    try {
+                      const res = await fetch(CATEGORY_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
+                        body: JSON.stringify({ name: newCategoryName.trim() })
+                      });
+                      if (res.ok) {
+                        setNewCategoryName("");
+                        await fetchCategories();
+                        showToast("Thêm danh mục thành công!");
+                      } else {
+                        showToast("Thêm thất bại", "error");
+                      }
+                    } finally {
+                      setIsSavingCategory(false);
+                    }
+                  }}
+                  disabled={!newCategoryName.trim() || isSavingCategory}
+                  className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 border border-surface-container-high rounded-xl overflow-hidden">
+                {categories.length === 0 ? (
+                  <div className="p-6 text-center text-on-surface-variant text-sm">
+                    Chưa có danh mục nào.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-surface-container-low max-h-[400px] overflow-y-auto">
+                    {categories.map(c => (
+                      <li key={c.id} className="p-3 flex justify-between items-center hover:bg-surface-container-low/50 transition-colors">
+                        <span className="text-sm font-medium text-on-surface">{c.name}</span>
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`Bạn có chắc muốn xóa danh mục "${c.name}"?`)) {
+                              const res = await fetch(`${CATEGORY_API_URL}/${c.id}`, {
+                                method: 'DELETE',
+                                headers: { 'X-Tenant-Id': TENANT_ID }
+                              });
+                              if (res.ok) {
+                                await fetchCategories();
+                                showToast("Đã xóa danh mục!");
+                                // Optionally refresh products to update the tags of products that were deleted (if cascade) or clear
+                                await fetchProducts();
+                              } else {
+                                const errorText = await res.text();
+                                showToast(errorText || "Danh mục đang chứa sản phẩm, không thể xóa.", "error");
+                              }
+                            }
+                          }}
+                          className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
+                          title="Xóa danh mục"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

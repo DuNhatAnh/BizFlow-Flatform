@@ -72,13 +72,11 @@ services:
     working_dir: /app
     command: dotnet watch run --non-interactive --project src/BizFlow.WebApi --urls=http://0.0.0.0:5178
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=bizflow_db;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=aws-1-ap-northeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.nltybanibdbuxowimrpv;Password=nhatanh3008;SSL Mode=Require;Trust Server Certificate=true
       - ConnectionStrings__RedisConnection=cache:6379
       - DOTNET_USE_POLLING_FILE_WATCHER=1
 
     depends_on:
-      db:
-        condition: service_healthy
       cache:
         condition: service_started
 

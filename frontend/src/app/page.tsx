@@ -73,16 +73,28 @@ export default function Home() {
       const parsedUser = JSON.parse(stored);
       setUser(parsedUser);
       setAuthorized(true);
-      // Auto routing based on role
-      if (parsedUser.username === "cashier@bizflow.com") {
-        setActiveTab("pos");
-      } else if (parsedUser.username === "admin@bizflow.com") {
-        setActiveTab("overview");
+      
+      const savedTab = localStorage.getItem("bizflow_active_tab");
+      if (savedTab) {
+        setActiveTab(savedTab);
       } else {
-        setActiveTab("overview");
+        // Auto routing based on role
+        if (parsedUser.username === "cashier@bizflow.com") {
+          setActiveTab("pos");
+        } else if (parsedUser.username === "admin@bizflow.com") {
+          setActiveTab("overview");
+        } else {
+          setActiveTab("overview");
+        }
       }
     }
   }, []);
+
+  React.useEffect(() => {
+    if (authorized) {
+      localStorage.setItem("bizflow_active_tab", activeTab);
+    }
+  }, [activeTab, authorized]);
 
   const addToCart = (product: typeof posProducts[0]) => {
     const existing = cart.find(item => item.id === product.id);

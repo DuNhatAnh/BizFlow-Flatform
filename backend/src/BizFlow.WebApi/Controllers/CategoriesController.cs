@@ -1,25 +1,49 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BizFlow.Application.Common.Interfaces;
-using BizFlow.Domain.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
+using BizFlow.Application.DTOs.Products;
+using BizFlow.Application.Interfaces;
 
 namespace BizFlow.WebApi.Controllers;
 
 public class CategoriesController : ApiControllerBase
 {
-    private readonly IApplicationDbContext _context;
+    private readonly ICategoryService _categoryService;
 
-    public CategoriesController(IApplicationDbContext context)
+    public CategoriesController(ICategoryService categoryService)
     {
-        _context = context;
+        _categoryService = categoryService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Category>>> GetCategories([FromQuery] Guid tenantId)
+    public async Task<ActionResult<List<CategoryDto>>> GetCategories([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
-        return await _context.Categories
-            .Where(c => c.TenantId == tenantId)
-            .OrderBy(c => c.Name)
-            .ToListAsync();
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        
+        var categories = await _categoryService.GetAllAsync(tenantId);
+        return Ok(categories);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<CategoryDto>> CreateCategory([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] CreateCategoryRequest request)
+    {
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Name is required.");
+
+        var category = await _categoryService.CreateAsync(tenantId, request);
+        return Ok(category);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteCategory([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, int id)
+    {
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+
+        var success = await _categoryService.DeleteAsync(tenantId, id);
+        if (!success)
+            return BadRequest("Không thể xóa danh mục. Có thể danh mục này đang chứa sản phẩm hoặc không tồn tại.");
+
+        return NoContent();
     }
 }

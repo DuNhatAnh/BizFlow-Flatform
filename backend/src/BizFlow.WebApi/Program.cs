@@ -55,9 +55,22 @@ using (var scope = app.Services.CreateScope())
     try 
     {
         var db = scope.ServiceProvider.GetRequiredService<BizFlow.Infrastructure.Persistence.ApplicationDbContext>();
-        db.Database.EnsureCreated();
-
-        // Migrate ConversionRate to numeric to support float (e.g. 0.05)
+        
+        // Supabase has default tables (auth, storage), so EnsureCreated() fails to run.
+        // We manually check if our table exists, and if not, execute the raw create script.
+        var conn = db.Database.GetDbConnection();
+        conn.Open();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT count(*) FROM pg_class WHERE relname = 'products'";
+            var count = (long)cmd.ExecuteScalar();
+            if (count == 0)
+            {
+                var script = db.Database.GenerateCreateScript();
+                db.Database.ExecuteSqlRaw(script);
+            }
+        }
+        conn.Close();
         db.Database.ExecuteSqlRaw("ALTER TABLE product_units ALTER COLUMN \"ConversionRate\" TYPE numeric(15,4);");
         
         // Migrate Quantity to numeric to support float quantities

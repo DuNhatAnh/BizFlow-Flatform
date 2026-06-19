@@ -14,7 +14,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ProductDto>>> GetProducts([FromQuery] Guid tenantId)
+    public async Task<ActionResult<List<ProductDto>>> GetProducts([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
         
@@ -23,7 +23,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ProductDto>> GetProduct(Guid id, [FromQuery] Guid tenantId)
+    public async Task<ActionResult<ProductDto>> GetProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
 
@@ -34,7 +34,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ProductDto>> CreateProduct([FromQuery] Guid tenantId, [FromBody] CreateProductRequest request)
+    public async Task<ActionResult<ProductDto>> CreateProduct([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] CreateProductRequest request)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
 
@@ -43,7 +43,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromQuery] Guid tenantId, [FromBody] UpdateProductRequest request)
+    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] UpdateProductRequest request)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
         
@@ -65,7 +65,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteProduct(Guid id, [FromQuery] Guid tenantId)
+    public async Task<ActionResult> DeleteProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
 
@@ -73,5 +73,23 @@ public class ProductsController : ApiControllerBase
         if (!result) return NotFound();
 
         return NoContent();
+    }
+
+    [HttpGet("{id}/history")]
+    public async Task<ActionResult<List<ProductHistoryDto>>> GetProductHistory(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    {
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+
+        var histories = await _productService.GetHistoryAsync(tenantId, id);
+        return Ok(histories);
+    }
+
+    [HttpGet("history/all")]
+    public async Task<ActionResult<List<ProductHistoryDto>>> GetGlobalHistory([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    {
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+
+        var histories = await _productService.GetAllHistoryAsync(tenantId);
+        return Ok(histories);
     }
 }

@@ -1,0 +1,92 @@
+{
+  "trace_id": "bizflow_trace_002_ai_order",
+  "timestamp": "2026-06-19T14:18:07+07:00",
+  "domain": "sales",
+  "user_request": "Tự động lên đơn hàng từ giọng nói hoặc tin nhắn bằng AI",
+  "business_context": {
+    "constraints": [
+      "AI phải nhận dạng đúng sản phẩm có trong hệ thống",
+      "Giới hạn định dạng âm thanh đầu vào (.wav, .mp3)"
+    ],
+    "business_rules": [
+      "Đơn hàng AI chỉ tạo bản nháp, cần thu ngân duyệt lại",
+      "Đơn hàng nợ (Debt) phải gắn với thông tin Khách hàng (Customer)"
+    ],
+    "available_data_sources": [
+      "Orders",
+      "OrderItems",
+      "Customers",
+      "Products"
+    ]
+  },
+  "intent_analysis": {
+    "primary_intent": "Trích xuất thông tin nghiệp vụ từ giọng nói/văn bản tự do để tạo đơn hàng nháp",
+    "secondary_intents": [
+      "Dịch giọng nói thành văn bản (STT)",
+      "Phân loại hình thức thanh toán"
+    ],
+    "entities": [
+      "CustomerName",
+      "ProductName",
+      "Quantity",
+      "Unit",
+      "PaymentMethod"
+    ],
+    "priority": "high"
+  },
+  "reasoning_steps": [
+    {
+      "step": 1,
+      "description": "Nhận file audio hoặc văn bản từ Frontend."
+    },
+    {
+      "step": 2,
+      "description": "Dùng Whisper model để chuyển audio thành text (nếu là audio)."
+    },
+    {
+      "step": 3,
+      "description": "Gửi text qua LLM (Gemini/ChatGPT) để bóc tách thực thể (Người mua, món hàng, số lượng, đơn vị, thanh toán)."
+    },
+    {
+      "step": 4,
+      "description": "Mapping các thực thể trả về với dữ liệu CSDL hiện tại (VD: Khách vãng lai vs Khách quen)."
+    },
+    {
+      "step": 5,
+      "description": "Trả về JSON cho Frontend hiển thị đơn nháp."
+    }
+  ],
+  "actions": [
+    {
+      "type": "api_call",
+      "description": "POST /api/voice-order (Whisper STT)"
+    },
+    {
+      "type": "reasoning",
+      "description": "LLM Entity Extraction qua Gemini API"
+    },
+    {
+      "type": "api_call",
+      "description": "POST /api/orders (Lưu đơn sau khi duyệt)"
+    }
+  ],
+  "decision_points": [
+    {
+      "decision": "Chỉ tạo đơn nháp (Draft)",
+      "reason": "AI có thể nghe nhầm giọng nói địa phương hoặc sai tên sản phẩm, cần con người xác nhận trước khi trừ tồn kho."
+    },
+    {
+      "decision": "Tách riêng Service AI (Python)",
+      "reason": "Phù hợp cho việc tích hợp các model AI (Whisper, Gemini) thay vì code trong C# Backend."
+    }
+  ],
+  "output_summary": "Chuyển đổi thành công thông tin phi cấu trúc (giọng nói, tin nhắn) thành cấu trúc JSON đơn hàng chuẩn để lưu vào DB.",
+  "outcome": {
+    "status": "success",
+    "failure_reason": null
+  },
+  "skill_candidate": {
+    "name": "AIOrderProcessing",
+    "confidence": 0.98
+  }
+}

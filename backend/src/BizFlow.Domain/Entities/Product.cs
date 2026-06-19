@@ -12,6 +12,8 @@ public class Product
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string BaseUnit { get; set; } = string.Empty; // e.g. Lon, Cái, Bao
+    public bool IsActive { get; set; } = true;
+    public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

@@ -1,0 +1,94 @@
+{
+  "trace_id": "bizflow_trace_001_product_mgmt",
+  "timestamp": "2026-06-19T14:18:07+07:00",
+  "domain": "inventory",
+  "user_request": "Quản lý Hàng hóa, Thêm sản phẩm, Đơn vị quy đổi và Lịch sử thao tác",
+  "business_context": {
+    "constraints": [
+      "Mọi thao tác truy xuất dữ liệu bắt buộc kèm TenantId"
+    ],
+    "business_rules": [
+      "Sản phẩm luôn phải thuộc 1 danh mục",
+      "Sản phẩm có 1 đơn vị cơ bản (BaseUnit)",
+      "Sản phẩm có thể có nhiều đơn vị quy đổi (ProductUnits) với giá riêng biệt",
+      "Mọi thay đổi thông tin sản phẩm hoặc giá bán phải được ghi log vào Lịch sử"
+    ],
+    "available_data_sources": [
+      "Categories",
+      "Products",
+      "ProductUnits",
+      "ProductHistories"
+    ]
+  },
+  "intent_analysis": {
+    "primary_intent": "Quản lý dữ liệu gốc của hàng hóa và giá bán",
+    "secondary_intents": [
+      "Theo dõi lịch sử thay đổi để ngăn chặn gian lận giá",
+      "Đảm bảo phân cấp danh mục hợp lệ"
+    ],
+    "entities": [
+      "Product",
+      "Category",
+      "BaseUnit",
+      "ProductUnit",
+      "Price",
+      "History"
+    ],
+    "priority": "high"
+  },
+  "reasoning_steps": [
+    {
+      "step": 1,
+      "description": "Nhận yêu cầu thêm hoặc cập nhật sản phẩm."
+    },
+    {
+      "step": 2,
+      "description": "Kiểm tra danh mục có tồn tại không. Nếu không, yêu cầu tạo danh mục trước."
+    },
+    {
+      "step": 3,
+      "description": "Lưu thông tin sản phẩm gốc và đơn vị cơ bản."
+    },
+    {
+      "step": 4,
+      "description": "Lưu các đơn vị quy đổi kèm giá bán tương ứng."
+    },
+    {
+      "step": 5,
+      "description": "Ghi nhận thay đổi vào ProductHistories."
+    }
+  ],
+  "actions": [
+    {
+      "type": "database_query",
+      "description": "SELECT from Categories WHERE TenantId = @tenantId"
+    },
+    {
+      "type": "api_call",
+      "description": "POST /api/products hoặc PUT /api/products/{id}"
+    },
+    {
+      "type": "api_call",
+      "description": "GET /api/products/history/all"
+    }
+  ],
+  "decision_points": [
+    {
+      "decision": "Bắt buộc có danh mục",
+      "reason": "Để hỗ trợ việc phân loại và tìm kiếm sản phẩm sau này."
+    },
+    {
+      "decision": "Lưu lịch sử mọi thay đổi",
+      "reason": "Chủ cửa hàng cần rà soát lại biến động giá hoặc khi nhân viên tự ý đổi thông tin."
+    }
+  ],
+  "output_summary": "Hoàn thành quy trình quản lý thông tin gốc của hàng hóa, tỷ lệ quy đổi và ghi log lịch sử thao tác.",
+  "outcome": {
+    "status": "success",
+    "failure_reason": null
+  },
+  "skill_candidate": {
+    "name": "ProductAndInventoryManagement",
+    "confidence": 0.95
+  }
+}
