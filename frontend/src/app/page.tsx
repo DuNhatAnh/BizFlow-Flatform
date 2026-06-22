@@ -9,10 +9,10 @@ import TopProducts from "@/components/TopProducts";
 import AIInsight from "@/components/AIInsight";
 import ProductManagement from "@/components/ProductManagement";
 import InventoryManagement from "@/components/InventoryManagement";
-import { 
-  DollarSign, 
-  ShoppingCart, 
-  Package, 
+import {
+  DollarSign,
+  ShoppingCart,
+  Package,
   CreditCard,
   Plus,
   Search,
@@ -35,7 +35,7 @@ export default function Home() {
   const [posCustomer, setPosCustomer] = useState("");
   const [isDebt, setIsDebt] = useState(false);
   const [posSearch, setPosSearch] = useState("");
-  
+
   // Mock AI drafts loaded dynamically to simulate real-time API syncing (triggered by hot reload)
   const [aiDrafts, setAiDrafts] = useState([
     {
@@ -96,7 +96,7 @@ export default function Home() {
       const parsedUser = JSON.parse(stored);
       setUser(parsedUser);
       setAuthorized(true);
-      
+
       const savedTab = localStorage.getItem("bizflow_active_tab");
       if (savedTab) {
         setActiveTab(savedTab);
@@ -122,7 +122,7 @@ export default function Home() {
   const addToCart = (product: typeof posProducts[0]) => {
     const existing = cart.find(item => item.id === product.id);
     const newQty = existing ? existing.quantity + 1 : 1;
-    
+
     if (newQty > product.stock) {
       alert(`Sản phẩm ${product.name} đã hết hàng trong kho! Không thể thêm vào đơn.`);
       return;
@@ -267,7 +267,7 @@ export default function Home() {
             <div className="lg:col-span-7 xl:col-span-8 space-y-6">
               <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex items-center gap-3">
                 <Search className="w-5 h-5 text-on-surface-variant" />
-                <input 
+                <input
                   type="text"
                   placeholder="Tìm nhanh mặt hàng (nhập tên, đơn vị)..."
                   value={posSearch}
@@ -278,7 +278,7 @@ export default function Home() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredProducts.map(p => (
-                  <div 
+                  <div
                     key={p.id}
                     onClick={() => addToCart(p)}
                     className="bg-white p-4 rounded-xl border border-surface-container-high hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex justify-between items-start group"
@@ -321,7 +321,7 @@ export default function Home() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-on-surface">{(item.price * item.quantity).toLocaleString()} đ</p>
-                          <button 
+                          <button
                             onClick={() => setCart(cart.filter(c => c.id !== item.id))}
                             className="text-xs text-error hover:underline mt-1 font-medium inline-block"
                           >
@@ -336,7 +336,7 @@ export default function Home() {
                 <div className="border-t border-surface-container-high pt-4 space-y-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Tên khách hàng</label>
-                    <input 
+                    <input
                       type="text"
                       placeholder="Nhập tên để theo dõi công nợ (nếu có)..."
                       value={posCustomer}
@@ -348,8 +348,8 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Bán ghi nợ (Công nợ TT88)</span>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={isDebt}
                         onChange={(e) => setIsDebt(e.target.checked)}
                         className="sr-only peer"
@@ -365,7 +365,7 @@ export default function Home() {
                     </span>
                   </div>
 
-                  <button 
+                  <button
                     onClick={handleCheckout}
                     className="w-full py-3 bg-primary hover:bg-primary-container text-white font-bold rounded-lg text-sm shadow-sm transition-all"
                   >
@@ -410,7 +410,7 @@ export default function Home() {
                           <Sparkles className="w-3 h-3" /> AI Khớp: {draft.confidence}
                         </span>
                       </div>
-                      
+
                       <div className="bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
                         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Ghi âm/Văn bản thô:</p>
                         <p className="text-sm italic text-on-surface font-sans">"{draft.rawText}"</p>
@@ -440,13 +440,13 @@ export default function Home() {
                       </div>
 
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => setAiDrafts(aiDrafts.filter(d => d.id !== draft.id))}
                           className="flex-1 py-2 bg-error/5 hover:bg-error/10 text-error text-xs font-bold rounded-lg border border-error/20 flex items-center justify-center gap-1 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Hủy
                         </button>
-                        <button 
+                        <button
                           onClick={() => approveDraft(draft)}
                           className="flex-1 py-2 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-all shadow-sm"
                         >

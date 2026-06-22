@@ -68,7 +68,6 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       default:
         return [
           { id: "overview", label: "Tổng quan Doanh thu", icon: LayoutDashboard },
-          { id: "pos", label: "Bán hàng (POS)", icon: PlusCircle },
           { id: "products", label: "Hàng hóa & Đơn vị", icon: Package },
           { id: "inventory", label: "Quản lý Kho hàng", icon: Warehouse },
           { id: "customers", label: "Khách hàng & Công nợ", icon: Users },

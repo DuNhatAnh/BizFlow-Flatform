@@ -39,7 +39,7 @@ public class InventoryService : IInventoryService
                 TenantId = tenantId,
                 ReceiptCode = receiptCode,
                 Type = request.Type,
-                Date = request.Date?.ToUniversalTime() ?? DateTime.UtcNow,
+                Date = request.Date?.Date.Add(DateTime.UtcNow.TimeOfDay) ?? DateTime.UtcNow,
                 Note = request.Note,
                 DelivererReceiverName = request.DelivererReceiverName,
                 ReferenceDocumentNo = request.ReferenceDocumentNo,

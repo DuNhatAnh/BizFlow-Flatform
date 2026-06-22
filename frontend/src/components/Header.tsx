@@ -8,10 +8,11 @@ interface HeaderProps {
 }
 
 export default function Header({ showGreeting = true }: HeaderProps) {
-  // Format current date or mockup date matching user's visual
-  // "Thứ Năm, 11 tháng 6, 2026"
-  const formattedDate = "Thứ Năm, 11 tháng 6, 2026";
-
+  const date = new Date();
+  const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  let formattedDate = date.toLocaleDateString('vi-VN', options);
+  // Capitalize the first letter (e.g. "Thứ năm, 11 tháng 6, 2026")
+  formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
   return (
     <header className="flex items-center justify-between mb-8">
       <div>
