@@ -8,6 +8,7 @@ import RevenueChart from "@/components/RevenueChart";
 import TopProducts from "@/components/TopProducts";
 import AIInsight from "@/components/AIInsight";
 import ProductManagement from "@/components/ProductManagement";
+import InventoryManagement from "@/components/InventoryManagement";
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -57,13 +58,35 @@ export default function Home() {
     }
   ]);
 
-  const posProducts = [
-    { id: "p1", name: "Xi măng Hà Tiên", price: 85000, unit: "Bao", stock: 120 },
-    { id: "p2", name: "Dây cáp điện Cadivi", price: 1200000, unit: "Cuộn", stock: 15 },
-    { id: "p3", name: "Thép Pomina phi 10", price: 18500, unit: "Kg", stock: 850 },
-    { id: "p4", name: "Gạch đỏ ống tuynel", price: 1200, unit: "Viên", stock: 4500 },
-    { id: "p5", name: "Cát xây tô sạch", price: 320000, unit: "Khối", stock: 40 },
-  ];
+  const [posProducts, setPosProducts] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("http://localhost:5178/api/products", {
+          headers: { "X-Tenant-Id": "11111111-1111-1111-1111-111111111111" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Map backend ProductDto to POS format
+          const mapped = data.map((p: any) => {
+            const defaultUnit = p.units?.find((u: any) => u.isDefault) || p.units?.[0];
+            return {
+              id: p.id,
+              name: p.name,
+              price: defaultUnit ? defaultUnit.price : 0,
+              unit: defaultUnit ? defaultUnit.unitName : p.baseUnit,
+              stock: p.stockQuantity
+            };
+          });
+          setPosProducts(mapped);
+        }
+      } catch (e) {
+        console.error("Failed to fetch products for POS", e);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   React.useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
@@ -98,8 +121,15 @@ export default function Home() {
 
   const addToCart = (product: typeof posProducts[0]) => {
     const existing = cart.find(item => item.id === product.id);
+    const newQty = existing ? existing.quantity + 1 : 1;
+    
+    if (newQty > product.stock) {
+      alert(`Sản phẩm ${product.name} đã hết hàng trong kho! Không thể thêm vào đơn.`);
+      return;
+    }
+
     if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+      setCart(cart.map(item => item.id === product.id ? { ...item, quantity: newQty } : item));
     } else {
       setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, unit: product.unit }]);
     }
@@ -504,6 +534,10 @@ export default function Home() {
 
     if (activeTab === "products") {
       return <ProductManagement />;
+    }
+
+    if (activeTab === "inventory") {
+      return <InventoryManagement />;
     }
 
     return (

@@ -438,7 +438,7 @@ export default function ProductManagement() {
                     <td className="p-4 font-semibold text-on-surface">{p.baseUnit}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-2">
-                        {p.units.map(u => (
+                        {[...p.units].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)).map(u => (
                           <div 
                             key={u.id} 
                             className={`px-3 py-1.5 rounded-lg border text-xs flex flex-col gap-0.5 ${

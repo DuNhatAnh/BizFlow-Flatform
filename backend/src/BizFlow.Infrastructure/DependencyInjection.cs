@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BizFlow.Application.Common.Interfaces;
+using BizFlow.Application.Interfaces;
 using BizFlow.Infrastructure.Persistence;
 
 namespace BizFlow.Infrastructure;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderService, BizFlow.Infrastructure.Services.OrderService>();
         services.AddScoped<BizFlow.Application.Interfaces.IProductService, BizFlow.Infrastructure.Services.ProductService>();
         services.AddScoped<BizFlow.Application.Interfaces.ICategoryService, BizFlow.Infrastructure.Services.CategoryService>();
+        services.AddScoped<IInventoryService, BizFlow.Infrastructure.Services.InventoryService>();
 
 
         // Register Redis Cache

@@ -1,0 +1,1429 @@
+dotnet watch ⌚ Polling file watcher is enabled
+dotnet watch 🔥 Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+dotnet watch 🔧 Building...
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  BizFlow.Domain -> /app/src/BizFlow.Domain/bin/Debug/net8.0/BizFlow.Domain.dll
+  BizFlow.Application -> /app/src/BizFlow.Application/bin/Debug/net8.0/BizFlow.Application.dll
+  BizFlow.Infrastructure -> /app/src/BizFlow.Infrastructure/bin/Debug/net8.0/BizFlow.Infrastructure.dll
+  BizFlow.WebApi -> /app/src/BizFlow.WebApi/bin/Debug/net8.0/BizFlow.WebApi.dll
+dotnet watch 🚀 Started
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS inventory_receipts (
+                  "Id" uuid NOT NULL,
+                  "TenantId" uuid NOT NULL,
+                  "ReceiptCode" text,
+                  "Type" text NOT NULL,
+                  "Date" timestamp with time zone NOT NULL,
+                  "TotalAmount" numeric(15,2) NOT NULL,
+                  "Note" text,
+                  "DelivererReceiverName" text,
+                  "ReferenceDocumentNo" text,
+                  "ReferenceDocumentDate" timestamp with time zone,
+                  "ReferenceDocumentIssuer" text,
+                  "WarehouseLocation" text,
+                  "CreatedBy" uuid,
+                  CONSTRAINT "PK_inventory_receipts" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS inventory_receipt_details (
+                  "Id" uuid NOT NULL,
+                  "ReceiptId" uuid NOT NULL,
+                  "ProductId" uuid NOT NULL,
+                  "DocumentQuantity" numeric(18,4) NOT NULL,
+                  "Quantity" numeric(18,4) NOT NULL,
+                  "UnitPrice" numeric(15,2) NOT NULL,
+                  "TotalPrice" numeric(15,2) NOT NULL,
+                  CONSTRAINT "PK_inventory_receipt_details" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS accounting_ledger_s2 (
+                  "Id" uuid NOT NULL,
+                  "TenantId" uuid NOT NULL,
+                  "ProductId" uuid NOT NULL,
+                  "ReceiptId" uuid,
+                  "Date" timestamp with time zone NOT NULL,
+                  "Type" text NOT NULL,
+                  "QuantityIn" numeric(18,4) NOT NULL,
+                  "ValueIn" numeric(15,2) NOT NULL,
+                  "QuantityOut" numeric(18,4) NOT NULL,
+                  "ValueOut" numeric(15,2) NOT NULL,
+                  "QuantityBalance" numeric(18,4) NOT NULL,
+                  "ValueBalance" numeric(15,2) NOT NULL,
+                  CONSTRAINT "PK_accounting_ledger_s2" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (111ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE product_units ALTER COLUMN "ConversionRate" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_transactions ALTER COLUMN "Quantity" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE order_items ALTER COLUMN "Quantity" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "DelivererReceiverName" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentNo" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentDate" timestamp with time zone;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentIssuer" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "WarehouseLocation" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipt_details ADD COLUMN IF NOT EXISTS "DocumentQuantity" numeric(18,4) NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "IsDeleted" boolean NOT NULL DEFAULT FALSE;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "StockQuantity" numeric(18,4) NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (101ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS "CogsMethod" integer NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "Status" integer NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelledAt" timestamp with time zone;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelledBy" uuid;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelReason" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM categories AS c)
+warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+      Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://0.0.0.0:5178'.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:5178
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /app/src/BizFlow.WebApi
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (120ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (120ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (96ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (96ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+=== RAW REQUEST BODY [POST /api/inventory/receipts] ===
+{"type":0,"date":"2026-06-22T00:00:00.000Z","note":"nhập hàng tháng 6","delivererReceiverName":"Nguyễn Văn Mười","referenceDocumentNo":"HD03609","referenceDocumentDate":"2026-06-18T00:00:00.000Z","referenceDocumentIssuer":"Công ty Hòa Phát","warehouseLocation":"kho trung tâm","items":[{"productId":"a67eb1b6-3a63-46d4-96db-5a283026eab2","documentQuantity":50,"quantity":50,"unitPrice":400000},{"productId":"6bb75e2c-b549-4434-b843-7d9cb89bb2a3","documentQuantity":2000,"quantity":2000,"unitPrice":1000}]}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__get_Item_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."Address", t."CogsMethod", t."CreatedAt", t."IsActive", t."Name", t."OwnerName", t."Phone", t."SubscriptionPlanId", t."TaxCode"
+      FROM tenants AS t
+      WHERE t."Id" = @__get_Item_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__request_Type_1='?'], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM inventory_receipts AS i
+      WHERE i."TenantId" = @__tenantId_0 AND i."Type" = @__request_Type_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__8__locals2_itemReq_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals2_itemReq_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__8__locals2_itemReq_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals2_itemReq_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (295ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = Guid), @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?', @p9='?' (DbType = DateTime), @p10='?', @p11='?', @p12='?' (DbType = Int32), @p13='?' (DbType = Guid), @p14='?' (DbType = Decimal), @p15='?', @p16='?', @p18='?' (DbType = Guid), @p17='?' (DbType = Decimal), @p20='?' (DbType = Guid), @p19='?' (DbType = Decimal), @p21='?' (DbType = Guid), @p22='?' (DbType = DateTime), @p23='?' (DbType = Guid), @p24='?' (DbType = Decimal), @p25='?' (DbType = Decimal), @p26='?' (DbType = Decimal), @p27='?' (DbType = Guid), @p28='?' (DbType = Guid), @p29='?', @p30='?' (DbType = Decimal), @p31='?' (DbType = Decimal), @p32='?' (DbType = Decimal), @p33='?' (DbType = Guid), @p34='?' (DbType = DateTime), @p35='?' (DbType = Guid), @p36='?' (DbType = Decimal), @p37='?' (DbType = Decimal), @p38='?' (DbType = Decimal), @p39='?' (DbType = Guid), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = Decimal), @p43='?' (DbType = Decimal), @p44='?' (DbType = Decimal), @p45='?' (DbType = Guid), @p46='?' (DbType = Decimal), @p47='?' (DbType = Guid), @p48='?' (DbType = Decimal), @p49='?' (DbType = Guid), @p50='?' (DbType = Decimal), @p51='?' (DbType = Decimal), @p52='?' (DbType = Guid), @p53='?' (DbType = Decimal), @p54='?' (DbType = Guid), @p55='?' (DbType = Decimal), @p56='?' (DbType = Guid), @p57='?' (DbType = Decimal), @p58='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO inventory_receipts ("Id", "CancelReason", "CancelledAt", "CancelledBy", "CreatedBy", "Date", "DelivererReceiverName", "Note", "ReceiptCode", "ReferenceDocumentDate", "ReferenceDocumentIssuer", "ReferenceDocumentNo", "Status", "TenantId", "TotalAmount", "Type", "WarehouseLocation")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
+      UPDATE products SET "StockQuantity" = @p17
+      WHERE "Id" = @p18;
+      UPDATE products SET "StockQuantity" = @p19
+      WHERE "Id" = @p20;
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32);
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44);
+      INSERT INTO inventory_receipt_details ("Id", "DocumentQuantity", "ProductId", "Quantity", "ReceiptId", "TotalPrice", "UnitPrice")
+      VALUES (@p45, @p46, @p47, @p48, @p49, @p50, @p51);
+      INSERT INTO inventory_receipt_details ("Id", "DocumentQuantity", "ProductId", "Quantity", "ReceiptId", "TotalPrice", "UnitPrice")
+      VALUES (@p52, @p53, @p54, @p55, @p56, @p57, @p58);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (96ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c."Id", c."CreatedAt", c."Name", c."TenantId"
+      FROM categories AS c
+      WHERE c."TenantId" = @__tenantId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c."Id", c."CreatedAt", c."Name", c."TenantId"
+      FROM categories AS c
+      WHERE c."TenantId" = @__tenantId_0
+=== RAW REQUEST BODY [PUT /api/products/a67eb1b6-3a63-46d4-96db-5a283026eab2] ===
+{"id":"a67eb1b6-3a63-46d4-96db-5a283026eab2","code":"SAT-P16-01","name":"Sắt thép phi 16","categoryId":1,"baseUnit":"cây","description":"","stockQuantity":50,"createdAt":"2026-06-19T10:15:44.091226Z","units":[{"id":7,"unitName":"cây","conversionRate":1,"price":500000,"isDefault":true},{"unitName":"bó","conversionRate":10,"price":420000,"isDefault":false}]}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM (
+          SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM products AS p
+          WHERE p."TenantId" = @__tenantId_0 AND p."Id" = @__productId_1 AND NOT (p."IsDeleted")
+          LIMIT 1
+      ) AS t
+      LEFT JOIN product_units AS p0 ON t."Id" = p0."ProductId"
+      ORDER BY t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__request_CategoryId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM categories AS c
+          WHERE c."Id" = @__request_CategoryId_Value_0)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Guid), @p6='?' (DbType = Guid), @p8='?' (DbType = Int32), @p7='?' (DbType = Decimal), @p9='?' (DbType = Decimal), @p10='?' (DbType = Boolean), @p11='?' (DbType = Decimal), @p12='?' (DbType = Guid), @p13='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO product_histories ("Id", "ActionBy", "ActionName", "ChangeDetails", "CreatedAt", "ProductId", "TenantId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+      UPDATE product_units SET "Price" = @p7
+      WHERE "Id" = @p8;
+      INSERT INTO product_units ("ConversionRate", "IsDefault", "Price", "ProductId", "UnitName")
+      VALUES (@p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+=== RAW REQUEST BODY [PUT /api/products/a67eb1b6-3a63-46d4-96db-5a283026eab2] ===
+{"id":"a67eb1b6-3a63-46d4-96db-5a283026eab2","code":"SAT-P16-01","name":"Sắt thép phi 16","categoryId":1,"baseUnit":"cây","description":"","stockQuantity":50,"createdAt":"2026-06-19T10:15:44.091226Z","units":[{"id":7,"unitName":"cây","conversionRate":1,"price":500000,"isDefault":true},{"id":8,"unitName":"bó","conversionRate":10,"price":4200000,"isDefault":false}]}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM (
+          SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM products AS p
+          WHERE p."TenantId" = @__tenantId_0 AND p."Id" = @__productId_1 AND NOT (p."IsDeleted")
+          LIMIT 1
+      ) AS t
+      LEFT JOIN product_units AS p0 ON t."Id" = p0."ProductId"
+      ORDER BY t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__request_CategoryId_Value_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM categories AS c
+          WHERE c."Id" = @__request_CategoryId_Value_0)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Guid), @p6='?' (DbType = Guid), @p8='?' (DbType = Int32), @p7='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO product_histories ("Id", "ActionBy", "ActionName", "ChangeDetails", "CreatedAt", "ProductId", "TenantId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+      UPDATE product_units SET "Price" = @p7
+      WHERE "Id" = @p8;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c."Id", c."CreatedAt", c."Name", c."TenantId"
+      FROM categories AS c
+      WHERE c."TenantId" = @__tenantId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (89ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c."Id", c."CreatedAt", c."Name", c."TenantId"
+      FROM categories AS c
+      WHERE c."TenantId" = @__tenantId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (96ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (97ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (96ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (98ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (97ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (98ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+dotnet watch ⌚ File changed: ./src/BizFlow.Application/DTOs/Inventory/ReceiptDto.cs.
+dotnet watch 🔥 Hot reload of changes succeeded.
+dotnet watch ⌚ File changed: ./src/BizFlow.Infrastructure/Services/InventoryService.cs.
+dotnet watch 🔥 Hot reload of changes succeeded.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (110ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (99ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1
+      ORDER BY a."Date"
+dotnet watch ⌚ File changed: ./src/BizFlow.Application/Interfaces/IInventoryService.cs.
+dotnet watch ⌚ Unable to apply hot reload because of a rude edit.
+dotnet watch ⌚ Exited
+dotnet watch 🔧 Building...
+  BizFlow.Domain -> /app/src/BizFlow.Domain/bin/Debug/net8.0/BizFlow.Domain.dll
+  BizFlow.Application -> /app/src/BizFlow.Application/bin/Debug/net8.0/BizFlow.Application.dll
+/app/src/BizFlow.Infrastructure/Services/InventoryService.cs(15,33): error CS0738: 'InventoryService' does not implement interface member 'IInventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)'. 'InventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)' cannot implement 'IInventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)' because it does not have the matching return type of 'Task<S2LedgerReportDto>'. [/app/src/BizFlow.Infrastructure/BizFlow.Infrastructure.csproj]
+dotnet watch ⏳ Waiting for a file to change before restarting dotnet...
+dotnet watch 🔧 Building...
+  BizFlow.Domain -> /app/src/BizFlow.Domain/bin/Debug/net8.0/BizFlow.Domain.dll
+  BizFlow.Application -> /app/src/BizFlow.Application/bin/Debug/net8.0/BizFlow.Application.dll
+/app/src/BizFlow.Infrastructure/Services/InventoryService.cs(15,33): error CS0738: 'InventoryService' does not implement interface member 'IInventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)'. 'InventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)' cannot implement 'IInventoryService.GetS2LedgerAsync(Guid, Guid, DateTime?, DateTime?)' because it does not have the matching return type of 'Task<S2LedgerReportDto>'. [/app/src/BizFlow.Infrastructure/BizFlow.Infrastructure.csproj]
+dotnet watch ⏳ Waiting for a file to change before restarting dotnet...
+dotnet watch 🔧 Building...
+  BizFlow.Domain -> /app/src/BizFlow.Domain/bin/Debug/net8.0/BizFlow.Domain.dll
+  BizFlow.Application -> /app/src/BizFlow.Application/bin/Debug/net8.0/BizFlow.Application.dll
+/app/src/BizFlow.Infrastructure/Services/ProductService.cs(148,86): warning CS8629: Nullable value type may be null. [/app/src/BizFlow.Infrastructure/BizFlow.Infrastructure.csproj]
+  BizFlow.Infrastructure -> /app/src/BizFlow.Infrastructure/bin/Debug/net8.0/BizFlow.Infrastructure.dll
+/app/src/BizFlow.WebApi/Program.cs(69,25): warning CS8605: Unboxing a possibly null value. [/app/src/BizFlow.WebApi/BizFlow.WebApi.csproj]
+  BizFlow.WebApi -> /app/src/BizFlow.WebApi/bin/Debug/net8.0/BizFlow.WebApi.dll
+dotnet watch 🚀 Started
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (101ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS inventory_receipts (
+                  "Id" uuid NOT NULL,
+                  "TenantId" uuid NOT NULL,
+                  "ReceiptCode" text,
+                  "Type" text NOT NULL,
+                  "Date" timestamp with time zone NOT NULL,
+                  "TotalAmount" numeric(15,2) NOT NULL,
+                  "Note" text,
+                  "DelivererReceiverName" text,
+                  "ReferenceDocumentNo" text,
+                  "ReferenceDocumentDate" timestamp with time zone,
+                  "ReferenceDocumentIssuer" text,
+                  "WarehouseLocation" text,
+                  "CreatedBy" uuid,
+                  CONSTRAINT "PK_inventory_receipts" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS inventory_receipt_details (
+                  "Id" uuid NOT NULL,
+                  "ReceiptId" uuid NOT NULL,
+                  "ProductId" uuid NOT NULL,
+                  "DocumentQuantity" numeric(18,4) NOT NULL,
+                  "Quantity" numeric(18,4) NOT NULL,
+                  "UnitPrice" numeric(15,2) NOT NULL,
+                  "TotalPrice" numeric(15,2) NOT NULL,
+                  CONSTRAINT "PK_inventory_receipt_details" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS accounting_ledger_s2 (
+                  "Id" uuid NOT NULL,
+                  "TenantId" uuid NOT NULL,
+                  "ProductId" uuid NOT NULL,
+                  "ReceiptId" uuid,
+                  "Date" timestamp with time zone NOT NULL,
+                  "Type" text NOT NULL,
+                  "QuantityIn" numeric(18,4) NOT NULL,
+                  "ValueIn" numeric(15,2) NOT NULL,
+                  "QuantityOut" numeric(18,4) NOT NULL,
+                  "ValueOut" numeric(15,2) NOT NULL,
+                  "QuantityBalance" numeric(18,4) NOT NULL,
+                  "ValueBalance" numeric(15,2) NOT NULL,
+                  CONSTRAINT "PK_accounting_ledger_s2" PRIMARY KEY ("Id")
+              );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (100ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE product_units ALTER COLUMN "ConversionRate" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_transactions ALTER COLUMN "Quantity" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE order_items ALTER COLUMN "Quantity" TYPE numeric(15,4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "DelivererReceiverName" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentNo" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentDate" timestamp with time zone;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "ReferenceDocumentIssuer" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "WarehouseLocation" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipt_details ADD COLUMN IF NOT EXISTS "DocumentQuantity" numeric(18,4) NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "IsDeleted" boolean NOT NULL DEFAULT FALSE;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS "StockQuantity" numeric(18,4) NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS "CogsMethod" integer NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "Status" integer NOT NULL DEFAULT 0;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelledAt" timestamp with time zone;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelledBy" uuid;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS "CancelReason" text;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM categories AS c)
+warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+      Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://0.0.0.0:5178'.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:5178
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /app/src/BizFlow.WebApi
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (108ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (97ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (102ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (102ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (107ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+=== RAW REQUEST BODY [POST /api/inventory/receipts] ===
+{"type":1,"date":"2026-06-22T00:00:00.000Z","note":"trả hàng lỗi","delivererReceiverName":"Nguyễn Bá Huân","referenceDocumentNo":"HD045012","referenceDocumentDate":"2026-06-21T00:00:00.000Z","referenceDocumentIssuer":"Cty vật liệu Sài Gòn","warehouseLocation":"kho số 2","items":[{"productId":"a67eb1b6-3a63-46d4-96db-5a283026eab2","documentQuantity":2,"quantity":2,"unitPrice":500000}]}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@__get_Item_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."Address", t."CogsMethod", t."CreatedAt", t."IsActive", t."Name", t."OwnerName", t."Phone", t."SubscriptionPlanId", t."TaxCode"
+      FROM tenants AS t
+      WHERE t."Id" = @__get_Item_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__request_Type_1='?'], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM inventory_receipts AS i
+      WHERE i."TenantId" = @__tenantId_0 AND i."Type" = @__request_Type_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__8__locals2_itemReq_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals2_itemReq_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+=== RAW REQUEST BODY [POST /api/inventory/receipts] ===
+{"type":1,"date":"2026-06-22T00:00:00.000Z","note":"trả hàng lỗi","delivererReceiverName":"Nguyễn Bá Huân","referenceDocumentNo":"HD045012","referenceDocumentDate":"2026-06-21T00:00:00.000Z","referenceDocumentIssuer":"Cty vật liệu Sài Gòn","warehouseLocation":"kho số 2","items":[{"productId":"a67eb1b6-3a63-46d4-96db-5a283026eab2","documentQuantity":2,"quantity":2,"unitPrice":500000}]}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (222ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = Guid), @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?', @p9='?' (DbType = DateTime), @p10='?', @p11='?', @p12='?' (DbType = Int32), @p13='?' (DbType = Guid), @p14='?' (DbType = Decimal), @p15='?', @p16='?', @p18='?' (DbType = Guid), @p17='?' (DbType = Decimal), @p19='?' (DbType = Guid), @p20='?' (DbType = DateTime), @p21='?' (DbType = Guid), @p22='?' (DbType = Decimal), @p23='?' (DbType = Decimal), @p24='?' (DbType = Decimal), @p25='?' (DbType = Guid), @p26='?' (DbType = Guid), @p27='?', @p28='?' (DbType = Decimal), @p29='?' (DbType = Decimal), @p30='?' (DbType = Decimal), @p31='?' (DbType = Guid), @p32='?' (DbType = Decimal), @p33='?' (DbType = Guid), @p34='?' (DbType = Decimal), @p35='?' (DbType = Guid), @p36='?' (DbType = Decimal), @p37='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO inventory_receipts ("Id", "CancelReason", "CancelledAt", "CancelledBy", "CreatedBy", "Date", "DelivererReceiverName", "Note", "ReceiptCode", "ReferenceDocumentDate", "ReferenceDocumentIssuer", "ReferenceDocumentNo", "Status", "TenantId", "TotalAmount", "Type", "WarehouseLocation")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
+      UPDATE products SET "StockQuantity" = @p17
+      WHERE "Id" = @p18;
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30);
+      INSERT INTO inventory_receipt_details ("Id", "DocumentQuantity", "ProductId", "Quantity", "ReceiptId", "TotalPrice", "UnitPrice")
+      VALUES (@p31, @p32, @p33, @p34, @p35, @p36, @p37);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__get_Item_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."Address", t."CogsMethod", t."CreatedAt", t."IsActive", t."Name", t."OwnerName", t."Phone", t."SubscriptionPlanId", t."TaxCode"
+      FROM tenants AS t
+      WHERE t."Id" = @__get_Item_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__request_Type_1='?'], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM inventory_receipts AS i
+      WHERE i."TenantId" = @__tenantId_0 AND i."Type" = @__request_Type_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__8__locals2_itemReq_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals2_itemReq_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = Guid), @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?', @p9='?' (DbType = DateTime), @p10='?', @p11='?', @p12='?' (DbType = Int32), @p13='?' (DbType = Guid), @p14='?' (DbType = Decimal), @p15='?', @p16='?', @p18='?' (DbType = Guid), @p17='?' (DbType = Decimal), @p19='?' (DbType = Guid), @p20='?' (DbType = DateTime), @p21='?' (DbType = Guid), @p22='?' (DbType = Decimal), @p23='?' (DbType = Decimal), @p24='?' (DbType = Decimal), @p25='?' (DbType = Guid), @p26='?' (DbType = Guid), @p27='?', @p28='?' (DbType = Decimal), @p29='?' (DbType = Decimal), @p30='?' (DbType = Decimal), @p31='?' (DbType = Guid), @p32='?' (DbType = Decimal), @p33='?' (DbType = Guid), @p34='?' (DbType = Decimal), @p35='?' (DbType = Guid), @p36='?' (DbType = Decimal), @p37='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO inventory_receipts ("Id", "CancelReason", "CancelledAt", "CancelledBy", "CreatedBy", "Date", "DelivererReceiverName", "Note", "ReceiptCode", "ReferenceDocumentDate", "ReferenceDocumentIssuer", "ReferenceDocumentNo", "Status", "TenantId", "TotalAmount", "Type", "WarehouseLocation")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
+      UPDATE products SET "StockQuantity" = @p17
+      WHERE "Id" = @p18;
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30);
+      INSERT INTO inventory_receipt_details ("Id", "DocumentQuantity", "ProductId", "Quantity", "ReceiptId", "TotalPrice", "UnitPrice")
+      VALUES (@p31, @p32, @p33, @p34, @p35, @p36, @p37);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (105ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+=== RAW REQUEST BODY [POST /api/inventory/receipts/47e1bdb3-c04b-4694-a317-e27da99839d4/cancel] ===
+{"cancelReason":"double click tự sinh ra thêm 1 phiếu nữa (sửa trong lần tới)"}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__8__locals1_receiptId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."CancelReason", t."CancelledAt", t."CancelledBy", t."CreatedBy", t."Date", t."DelivererReceiverName", t."Note", t."ReceiptCode", t."ReferenceDocumentDate", t."ReferenceDocumentIssuer", t."ReferenceDocumentNo", t."Status", t."TenantId", t."TotalAmount", t."Type", t."WarehouseLocation", i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice"
+      FROM (
+          SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+          FROM inventory_receipts AS i
+          WHERE i."Id" = @__8__locals1_receiptId_0 AND i."TenantId" = @__8__locals1_tenantId_1
+          LIMIT 1
+      ) AS t
+      LEFT JOIN inventory_receipt_details AS i0 ON t."Id" = i0."ReceiptId"
+      ORDER BY t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__8__locals3_detail_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals3_detail_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__8__locals2_receipt_Id_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."ReceiptId" = @__8__locals2_receipt_Id_0 AND a."ProductId" = @__product_Id_1 AND a."Type" = 'Export'
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = Guid), @p3='?' (DbType = Decimal), @p4='?' (DbType = Decimal), @p5='?' (DbType = Decimal), @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?', @p9='?' (DbType = Decimal), @p10='?' (DbType = Decimal), @p11='?' (DbType = Decimal), @p15='?' (DbType = Guid), @p12='?', @p13='?' (DbType = DateTime), @p14='?' (DbType = Int32), @p17='?' (DbType = Guid), @p16='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+      UPDATE inventory_receipts SET "CancelReason" = @p12, "CancelledAt" = @p13, "Status" = @p14
+      WHERE "Id" = @p15;
+      UPDATE products SET "StockQuantity" = @p16
+      WHERE "Id" = @p17;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (95ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (106ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (93ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (103ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (104ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (91ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (89ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (86ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (89ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+=== RAW REQUEST BODY [POST /api/inventory/receipts/040d3e5e-39ac-446c-8a3b-c3a73782f8a9/cancel] ===
+{"cancelReason":"nhầm"}
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@__8__locals1_receiptId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT t."Id", t."CancelReason", t."CancelledAt", t."CancelledBy", t."CreatedBy", t."Date", t."DelivererReceiverName", t."Note", t."ReceiptCode", t."ReferenceDocumentDate", t."ReferenceDocumentIssuer", t."ReferenceDocumentNo", t."Status", t."TenantId", t."TotalAmount", t."Type", t."WarehouseLocation", i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice"
+      FROM (
+          SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+          FROM inventory_receipts AS i
+          WHERE i."Id" = @__8__locals1_receiptId_0 AND i."TenantId" = @__8__locals1_tenantId_1
+          LIMIT 1
+      ) AS t
+      LEFT JOIN inventory_receipt_details AS i0 ON t."Id" = i0."ReceiptId"
+      ORDER BY t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@__8__locals3_detail_ProductId_0='?' (DbType = Guid), @__8__locals1_tenantId_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+      FROM products AS p
+      WHERE p."Id" = @__8__locals3_detail_ProductId_0 AND p."TenantId" = @__8__locals1_tenantId_1
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@__8__locals1_tenantId_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__8__locals1_tenantId_0 AND a."ProductId" = @__product_Id_1
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (86ms) [Parameters=[@__8__locals2_receipt_Id_0='?' (DbType = Guid), @__product_Id_1='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."ReceiptId" = @__8__locals2_receipt_Id_0 AND a."ProductId" = @__product_Id_1 AND a."Type" = 'Export'
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = Guid), @p3='?' (DbType = Decimal), @p4='?' (DbType = Decimal), @p5='?' (DbType = Decimal), @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?', @p9='?' (DbType = Decimal), @p10='?' (DbType = Decimal), @p11='?' (DbType = Decimal), @p15='?' (DbType = Guid), @p12='?', @p13='?' (DbType = DateTime), @p14='?' (DbType = Int32), @p17='?' (DbType = Guid), @p16='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO accounting_ledger_s2 ("Id", "Date", "ProductId", "QuantityBalance", "QuantityIn", "QuantityOut", "ReceiptId", "TenantId", "Type", "ValueBalance", "ValueIn", "ValueOut")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+      UPDATE inventory_receipts SET "CancelReason" = @p12, "CancelledAt" = @p13, "Status" = @p14
+      WHERE "Id" = @p15;
+      UPDATE products SET "StockQuantity" = @p16
+      WHERE "Id" = @p17;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation", t."Id", t."DocumentQuantity", t."ProductId", t."Quantity", t."ReceiptId", t."TotalPrice", t."UnitPrice", t."Id0", t."BaseUnit", t."CategoryId", t."Code", t."CreatedAt", t."Description", t."IsActive", t."IsDeleted", t."Name", t."StockQuantity", t."TenantId"
+      FROM inventory_receipts AS i
+      LEFT JOIN (
+          SELECT i0."Id", i0."DocumentQuantity", i0."ProductId", i0."Quantity", i0."ReceiptId", i0."TotalPrice", i0."UnitPrice", p."Id" AS "Id0", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId"
+          FROM inventory_receipt_details AS i0
+          INNER JOIN products AS p ON i0."ProductId" = p."Id"
+      ) AS t ON i."Id" = t."ReceiptId"
+      WHERE i."TenantId" = @__tenantId_0
+      ORDER BY i."Date" DESC, i."Id", t."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@__tenantId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", p0."Id", p0."ConversionRate", p0."IsDefault", p0."Price", p0."ProductId", p0."UnitName"
+      FROM products AS p
+      LEFT JOIN product_units AS p0 ON p."Id" = p0."ProductId"
+      WHERE p."TenantId" = @__tenantId_0 AND NOT (p."IsDeleted")
+      ORDER BY p."CreatedAt" DESC, p."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (87ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut"
+      FROM accounting_ledger_s2 AS a
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" < @__startDate_Value_2
+      ORDER BY a."Date" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (89ms) [Parameters=[@__tenantId_0='?' (DbType = Guid), @__productId_1='?' (DbType = Guid), @__startDate_Value_2='?' (DbType = DateTime), @__endDate_Value_3='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      SELECT a."Id", a."Date", a."ProductId", a."QuantityBalance", a."QuantityIn", a."QuantityOut", a."ReceiptId", a."TenantId", a."Type", a."ValueBalance", a."ValueIn", a."ValueOut", p."Id", p."BaseUnit", p."CategoryId", p."Code", p."CreatedAt", p."Description", p."IsActive", p."IsDeleted", p."Name", p."StockQuantity", p."TenantId", i."Id", i."CancelReason", i."CancelledAt", i."CancelledBy", i."CreatedBy", i."Date", i."DelivererReceiverName", i."Note", i."ReceiptCode", i."ReferenceDocumentDate", i."ReferenceDocumentIssuer", i."ReferenceDocumentNo", i."Status", i."TenantId", i."TotalAmount", i."Type", i."WarehouseLocation"
+      FROM accounting_ledger_s2 AS a
+      INNER JOIN products AS p ON a."ProductId" = p."Id"
+      LEFT JOIN inventory_receipts AS i ON a."ReceiptId" = i."Id"
+      WHERE a."TenantId" = @__tenantId_0 AND a."ProductId" = @__productId_1 AND a."Date" >= @__startDate_Value_2 AND a."Date" <= @__endDate_Value_3
+      ORDER BY a."Date"
+dotnet watch ⌚ File changed: ./src/BizFlow.WebApi/Controllers/InventoryController.cs.
+dotnet watch ⌚ [40m[31m/app/src/BizFlow.WebApi/Controllers/InventoryController.cs(62,61): error CS0246: The type or namespace name 'IApplicationDbContext' could not be found (are you missing a using directive or an assembly reference?)

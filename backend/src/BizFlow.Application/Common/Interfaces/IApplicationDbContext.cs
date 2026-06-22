@@ -19,6 +19,9 @@ public interface IApplicationDbContext
     DbSet<OrderItem> OrderItems { get; }
     DbSet<DebtTransaction> DebtTransactions { get; }
     DbSet<AccountingEntry> AccountingEntries { get; }
+    DbSet<InventoryReceipt> InventoryReceipts { get; }
+    DbSet<InventoryReceiptDetail> InventoryReceiptDetails { get; }
+    DbSet<AccountingLedgerS2> AccountingLedgerS2s { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

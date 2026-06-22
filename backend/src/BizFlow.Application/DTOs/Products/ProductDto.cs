@@ -11,6 +11,7 @@ public class ProductDto
     public int? CategoryId { get; set; }
     public string BaseUnit { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public decimal StockQuantity { get; set; }
     public DateTime CreatedAt { get; set; }
     
     public List<ProductUnitDto> Units { get; set; } = new();

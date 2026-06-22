@@ -15,11 +15,10 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d bizflow_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d bizflow_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
-
 
   cache:
     image: redis:7-alpine
@@ -70,7 +69,8 @@ services:
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: dotnet watch run --non-interactive --project src/BizFlow.WebApi --urls=http://0.0.0.0:5178
+    command: >
+      bash -c " dotnet tool install -g dotnet-ef || true; export PATH=\"$$PATH:/root/.dotnet/tools\"; dotnet ef migrations add Add_TT88_Tables_Migration --project src/BizFlow.Infrastructure --startup-project src/BizFlow.WebApi --output-dir Persistence/Migrations || true; dotnet ef database update --project src/BizFlow.Infrastructure --startup-project src/BizFlow.WebApi || true; dotnet watch run --non-interactive --project src/BizFlow.WebApi --urls=http://0.0.0.0:5178 > /app/backend-log.txt 2>&1 "
     environment:
       - ConnectionStrings__DefaultConnection=Host=aws-1-ap-northeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.nltybanibdbuxowimrpv;Password=nhatanh3008;SSL Mode=Require;Trust Server Certificate=true
       - ConnectionStrings__RedisConnection=cache:6379

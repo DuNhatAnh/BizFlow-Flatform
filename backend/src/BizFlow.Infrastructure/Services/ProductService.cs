@@ -244,6 +244,7 @@ public class ProductService : IProductService
             CategoryId = product.CategoryId,
             BaseUnit = product.BaseUnit,
             Description = product.Description,
+            StockQuantity = product.StockQuantity,
             CreatedAt = product.CreatedAt,
             Units = product.ProductUnits.Select(u => new ProductUnitDto
             {

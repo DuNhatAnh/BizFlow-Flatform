@@ -13,6 +13,7 @@ public class Tenant
     public string? Phone { get; set; }
     public int? SubscriptionPlanId { get; set; }
     public bool IsActive { get; set; } = true;
+    public BizFlow.Domain.Enums.CogsMethod CogsMethod { get; set; } = BizFlow.Domain.Enums.CogsMethod.WeightedAverage;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

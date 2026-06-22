@@ -35,12 +35,15 @@ builder.Services.AddSwaggerGen();
 // Register Clean Architecture Infrastructure services (DbContext)
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+// Register NotificationService
+builder.Services.AddScoped<BizFlow.Application.Interfaces.INotificationService, BizFlow.WebApi.Services.NotificationService>();
+
 // Configure CORS for Next.js Frontend (local dev environment)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -71,11 +74,78 @@ using (var scope = app.Services.CreateScope())
             }
         }
         conn.Close();
-        db.Database.ExecuteSqlRaw("ALTER TABLE product_units ALTER COLUMN \"ConversionRate\" TYPE numeric(15,4);");
+        void SafeSql(string sql) {
+            try { db.Database.ExecuteSqlRaw(sql); }
+            catch (Exception ex) { Console.WriteLine("SafeSql Error: " + ex.Message); }
+        }
+
+        SafeSql(@"CREATE TABLE IF NOT EXISTS inventory_receipts (
+            ""Id"" uuid NOT NULL,
+            ""TenantId"" uuid NOT NULL,
+            ""ReceiptCode"" text,
+            ""Type"" text NOT NULL,
+            ""Date"" timestamp with time zone NOT NULL,
+            ""TotalAmount"" numeric(15,2) NOT NULL,
+            ""Note"" text,
+            ""DelivererReceiverName"" text,
+            ""ReferenceDocumentNo"" text,
+            ""ReferenceDocumentDate"" timestamp with time zone,
+            ""ReferenceDocumentIssuer"" text,
+            ""WarehouseLocation"" text,
+            ""CreatedBy"" uuid,
+            CONSTRAINT ""PK_inventory_receipts"" PRIMARY KEY (""Id"")
+        );");
+
+        SafeSql(@"CREATE TABLE IF NOT EXISTS inventory_receipt_details (
+            ""Id"" uuid NOT NULL,
+            ""ReceiptId"" uuid NOT NULL,
+            ""ProductId"" uuid NOT NULL,
+            ""DocumentQuantity"" numeric(18,4) NOT NULL,
+            ""Quantity"" numeric(18,4) NOT NULL,
+            ""UnitPrice"" numeric(15,2) NOT NULL,
+            ""TotalPrice"" numeric(15,2) NOT NULL,
+            CONSTRAINT ""PK_inventory_receipt_details"" PRIMARY KEY (""Id"")
+        );");
+
+        SafeSql(@"CREATE TABLE IF NOT EXISTS accounting_ledger_s2 (
+            ""Id"" uuid NOT NULL,
+            ""TenantId"" uuid NOT NULL,
+            ""ProductId"" uuid NOT NULL,
+            ""ReceiptId"" uuid,
+            ""Date"" timestamp with time zone NOT NULL,
+            ""Type"" text NOT NULL,
+            ""QuantityIn"" numeric(18,4) NOT NULL,
+            ""ValueIn"" numeric(15,2) NOT NULL,
+            ""QuantityOut"" numeric(18,4) NOT NULL,
+            ""ValueOut"" numeric(15,2) NOT NULL,
+            ""QuantityBalance"" numeric(18,4) NOT NULL,
+            ""ValueBalance"" numeric(15,2) NOT NULL,
+            CONSTRAINT ""PK_accounting_ledger_s2"" PRIMARY KEY (""Id"")
+        );");
+
+        SafeSql("ALTER TABLE product_units ALTER COLUMN \"ConversionRate\" TYPE numeric(15,4);");
         
         // Migrate Quantity to numeric to support float quantities
-        db.Database.ExecuteSqlRaw("ALTER TABLE inventory_transactions ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
-        db.Database.ExecuteSqlRaw("ALTER TABLE order_items ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
+        SafeSql("ALTER TABLE inventory_transactions ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
+        SafeSql("ALTER TABLE order_items ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
+
+        // Add TT88 Fields to inventory_receipts and inventory_receipt_details
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"DelivererReceiverName\" text;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"ReferenceDocumentNo\" text;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"ReferenceDocumentDate\" timestamp with time zone;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"ReferenceDocumentIssuer\" text;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"WarehouseLocation\" text;");
+        SafeSql("ALTER TABLE inventory_receipt_details ADD COLUMN IF NOT EXISTS \"DocumentQuantity\" numeric(18,4) NOT NULL DEFAULT 0;");
+
+        // Add missing EF Core fields from init.sql mismatch
+        SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"IsActive\" boolean NOT NULL DEFAULT TRUE;");
+        SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"IsDeleted\" boolean NOT NULL DEFAULT FALSE;");
+        SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"StockQuantity\" numeric(18,4) NOT NULL DEFAULT 0;");
+        SafeSql("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS \"CogsMethod\" integer NOT NULL DEFAULT 0;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"Status\" integer NOT NULL DEFAULT 0;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelledAt\" timestamp with time zone;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelledBy\" uuid;");
+        SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelReason\" text;");
 
         var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         if (!db.Categories.Any())
