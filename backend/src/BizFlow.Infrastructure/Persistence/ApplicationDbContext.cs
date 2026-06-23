@@ -32,6 +32,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ExpenseRecord> ExpenseRecords => Set<ExpenseRecord>();
     public DbSet<TaxObligation> TaxObligations => Set<TaxObligation>();
     public DbSet<PayrollRecord> PayrollRecords => Set<PayrollRecord>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -210,6 +211,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Allowances).HasPrecision(15, 2);
             entity.Property(e => e.Deductions).HasPrecision(15, 2);
             entity.Property(e => e.NetPay).HasPrecision(15, 2);
+        });
+
+        // 20. AuditLog configurations
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("audit_logs");
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Seed default subscription plan

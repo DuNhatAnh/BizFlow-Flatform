@@ -16,11 +16,22 @@ import {
   Trash2,
   AlertCircle,
   Eye,
-  Printer
+  Printer,
+  MoreHorizontal
 } from "lucide-react";
 
-const TENANT_ID = "11111111-1111-1111-1111-111111111111";
 const API_URL = "http://localhost:5178/api";
+
+const getAuthInfo = () => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("bizflow_user");
+    if (stored) {
+      const user = JSON.parse(stored);
+      return { tenantId: user.tenantId || "11111111-1111-1111-1111-111111111111", token: user.token };
+    }
+  }
+  return { tenantId: "11111111-1111-1111-1111-111111111111", token: "" };
+};
 
 export default function InventoryManagement() {
   const [activeSubTab, setActiveSubTab] = useState(() => {
@@ -56,6 +67,8 @@ export default function InventoryManagement() {
   const [viewReceiptDetails, setViewReceiptDetails] = useState<any>(null);
   const [hasAcknowledgedCogs, setHasAcknowledgedCogs] = useState(false);
   const [isInitialReceiptsLoaded, setIsInitialReceiptsLoaded] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   const [receiptForm, setReceiptForm] = useState({
     type: 1, // 1 = Import, 2 = Export
@@ -75,9 +88,13 @@ export default function InventoryManagement() {
   };
 
   const fetchProducts = async () => {
+    const auth = getAuthInfo();
     try {
       const res = await fetch(`${API_URL}/products`, {
-        headers: { "X-Tenant-Id": TENANT_ID }
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -92,9 +109,13 @@ export default function InventoryManagement() {
   };
 
   const fetchReceipts = async () => {
+    const auth = getAuthInfo();
     try {
       const res = await fetch(`${API_URL}/inventory/receipts`, {
-        headers: { "X-Tenant-Id": TENANT_ID }
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -109,12 +130,16 @@ export default function InventoryManagement() {
 
   const fetchLedger = async (productId: string, month: number, year: number) => {
     if (!productId) return;
+    const auth = getAuthInfo();
     try {
       setIsLoading(true);
       const startDate = new Date(year, month - 1, 1, 0, 0, 0).toISOString();
       const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
       const res = await fetch(`${API_URL}/inventory/reports/s2?productId=${productId}&startDate=${startDate}&endDate=${endDate}`, {
-        headers: { "X-Tenant-Id": TENANT_ID }
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
       });
       if (res.ok) {
         setLedger(await res.json());
@@ -205,11 +230,13 @@ export default function InventoryManagement() {
         }))
       };
 
+      const auth = getAuthInfo();
       const res = await fetch(`${API_URL}/inventory/receipts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Tenant-Id": TENANT_ID
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
         },
         body: JSON.stringify(payload)
       });
@@ -239,12 +266,14 @@ export default function InventoryManagement() {
     }
     if (isLoading) return;
     setIsLoading(true);
+    const auth = getAuthInfo();
     try {
       const res = await fetch(`${API_URL}/inventory/receipts/${cancelReceiptId}/cancel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Tenant-Id": TENANT_ID
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
         },
         body: JSON.stringify({ cancelReason })
       });
@@ -523,27 +552,54 @@ export default function InventoryManagement() {
                         )}
                       </td>
                       <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setViewReceiptDetails(r)}
-                            className="text-primary hover:text-primary/80 p-1.5 hover:bg-primary/10 rounded"
-                            title="Xem chi tiết"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {r.status === 0 && (
-                            <button
-                              onClick={() => {
-                                setCancelReceiptId(r.id);
-                                setCancelModalOpen(true);
-                              }}
-                              className="text-red-600 hover:text-red-800 p-1.5 bg-red-50 hover:bg-red-100 rounded"
-                              title="Hủy phiếu"
+                        <button 
+                          onClick={(e) => {
+                            if (openDropdownId === r.id) {
+                              setOpenDropdownId(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownPos({
+                                top: rect.bottom + 4,
+                                right: window.innerWidth - rect.right
+                              });
+                              setOpenDropdownId(r.id);
+                            }
+                          }}
+                          className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
+                        >
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                        {openDropdownId === r.id && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                            <div 
+                              className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+                              style={{ top: dropdownPos.top, right: dropdownPos.right }}
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                              <button
+                                onClick={() => {
+                                  setViewReceiptDetails(r);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
+                              >
+                                <Eye className="w-4 h-4 text-primary" /> Xem chi tiết
+                              </button>
+                              {r.status === 0 && (
+                                <button
+                                  onClick={() => {
+                                    setCancelReceiptId(r.id);
+                                    setCancelModalOpen(true);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Hủy / Xóa phiếu
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

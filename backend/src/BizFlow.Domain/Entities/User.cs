@@ -12,6 +12,10 @@ public class User
     public string Fullname { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Cashier;
     public bool IsActive { get; set; } = true;
+    public string? Phone { get; set; }
+    public string? IdentityCard { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public DateTime? JoinDate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

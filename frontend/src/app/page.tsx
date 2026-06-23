@@ -9,6 +9,8 @@ import TopProducts from "@/components/TopProducts";
 import AIInsight from "@/components/AIInsight";
 import ProductManagement from "@/components/ProductManagement";
 import InventoryManagement from "@/components/InventoryManagement";
+import StaffManagement from "@/components/StaffManagement";
+import UserProfile from "@/components/UserProfile";
 import {
   DollarSign,
   ShoppingCart,
@@ -62,9 +64,16 @@ export default function Home() {
 
   React.useEffect(() => {
     const fetchProducts = async () => {
+      const stored = localStorage.getItem("bizflow_user");
+      if (!stored) return;
+      const userObj = JSON.parse(stored);
+
       try {
         const res = await fetch("http://localhost:5178/api/products", {
-          headers: { "X-Tenant-Id": "11111111-1111-1111-1111-111111111111" }
+          headers: { 
+            "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+            "Authorization": `Bearer ${userObj.token}` 
+          }
         });
         if (res.ok) {
           const data = await res.json();
@@ -162,6 +171,10 @@ export default function Home() {
 
   // --- RENDER CONTENT BY ROLE & TAB ---
   const renderContent = () => {
+    if (activeTab === "profile") {
+      return <UserProfile />;
+    }
+
     // 1. ADMIN FLOW
     if (user.username === "admin@bizflow.com") {
       if (activeTab === "overview") {
@@ -538,6 +551,10 @@ export default function Home() {
 
     if (activeTab === "inventory") {
       return <InventoryManagement />;
+    }
+
+    if (activeTab === "staff") {
+      return <StaffManagement />;
     }
 
     return (

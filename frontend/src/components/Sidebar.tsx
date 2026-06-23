@@ -17,7 +17,8 @@ import {
   FileSpreadsheet,
   Mic,
   PlusCircle,
-  Contact
+  Contact,
+  LogOut
 } from "lucide-react";
 
 interface SidebarProps {
@@ -28,6 +29,8 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
   const [imageError, setImageError] = React.useState(false);
+  const [showProfileMenu, setShowProfileMenu] = React.useState(false);
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
 
   React.useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
@@ -36,19 +39,22 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     }
   }, []);
 
-  const handleLogout = () => {
-    if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
-      localStorage.removeItem("bizflow_user");
-      window.location.href = "/login";
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setShowProfileMenu(false);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("bizflow_user");
+    window.location.href = "/login";
   };
 
   // Dynamically compute menu items based on role
   const getMenuItems = () => {
     if (!user) return [];
 
-    switch (user.username) {
-      case "admin@bizflow.com":
+    switch (user.role) {
+      case "PlatformAdmin":
         return [
           { id: "overview", label: "Hệ thống tổng quan", icon: LayoutDashboard },
           { id: "tenants", label: "Quản lý Tenant", icon: Building2 },
@@ -56,7 +62,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           { id: "tt88-config", label: "Cấu hình sổ sách TT88", icon: FileSpreadsheet },
           { id: "settings", label: "Thiết lập hệ thống", icon: Settings },
         ];
-      case "cashier@bizflow.com":
+      case "Cashier":
         return [
           { id: "pos", label: "Bán hàng POS", icon: PlusCircle },
           { id: "orders", label: "Đơn hàng của tôi", icon: ShoppingCart },
@@ -64,7 +70,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           { id: "products", label: "Tra cứu sản phẩm", icon: Package },
           { id: "debts", label: "Ghi nợ nhanh", icon: CreditCard },
         ];
-      case "owner@bizflow.com":
+      case "Owner":
+      case "Manager":
       default:
         return [
           { id: "overview", label: "Tổng quan Doanh thu", icon: LayoutDashboard },
@@ -125,28 +132,84 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </nav>
 
       {/* User Profile Card */}
-      <div className="p-4 border-t border-surface-container-low">
+      <div className="p-4 border-t border-surface-container-low relative">
+        {showProfileMenu && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-sm">
+              <button
+                onClick={() => {
+                  setActiveTab("profile");
+                  setShowProfileMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 text-on-surface hover:bg-surface-container-low transition-colors"
+              >
+                <Contact className="w-4 h-4 text-primary" />
+                Hồ sơ cá nhân
+              </button>
+              <button
+                onClick={handleLogoutClick}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 text-error hover:bg-error/10 transition-colors border-t border-surface-container-low"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-error font-medium">Đăng xuất</span>
+              </button>
+            </div>
+          </>
+        )}
+
         <div 
-          onClick={handleLogout}
-          title="Bấm để đăng xuất"
-          className="flex items-center justify-between p-2 rounded-md hover:bg-error-container hover:text-error cursor-pointer transition-colors group"
+          onClick={() => setShowProfileMenu(!showProfileMenu)}
+          title="Tùy chọn tài khoản"
+          className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors group ${showProfileMenu ? 'bg-surface-container-low' : 'hover:bg-surface-container-low'}`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold group-hover:bg-error group-hover:text-white">
+            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold group-hover:bg-primary group-hover:text-white transition-colors">
               {user ? user.fullname.charAt(0).toUpperCase() : "C"}
             </div>
             <div className="text-left">
-              <h4 className="text-sm font-semibold text-on-surface group-hover:text-error">
+              <h4 className="text-sm font-semibold text-on-surface">
                 {user ? user.fullname : "Chủ cửa hàng"}
               </h4>
-              <p className="text-xs text-on-surface-variant group-hover:text-error/80">
+              <p className="text-xs text-on-surface-variant">
                 Vai trò: {user ? user.roleName : "Chủ cửa hàng"}
               </p>
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-on-surface-variant group-hover:text-error" />
+          <ChevronDown className={`w-4 h-4 text-on-surface-variant transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl border border-surface-container-high w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center mx-auto mb-4">
+                <LogOut className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-on-surface mb-2">Đăng xuất</h3>
+              <p className="text-sm text-on-surface-variant">
+                Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không?
+              </p>
+            </div>
+            <div className="p-4 bg-surface-container-lowest border-t border-surface-container-low flex gap-3 justify-end">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-sm font-bold text-on-surface hover:bg-surface-container-low rounded-lg transition-colors border border-outline-variant flex-1"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={confirmLogout}
+                className="px-4 py-2 text-sm font-bold text-white bg-error hover:bg-error/90 rounded-lg shadow-sm transition-colors flex-1"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

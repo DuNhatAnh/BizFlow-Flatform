@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using BizFlow.Infrastructure;
 using BizFlow.WebApi.Hubs;
 using Microsoft.EntityFrameworkCore;
@@ -35,8 +38,32 @@ builder.Services.AddSwaggerGen();
 // Register Clean Architecture Infrastructure services (DbContext)
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// Register NotificationService
+// Register NotificationService and AuthService
 builder.Services.AddScoped<BizFlow.Application.Interfaces.INotificationService, BizFlow.WebApi.Services.NotificationService>();
+builder.Services.AddScoped<BizFlow.Application.Interfaces.IAuthService, BizFlow.Infrastructure.Services.AuthService>();
+
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"];
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
+    };
+});
 
 // Configure CORS for Next.js Frontend (local dev environment)
 builder.Services.AddCors(options =>
@@ -147,6 +174,26 @@ using (var scope = app.Services.CreateScope())
         SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelledBy\" uuid;");
         SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelReason\" text;");
 
+        // Add HR Fields to users
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"Phone\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"IdentityCard\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"DateOfBirth\" timestamp with time zone;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"JoinDate\" timestamp with time zone;");
+
+        // Ensure audit_logs table exists
+        SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
+            ""Id"" uuid NOT NULL,
+            ""TenantId"" uuid NOT NULL,
+            ""UserId"" uuid NOT NULL,
+            ""Action"" text NOT NULL,
+            ""EntityName"" text,
+            ""EntityId"" text,
+            ""Timestamp"" timestamp with time zone NOT NULL,
+            ""Details"" text,
+            CONSTRAINT ""PK_audit_logs"" PRIMARY KEY (""Id"")
+            -- We don't strictly enforce FK here to avoid migration conflicts, but EF will use it
+        );");
+
         var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         if (!db.Categories.Any())
         {
@@ -192,6 +239,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

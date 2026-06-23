@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Search, Plus, Edit2, Trash2, Package, Tag, Filter, X, Save, AlertCircle,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FolderTree
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FolderTree, MoreHorizontal
 } from "lucide-react";
 
 interface ProductUnit {
@@ -61,6 +61,8 @@ export default function ProductManagement() {
   // Custom UI States
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ message: string, onConfirm: () => void } | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -460,22 +462,51 @@ export default function ProductManagement() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button 
-                          onClick={() => handleOpenModal(p)}
-                          className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Sửa sản phẩm"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteProduct(p.id)}
-                          className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                          title="Xóa sản phẩm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button 
+                        onClick={(e) => {
+                          if (openDropdownId === p.id) {
+                            setOpenDropdownId(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setDropdownPos({
+                              top: rect.bottom + 4,
+                              right: window.innerWidth - rect.right
+                            });
+                            setOpenDropdownId(p.id);
+                          }
+                        }}
+                        className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
+                      >
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                      {openDropdownId === p.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                          <div 
+                            className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+                            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                          >
+                            <button
+                              onClick={() => {
+                                handleOpenModal(p);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4 text-primary" /> Sửa sản phẩm
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDeleteProduct(p.id);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" /> Xóa sản phẩm
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))

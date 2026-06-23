@@ -1,57 +1,113 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BizFlow.Application.Common.Interfaces;
+using BizFlow.Application.DTOs.Auth;
+using BizFlow.Application.Interfaces;
 
-namespace BizFlow.WebApi.Controllers;
+namespace BizFlow.WebApi.Controllers; // Trigger rebuild
 
-public class AuthController : ApiControllerBase
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IAuthService _authService;
 
-    public AuthController(IApplicationDbContext context)
+    public AuthController(IAuthService authService)
     {
-        _context = context;
+        _authService = authService;
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        // Search user in DB (triggered by hot reload)
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower() && u.IsActive);
-
-        if (user == null || user.PasswordHash != request.Password)
+        try
         {
-            return Unauthorized(new { Message = "Tên đăng nhập hoặc mật khẩu không chính xác" });
+            var response = await _authService.LoginAsync(request);
+            return Ok(response);
         }
-
-        // For simplicity, token is a base64 encoded representation of user details
-        var tokenRaw = $"{user.Id}:{user.TenantId}:{user.Role}:{user.Username}";
-        var tokenBytes = System.Text.Encoding.UTF8.GetBytes(tokenRaw);
-        var token = Convert.ToBase64String(tokenBytes);
-
-        return Ok(new LoginResponse
+        catch (UnauthorizedAccessException ex)
         {
-            AccessToken = token,
-            TenantId = user.TenantId,
-            UserId = user.Id,
-            Fullname = user.Fullname,
-            Role = user.Role.ToString()
-        });
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống.", inner = ex.Message });
+        }
     }
-}
 
-public class LoginRequest
-{
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
+    [HttpGet("profile")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<ActionResult<UserProfileResponse>> GetProfile()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString());
+            if (userId == Guid.Empty) return Unauthorized();
 
-public class LoginResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public Guid TenantId { get; set; }
-    public Guid UserId { get; set; }
-    public string Fullname { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
+            var response = await _authService.GetUserProfileAsync(userId);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống.", inner = ex.Message });
+        }
+    }
+
+    [HttpPut("profile")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString());
+            var roleStr = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            if (userId == Guid.Empty || string.IsNullOrEmpty(roleStr)) return Unauthorized();
+
+            if (!Enum.TryParse<BizFlow.Domain.Enums.UserRole>(roleStr, out var role))
+            {
+                return Forbid();
+            }
+
+            await _authService.UpdateUserProfileAsync(userId, request, role);
+            return Ok(new { message = "Cập nhật thành công." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống.", inner = ex.Message });
+        }
+    }
+
+    [HttpPut("change-password")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString());
+            if (userId == Guid.Empty) return Unauthorized();
+
+            await _authService.ChangePasswordAsync(userId, request);
+            return Ok(new { message = "Đổi mật khẩu thành công." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống.", inner = ex.Message });
+        }
+    }
 }

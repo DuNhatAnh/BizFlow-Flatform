@@ -11,14 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  // List of pre-seeded test accounts in email format
-  const testAccounts = [
-    { username: "admin@bizflow.com", password: "admin123", label: "Admin", roleName: "Quản trị viên" },
-    { username: "owner@bizflow.com", password: "owner123", label: "Chủ cửa hàng", roleName: "Chủ cửa hàng" },
-    { username: "cashier@bizflow.com", password: "cashier123", label: "Nhân viên", roleName: "Thu ngân" },
-  ];
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     
@@ -29,33 +22,37 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // Simple mockup authentication matching our seeded database accounts
-    setTimeout(() => {
-      const matched = testAccounts.find(
-        (acc) => acc.username === username.toLowerCase() && acc.password === password
-      );
+    try {
+      const res = await fetch("http://localhost:5178/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
 
-      if (matched) {
-        // Store in localStorage to simulate session state
+      const data = await res.json();
+
+      if (res.ok) {
+        // Store session and token
         const userSession = {
-          username: matched.username,
-          fullname: matched.username === "admin@bizflow.com" 
-            ? "Quản Trị Viên Hệ Thống" 
-            : matched.username === "owner@bizflow.com" 
-              ? "Nguyễn Văn A" 
-              : "Trần Thị B",
-          role: matched.label,
-          roleName: matched.roleName
+          username: data.user.username,
+          fullname: data.user.fullname,
+          role: data.user.role,
+          roleName: data.user.roleName,
+          tenantId: data.user.tenantId,
+          token: data.accessToken || data.token
         };
         localStorage.setItem("bizflow_user", JSON.stringify(userSession));
         
         // Redirect to dashboard
         window.location.href = "/";
       } else {
-        setError("Tên đăng nhập hoặc mật khẩu không đúng!");
-        setIsLoading(false);
+        setError(data.message || data.Message || "Tên đăng nhập hoặc mật khẩu không đúng!");
       }
-    }, 800);
+    } catch (e) {
+      setError("Không thể kết nối đến máy chủ.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
