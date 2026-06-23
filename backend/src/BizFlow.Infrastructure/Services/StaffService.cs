@@ -23,7 +23,7 @@ public class StaffService : IStaffService
     public async Task<PagedResult<StaffDto>> GetStaffMembersAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
     {
         var query = _context.Users
-            .Where(u => u.TenantId == tenantId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
+            .Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -125,7 +125,7 @@ public class StaffService : IStaffService
     public async Task<bool> ToggleStaffStatusAsync(Guid tenantId, Guid staffId)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Employee);
             
         if (user == null) return false;
 
@@ -137,7 +137,7 @@ public class StaffService : IStaffService
     public async Task<bool> ResetStaffPasswordAsync(Guid tenantId, Guid staffId, string newPassword)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Employee);
             
         if (user == null) return false;
 

@@ -119,8 +119,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
     <aside className="w-[260px] fixed top-0 left-0 bottom-0 bg-white border-r border-surface-container-high flex flex-col z-30">
       {/* Brand Logo */}
-      <div className="p-6 flex flex-col items-center border-b border-surface-container-low">
-        <div className="relative w-28 h-28 flex items-center justify-center">
+      <div className="pt-8 pb-4 flex flex-col items-center">
+        <div className="relative w-44 h-44 flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/logo.png" 

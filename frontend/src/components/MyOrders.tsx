@@ -405,7 +405,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
     // Populate printable elements
     const customerText = order.customer ? `${order.customer.fullname} - ${order.customer.phone || ""}` : "Khách vãng lai";
     const paymentText = order.paymentMethod === "Debt" ? "Ghi nợ (Nợ phải thu)" : "Tiền mặt";
-    const cashierName = user?.fullname || "Nhân viên thu ngân";
+    const cashierName = user?.fullname || "Nhân viên";
 
     let itemsHtml = "";
     order.orderItems.forEach((item, index) => {
@@ -433,7 +433,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 8px 0; margin-bottom: 10px; font-size: 11px; line-height: 1.4;">
           <div><b>Mã hóa đơn:</b> #${order.id.substring(0, 8)}</div>
           <div><b>Ngày bán:</b> ${formattedDate}</div>
-          <div><b>Thu ngân:</b> ${cashierName}</div>
+          <div><b>Nhân viên:</b> ${cashierName}</div>
           <div><b>Khách hàng:</b> ${customerText}</div>
           <div><b>Thanh toán:</b> ${paymentText}</div>
         </div>
@@ -647,7 +647,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
                     return (
                       <tr
                         key={order.id}
-                        className={`hover:bg-surface-container-low/40 transition-colors group ${order.status === "Cancelled" ? "bg-red-50/10 text-on-surface-variant" : ""
+                        className={`even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/40 transition-colors group ${order.status === "Cancelled" ? "bg-red-50/10 text-on-surface-variant" : ""
                           }`}
                       >
                         <td className="p-4 text-center font-medium text-on-surface-variant">

@@ -184,6 +184,9 @@ using (var scope = app.Services.CreateScope())
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"IdentityCard\" text;");
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"DateOfBirth\" timestamp with time zone;");
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"JoinDate\" timestamp with time zone;");
+        
+        // Migrate Cashier to Employee
+        SafeSql("UPDATE users SET \"Role\" = 'Employee' WHERE \"Role\" = 'Cashier';");
 
         // Add Category Multi-level Fields
         SafeSql("ALTER TABLE categories ADD COLUMN IF NOT EXISTS \"ParentId\" integer;");

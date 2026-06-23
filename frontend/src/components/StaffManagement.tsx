@@ -217,6 +217,7 @@ export default function StaffManagement() {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-surface-container-high text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low/50">
+                <th className="p-4 w-16 text-center">STT</th>
                 <th className="p-4">Họ và Tên</th>
                 <th className="p-4">Tài khoản (Username)</th>
                 <th className="p-4">Ngày tạo</th>
@@ -228,6 +229,7 @@ export default function StaffManagement() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`skeleton-${idx}`}>
+                    <td className="p-4"><Skeleton className="h-5 w-8 mx-auto" /></td>
                     <td className="p-4"><Skeleton className="h-5 w-40" /></td>
                     <td className="p-4"><Skeleton className="h-5 w-48" /></td>
                     <td className="p-4"><Skeleton className="h-5 w-24" /></td>
@@ -236,10 +238,11 @@ export default function StaffManagement() {
                   </tr>
                 ))
               ) : staffList.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Không tìm thấy nhân viên nào.</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-on-surface-variant">Không tìm thấy nhân viên nào.</td></tr>
                   ) : (
                     staffList.map((staff: any, index: number) => (
-                      <tr key={staff.id} className="hover:bg-surface-container-low/30 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                      <tr key={staff.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                        <td className="p-4 text-center text-on-surface-variant font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                         <td className="p-4 font-bold text-on-surface">{staff.fullname}</td>
                         <td className="p-4 text-on-surface-variant">{staff.username}</td>
                         <td className="p-4 text-on-surface-variant">{new Date(staff.createdAt).toLocaleDateString("vi-VN")}</td>

@@ -524,7 +524,8 @@ export default function InventoryManagement() {
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-surface-container-high text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low">
-                    <th className="p-4 rounded-tl-lg">Mã SP</th>
+                    <th className="p-4 rounded-tl-lg w-16 text-center">STT</th>
+                    <th className="p-4">Mã SP</th>
                     <th className="p-4">Tên Sản Phẩm</th>
                     <th className="p-4 text-center">ĐVT</th>
                     <th className="p-4 text-right">Tồn Kho</th>
@@ -534,6 +535,7 @@ export default function InventoryManagement() {
                   {isProductsLoading ? (
                     Array.from({ length: 5 }).map((_, idx) => (
                       <tr key={`skeleton-${idx}`}>
+                        <td className="p-4"><Skeleton className="h-5 w-8 mx-auto" /></td>
                         <td className="p-4"><Skeleton className="h-5 w-24" /></td>
                         <td className="p-4"><Skeleton className="h-5 w-48" /></td>
                         <td className="p-4"><Skeleton className="h-5 w-16 mx-auto" /></td>
@@ -541,9 +543,10 @@ export default function InventoryManagement() {
                       </tr>
                     ))
                   ) : products.length === 0 ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu hàng hóa</td></tr>
+                    <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu hàng hóa</td></tr>
                   ) : products.filter((s: any, i: number) => i < 10).map((s: any, i: number) => (
-                    <tr key={s.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                    <tr key={s.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                      <td className="p-4 text-center text-on-surface-variant font-medium">{(productPage - 1) * 10 + i + 1}</td>
                       <td className="p-4 font-semibold text-primary">{s.code || "N/A"}</td>
                       <td className="p-4 font-bold text-on-surface">{s.name}</td>
                       <td className="p-4 text-center text-on-surface-variant">{s.baseUnit}</td>
@@ -602,6 +605,7 @@ export default function InventoryManagement() {
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-surface-container-high text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low">
+                    <th className="p-4 w-16 text-center">STT</th>
                     <th className="p-4">Ngày Lập</th>
                     <th className="p-4">Loại</th>
                     <th className="p-4">Mã tham chiếu</th>
@@ -615,6 +619,7 @@ export default function InventoryManagement() {
                   {isReceiptsLoading ? (
                     Array.from({ length: 5 }).map((_, idx) => (
                       <tr key={`skeleton-${idx}`}>
+                        <td className="p-4"><Skeleton className="h-5 w-8 mx-auto" /></td>
                         <td className="p-4"><Skeleton className="h-5 w-32" /></td>
                         <td className="p-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
                         <td className="p-4"><Skeleton className="h-5 w-32" /></td>
@@ -624,14 +629,17 @@ export default function InventoryManagement() {
                         <td className="p-4"><Skeleton className="h-8 w-8 mx-auto rounded-lg" /></td>
                       </tr>
                     ))
-                  ) : receipts.filter((r: any) => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).length === 0 ? (
-                    <tr><td colSpan={7} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-                  ) : receipts.filter((r: any) => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).map((r: any, i: number) => (
-                    <tr key={r.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                  ) : receipts.length === 0 ? (
+                    <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
+                  ) : receipts.map((r: any, i: number) => {
+                    const isExport = r.type === 1 || r.type === "Export";
+                    return (
+                    <tr key={r.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                      <td className="p-4 text-center text-on-surface-variant font-medium">{(receiptPage - 1) * 10 + i + 1}</td>
                       <td className="p-4 text-on-surface-variant">{new Date(r.createdAt || r.date).toLocaleString('vi-VN')}</td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${r.type === 1 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {r.type === 1 ? 'Xuất kho' : 'Nhập kho'}
+                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${isExport ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {isExport ? 'Xuất kho' : 'Nhập kho'}
                         </span>
                       </td>
                       <td className="p-4 text-on-surface-variant font-mono">{r.referenceDocumentNo || r.referenceId || "N/A"}</td>
@@ -695,7 +703,8 @@ export default function InventoryManagement() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -815,7 +824,7 @@ export default function InventoryManagement() {
                           const productName = products.find((p: any) => p.id === selectedLedgerProduct)?.name;
                           const productUnit = products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit || "Cái";
                           return (
-                            <FadeIn as="tr" delay={i * 50} key={i} className={`hover:bg-surface-container-low/30 transition-colors text-right ${isCancel ? 'bg-red-50/50' : ''}`}>
+                            <FadeIn as="tr" delay={i * 50} key={i} className={`even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors text-right ${isCancel ? 'bg-red-50/50' : ''}`}>
                               <td className="p-3 text-center border-r border-surface-container-high font-semibold">{l.documentRef || "N/A"}</td>
                               <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
                               <td className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">
@@ -1349,8 +1358,9 @@ export default function InventoryManagement() {
 
       {/* VIEW RECEIPT MODAL */}
       {viewReceiptDetails && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in zoom-in-95">
+        <>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 print:hidden">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in zoom-in-95">
             <div className="flex justify-between items-center p-5 border-b border-surface-container-high bg-surface-container-low/50">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
@@ -1455,7 +1465,7 @@ export default function InventoryManagement() {
                 </div>
               </div>
             </div>
-            <div className="p-5 border-t border-surface-container-high bg-surface-container-low flex justify-end gap-3 print:hidden">
+            <div className="p-5 border-t border-surface-container-high bg-surface-container-low flex justify-end gap-3">
               <button onClick={() => window.print()} className="px-6 py-2 bg-white border border-outline-variant text-on-surface font-bold rounded-lg hover:bg-surface-container-low flex items-center gap-2 transition-colors">
                 <Printer className="w-4 h-4" /> In Phiếu (TT88)
               </button>
@@ -1464,9 +1474,10 @@ export default function InventoryManagement() {
               </button>
             </div>
           </div>
+        </div>
 
-          {/* PRINT LAYOUT (Hidden on screen) */}
-          <div id="print-area" className="hidden print:block absolute inset-0 bg-white p-8 text-black text-[13px] leading-relaxed z-[100] min-h-screen">
+        {/* PRINT LAYOUT (Hidden on screen) */}
+        <div id="print-area" className="hidden print:block absolute inset-0 bg-white p-8 text-black text-[13px] leading-relaxed z-[100] min-h-screen">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="font-bold text-sm">HỘ, CÁ NHÂN KINH DOANH: .......................................</div>
@@ -1569,7 +1580,7 @@ export default function InventoryManagement() {
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* COGS Setup Required Modal */}

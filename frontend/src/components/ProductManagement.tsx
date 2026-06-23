@@ -557,7 +557,7 @@ export default function ProductManagement() {
                     </tr>
                   ) : (
                     filteredProducts.map((p: any, index: number) => (
-                      <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                      <tr key={p.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                         <td className="p-4 text-center text-on-surface-variant font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                         <td className="p-4">
                           <div className="font-bold text-on-surface">{p.name}</div>
