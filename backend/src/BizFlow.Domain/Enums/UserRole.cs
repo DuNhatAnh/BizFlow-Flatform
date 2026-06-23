@@ -5,5 +5,6 @@ public enum UserRole
     Admin,
     Owner,
     Cashier,
-    Manager
+    Manager,
+    Employee
 }

@@ -69,6 +69,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Category>(entity =>
         {
             entity.ToTable("categories");
+            entity.HasOne(e => e.Parent)
+                  .WithMany(e => e.SubCategories)
+                  .HasForeignKey(e => e.ParentId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // 5. Product configurations

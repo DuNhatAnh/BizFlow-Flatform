@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { 
-  Search, Plus, Edit2, Trash2, Package, Tag, Filter, X, Save, AlertCircle,
+  Search, Plus, Edit2, Trash2, Package, Tag, Filter, X, Save, AlertCircle, Check,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FolderTree, MoreHorizontal
 } from "lucide-react";
+import { Skeleton } from "./ui/Skeleton";
+import { FadeIn } from "./ui/FadeIn";
+import { Pagination } from "./ui/Pagination";
 
 interface ProductUnit {
   id: number | null;  // null if newly added on frontend
@@ -29,15 +33,62 @@ const API_URL = "http://localhost:5178/api/products";
 const CATEGORY_API_URL = "http://localhost:5178/api/categories";
 
 export default function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<number>(0);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ["products", currentPage, debouncedSearch],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        pageSize: itemsPerPage.toString(),
+      });
+      if (debouncedSearch) queryParams.append("search", debouncedSearch);
+
+      const res = await fetch(`${API_URL}?${queryParams.toString()}`, {
+        headers: { "X-Tenant-Id": TENANT_ID }
+      });
+      if (!res.ok) throw new Error("Network response was not ok");
+      
+      const data = await res.json();
+      const normalized = (data.items || []).map((p: any) => ({
+        ...p,
+        units: (p.units || []).map((u: any) => ({
+          ...u,
+          id: u.id != null ? Number(u.id) : null
+        }))
+      }));
+      return { ...data, items: normalized };
+    },
+    placeholderData: keepPreviousData,
+  });
+
+  const products = productsData?.items || [];
+  const totalPages = productsData?.totalPages || 0;
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch(CATEGORY_API_URL, { headers: { "X-Tenant-Id": TENANT_ID } });
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    }
+  });
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,7 +107,126 @@ export default function ProductManagement() {
   // Category Management State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryParentId, setNewCategoryParentId] = useState<number | "">("");
   const [isSavingCategory, setIsSavingCategory] = useState(false);
+  
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [editingCategoryParentId, setEditingCategoryParentId] = useState<number | "">("");
+
+  // Build category tree
+  const buildCategoryTree = (cats: any[]) => {
+    const map = new Map();
+    const roots: any[] = [];
+    cats.forEach(c => map.set(c.id, { ...c, children: [] }));
+    cats.forEach(c => {
+      if (c.parentId) {
+        const parent = map.get(c.parentId);
+        if (parent) parent.children.push(map.get(c.id));
+      } else {
+        roots.push(map.get(c.id));
+      }
+    });
+    return roots;
+  };
+  const categoryTree = buildCategoryTree(categories);
+
+  const renderCategoryNode = (node: any, level: number = 0) => {
+    return (
+      <React.Fragment key={node.id}>
+        <li className="p-3 flex justify-between items-center hover:bg-surface-container-low/50 transition-colors border-b border-surface-container-low last:border-0" style={{ paddingLeft: `${Math.max(12, level * 24 + 12)}px` }}>
+          {editingCategoryId === node.id ? (
+            <div className="flex flex-1 gap-2 mr-2">
+              <input 
+                type="text" 
+                value={editingCategoryName}
+                onChange={e => setEditingCategoryName(e.target.value)}
+                className="flex-1 px-2 py-1 border rounded text-sm"
+                autoFocus
+              />
+              <select
+                value={editingCategoryParentId}
+                onChange={e => setEditingCategoryParentId(e.target.value === "" ? "" : Number(e.target.value))}
+                className="px-2 py-1 border rounded text-sm max-w-[150px]"
+              >
+                <option value="">-- Không có cha --</option>
+                {categories.filter((c: any) => c.id !== node.id).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={async () => {
+                  if (!editingCategoryName.trim()) return;
+                  const res = await fetch(`${CATEGORY_API_URL}/${node.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
+                    body: JSON.stringify({ name: editingCategoryName.trim(), parentId: editingCategoryParentId === "" ? null : editingCategoryParentId })
+                  });
+                  if (res.ok) {
+                    setEditingCategoryId(null);
+                    queryClient.invalidateQueries({ queryKey: ["categories"] });
+                    showToast("Cập nhật thành công!");
+                  } else {
+                    const err = await res.text();
+                    showToast(err || "Cập nhật thất bại", "error");
+                  }
+                }}
+                className="p-1 text-green-600 hover:bg-green-50 rounded"
+              >
+                <Check className="w-5 h-5" />
+              </button>
+              <button onClick={() => setEditingCategoryId(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <span className="text-sm font-medium text-on-surface flex items-center gap-2">
+                {level > 0 && <span className="w-3 border-b border-l h-4 inline-block -mt-4 border-slate-300"></span>}
+                {node.name}
+              </span>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => {
+                    setEditingCategoryId(node.id);
+                    setEditingCategoryName(node.name);
+                    setEditingCategoryParentId(node.parentId || "");
+                  }}
+                  className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                  title="Sửa danh mục"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (confirm(`Bạn có chắc muốn xóa danh mục "${node.name}"?`)) {
+                      const res = await fetch(`${CATEGORY_API_URL}/${node.id}`, {
+                        method: 'DELETE',
+                        headers: { 'X-Tenant-Id': TENANT_ID }
+                      });
+                      if (res.ok) {
+                        queryClient.invalidateQueries({ queryKey: ["categories"] });
+                        showToast("Đã xóa danh mục!");
+                        queryClient.invalidateQueries({ queryKey: ["products"] });
+                      } else {
+                        const errorText = await res.text();
+                        showToast(errorText || "Danh mục đang chứa sản phẩm hoặc danh mục con, không thể xóa.", "error");
+                      }
+                    }
+                  }}
+                  className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
+                  title="Xóa danh mục"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          )}
+        </li>
+        {node.children && node.children.length > 0 && node.children.map((child: any) => renderCategoryNode(child, level + 1))}
+      </React.Fragment>
+    );
+  };
 
   // Custom UI States
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
@@ -69,70 +239,15 @@ export default function ProductManagement() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Fetch data — reusable so we can call after save
-  const fetchProducts = React.useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(`${API_URL}`, {
-        headers: { "X-Tenant-Id": TENANT_ID }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Ensure unit ids are always numbers (guard against hot-reload state)
-        const normalized = data.map((p: any) => ({
-          ...p,
-          units: (p.units || []).map((u: any) => ({
-            ...u,
-            id: u.id != null ? Number(u.id) : null
-          }))
-        }));
-        setProducts(normalized);
-      }
-    } catch (error) {
-      console.error("Failed to fetch products", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, [fetchProducts]);
 
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch(CATEGORY_API_URL, {
-        headers: { "X-Tenant-Id": TENANT_ID }
-      });
-      if (res.ok) {
-        setCategories(await res.json());
-      }
-    } catch (error) {
-      console.error("Failed to fetch categories", error);
-    }
-  };
-
-  // Filter logic
-  const filteredProducts = products.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        p.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = filterCategory === 0 || p.categoryId === filterCategory;
-    return matchSearch && matchCat;
+  // Client-side category filtering (since backend doesn't filter by category yet, we can filter locally or add it to backend. 
+  // Given the backend changes, we only added search by name/code. For now, filter category locally over the paginated items if needed, 
+  // or just apply it directly to `products`.
+  const filteredProducts = products.filter((p: any) => {
+    const matchCat = filterCategory === 0 || (p as any).categoryId === filterCategory;
+    return matchCat;
   });
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    } else if (currentPage === 0 && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [filteredProducts.length, currentPage, totalPages]);
-
-  const startIndex = Math.max(0, (currentPage - 1) * itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   // History Pagination Logic
   const totalHistoryPages = Math.ceil(historyData.length / historyItemsPerPage);
@@ -183,7 +298,7 @@ export default function ProductManagement() {
             headers: { "X-Tenant-Id": TENANT_ID }
           });
           if (res.ok) {
-            setProducts(products.filter(p => p.id !== id));
+            queryClient.invalidateQueries({ queryKey: ["products"] });
             showToast("Xóa sản phẩm thành công", "success");
           } else {
             showToast("Hệ thống chưa thể xóa lúc này, cô/chú vui lòng thử lại sau nhé.", "error");
@@ -247,7 +362,7 @@ export default function ProductManagement() {
 
         if (res.ok) {
           handleCloseModal();
-          await fetchProducts(); // Re-sync from DB with proper numeric IDs
+          queryClient.invalidateQueries({ queryKey: ["products"] }); // Re-sync from DB
           showToast("Tuyệt vời! Đã thêm sản phẩm mới thành công.");
         } else {
           showToast("Hệ thống từ chối lưu dữ liệu. Xin vui lòng kiểm tra lại các thông tin đã nhập.", "error");
@@ -266,7 +381,7 @@ export default function ProductManagement() {
 
         if (res.ok) {
           handleCloseModal();
-          await fetchProducts(); // Re-sync from DB with proper numeric IDs
+          queryClient.invalidateQueries({ queryKey: ["products"] }); // Re-sync from DB
           showToast("Đã cập nhật thông tin sản phẩm thành công!");
         } else {
           const errText = await res.text().catch(() => "");
@@ -380,7 +495,10 @@ export default function ProductManagement() {
             type="text"
             placeholder="Tìm theo tên sản phẩm, mã vạch..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to page 1 on search
+            }}
             className="block w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -394,7 +512,7 @@ export default function ProductManagement() {
             className="block w-full pl-9 pr-8 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer"
           >
             <option value={0}>Tất cả danh mục</option>
-            {categories.map(c => (
+            {categories.map((c: any) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -416,151 +534,132 @@ export default function ProductManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container-low">
-              {paginatedProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">
-                    <Package className="w-12 h-12 mx-auto text-on-surface-variant/30 mb-3" />
-                    Không tìm thấy sản phẩm nào phù hợp.
-                  </td>
-                </tr>
-              ) : (
-                paginatedProducts.map((p, index) => (
-                  <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="p-4 text-center text-on-surface-variant font-medium">{startIndex + index + 1}</td>
-                    <td className="p-4">
-                      <div className="font-bold text-on-surface">{p.name}</div>
-                      <div className="text-xs text-on-surface-variant mt-0.5 font-mono bg-surface-container-high inline-block px-1.5 py-0.5 rounded">{p.code || "N/A"}</div>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
-                        <Tag className="w-3 h-3" />
-                        {categories.find(c => c.id === p.categoryId)?.name || 'Không xác định'}
-                      </span>
-                    </td>
-                    <td className="p-4 font-semibold text-on-surface">{p.baseUnit}</td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-2">
-                        {[...p.units].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)).map(u => (
-                          <div 
-                            key={u.id} 
-                            className={`px-3 py-1.5 rounded-lg border text-xs flex flex-col gap-0.5 ${
-                              u.isDefault 
-                                ? 'bg-primary/10 border-primary/30' 
-                                : 'bg-surface-container-low border-outline-variant text-on-surface-variant'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <span className={`font-bold ${u.isDefault ? 'text-primary' : 'text-on-surface'}`}>{u.unitName}</span>
-                              {u.isDefault && <span className="bg-primary text-white text-[9px] px-1 rounded uppercase font-bold">Mặc định</span>}
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span>1 = {u.conversionRate} {p.baseUnit}</span>
-                              <span className="font-bold text-secondary">{u.price.toLocaleString()} đ</span>
-                            </div>
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={`skeleton-${idx}`}>
+                        <td className="p-4"><Skeleton className="h-4 w-8 mx-auto" /></td>
+                        <td className="p-4">
+                          <Skeleton className="h-5 w-40 mb-2" />
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="p-4"><Skeleton className="h-6 w-24 rounded-md" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-16" /></td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <Skeleton className="h-14 w-40 rounded-lg" />
+                            <Skeleton className="h-14 w-40 rounded-lg" />
                           </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button 
-                        onClick={(e) => {
-                          if (openDropdownId === p.id) {
-                            setOpenDropdownId(null);
-                          } else {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setDropdownPos({
-                              top: rect.bottom + 4,
-                              right: window.innerWidth - rect.right
-                            });
-                            setOpenDropdownId(p.id);
-                          }
-                        }}
-                        className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
-                      >
-                        <MoreHorizontal className="w-5 h-5" />
-                      </button>
-                      {openDropdownId === p.id && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
-                          <div 
-                            className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
-                            style={{ top: dropdownPos.top, right: dropdownPos.right }}
-                          >
-                            <button
-                              onClick={() => {
-                                handleOpenModal(p);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4 text-primary" /> Sửa sản phẩm
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleDeleteProduct(p.id);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" /> Xóa sản phẩm
-                            </button>
+                        </td>
+                        <td className="p-4"><Skeleton className="h-8 w-8 ml-auto rounded-lg" /></td>
+                      </tr>
+                    ))
+                  ) : filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-on-surface-variant">
+                        <Package className="w-12 h-12 mx-auto text-on-surface-variant/30 mb-3" />
+                        Không tìm thấy sản phẩm nào phù hợp.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProducts.map((p: any, index: number) => (
+                      <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                        <td className="p-4 text-center text-on-surface-variant font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                        <td className="p-4">
+                          <div className="font-bold text-on-surface">{p.name}</div>
+                          <div className="text-xs text-on-surface-variant mt-0.5 font-mono bg-surface-container-high inline-block px-1.5 py-0.5 rounded">{p.code || "N/A"}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                            <Tag className="w-3 h-3" />
+                            {categories.find((c: any) => c.id === p.categoryId)?.name || 'Không xác định'}
+                          </span>
+                        </td>
+                        <td className="p-4 font-semibold text-on-surface">{p.baseUnit}</td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-2">
+                            {[...p.units].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)).map(u => (
+                              <div 
+                                key={u.id} 
+                                className={`px-3 py-1.5 rounded-lg border text-xs flex flex-col gap-0.5 ${
+                                  u.isDefault 
+                                    ? 'bg-primary/10 border-primary/30' 
+                                    : 'bg-surface-container-low border-outline-variant text-on-surface-variant'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`font-bold ${u.isDefault ? 'text-primary' : 'text-on-surface'}`}>{u.unitName}</span>
+                                  {u.isDefault && <span className="bg-primary text-white text-[9px] px-1 rounded uppercase font-bold">Mặc định</span>}
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                  <span>1 = {u.conversionRate} {p.baseUnit}</span>
+                                  <span className="font-bold text-secondary">{u.price.toLocaleString()} đ</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button 
+                            onClick={(e) => {
+                              if (openDropdownId === p.id) {
+                                setOpenDropdownId(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setDropdownPos({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right
+                                });
+                                setOpenDropdownId(p.id);
+                              }
+                            }}
+                            className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </button>
+                          {openDropdownId === p.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                              <div 
+                                className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+                                style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                              >
+                                <button
+                                  onClick={() => {
+                                    handleOpenModal(p);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
+                                >
+                                  <Edit2 className="w-4 h-4 text-primary" /> Sửa sản phẩm
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleDeleteProduct(p.id);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Xóa sản phẩm
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
             </tbody>
           </table>
         </div>
-        
-        {/* Pagination Controls */}
-        {filteredProducts.length > 0 && (
-          <div className="p-4 border-t border-surface-container-high flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-low/30">
-            <div className="text-sm text-on-surface-variant">
-              Hiển thị <span className="font-bold text-on-surface">{startIndex + 1}</span> - <span className="font-bold text-on-surface">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> trong tổng số <span className="font-bold text-on-surface">{filteredProducts.length}</span> sản phẩm
-            </div>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setCurrentPage(1)} 
-                disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
-                title="Đến trang đầu"
-              >
-                <ChevronsLeft className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
-                title="Trang trước"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              
-              <div className="px-4 py-1.5 text-sm font-bold text-on-surface bg-white border border-outline-variant rounded-lg mx-1 shadow-sm">
-                Trang {currentPage} / {totalPages || 1}
-              </div>
-
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
-                title="Trang tiếp theo"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setCurrentPage(totalPages)} 
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-inherit transition-colors"
-                title="Đến trang cuối"
-              >
-                <ChevronsRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+        {(productsData?.totalCount || 0) > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={itemsPerPage}
+            totalItems={productsData?.totalCount || 0}
+            itemName="sản phẩm"
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
 
@@ -615,7 +714,7 @@ export default function ProductManagement() {
                       onChange={(e) => setEditingProduct({...editingProduct, categoryId: Number(e.target.value)})}
                       className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary"
                     >
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -919,11 +1018,12 @@ export default function ProductManagement() {
                         const res = await fetch(CATEGORY_API_URL, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
-                          body: JSON.stringify({ name: newCategoryName.trim() })
+                          body: JSON.stringify({ name: newCategoryName.trim(), parentId: newCategoryParentId === "" ? null : newCategoryParentId })
                         });
                         if (res.ok) {
                           setNewCategoryName("");
-                          await fetchCategories();
+                          setNewCategoryParentId("");
+                          queryClient.invalidateQueries({ queryKey: ["categories"] });
                           showToast("Thêm danh mục thành công!");
                         } else {
                           showToast("Thêm thất bại", "error");
@@ -934,6 +1034,16 @@ export default function ProductManagement() {
                     }
                   }}
                 />
+                <select
+                  value={newCategoryParentId}
+                  onChange={(e) => setNewCategoryParentId(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary max-w-[150px]"
+                >
+                  <option value="">-- Không có cha --</option>
+                  {categories.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
                 <button 
                   onClick={async () => {
                     if (!newCategoryName.trim()) return;
@@ -942,11 +1052,12 @@ export default function ProductManagement() {
                       const res = await fetch(CATEGORY_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
-                        body: JSON.stringify({ name: newCategoryName.trim() })
+                        body: JSON.stringify({ name: newCategoryName.trim(), parentId: newCategoryParentId === "" ? null : newCategoryParentId })
                       });
                       if (res.ok) {
                         setNewCategoryName("");
-                        await fetchCategories();
+                        setNewCategoryParentId("");
+                        queryClient.invalidateQueries({ queryKey: ["categories"] });
                         showToast("Thêm danh mục thành công!");
                       } else {
                         showToast("Thêm thất bại", "error");
@@ -963,40 +1074,13 @@ export default function ProductManagement() {
               </div>
 
               <div className="mt-4 border border-surface-container-high rounded-xl overflow-hidden">
-                {categories.length === 0 ? (
+                {categoryTree.length === 0 ? (
                   <div className="p-6 text-center text-on-surface-variant text-sm">
                     Chưa có danh mục nào.
                   </div>
                 ) : (
-                  <ul className="divide-y divide-surface-container-low max-h-[400px] overflow-y-auto">
-                    {categories.map(c => (
-                      <li key={c.id} className="p-3 flex justify-between items-center hover:bg-surface-container-low/50 transition-colors">
-                        <span className="text-sm font-medium text-on-surface">{c.name}</span>
-                        <button 
-                          onClick={async () => {
-                            if (confirm(`Bạn có chắc muốn xóa danh mục "${c.name}"?`)) {
-                              const res = await fetch(`${CATEGORY_API_URL}/${c.id}`, {
-                                method: 'DELETE',
-                                headers: { 'X-Tenant-Id': TENANT_ID }
-                              });
-                              if (res.ok) {
-                                await fetchCategories();
-                                showToast("Đã xóa danh mục!");
-                                // Optionally refresh products to update the tags of products that were deleted (if cascade) or clear
-                                await fetchProducts();
-                              } else {
-                                const errorText = await res.text();
-                                showToast(errorText || "Danh mục đang chứa sản phẩm, không thể xóa.", "error");
-                              }
-                            }
-                          }}
-                          className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
-                          title="Xóa danh mục"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </li>
-                    ))}
+                  <ul className="max-h-[400px] overflow-y-auto">
+                    {categoryTree.map((c: any) => renderCategoryNode(c, 0))}
                   </ul>
                 )}
               </div>

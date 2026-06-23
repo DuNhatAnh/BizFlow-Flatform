@@ -27,7 +27,8 @@ public class CategoryService : ICategoryService
         return categories.Select(c => new CategoryDto
         {
             Id = c.Id,
-            Name = c.Name
+            Name = c.Name,
+            ParentId = c.ParentId
         }).ToList();
     }
     public async Task<CategoryDto> CreateAsync(Guid tenantId, CreateCategoryRequest request)
@@ -35,7 +36,8 @@ public class CategoryService : ICategoryService
         var category = new BizFlow.Domain.Entities.Category
         {
             TenantId = tenantId,
-            Name = request.Name
+            Name = request.Name,
+            ParentId = request.ParentId
         };
 
         _context.Categories.Add(category);
@@ -44,7 +46,36 @@ public class CategoryService : ICategoryService
         return new CategoryDto
         {
             Id = category.Id,
-            Name = category.Name
+            Name = category.Name,
+            ParentId = category.ParentId
+        };
+    }
+
+    public async Task<CategoryDto> UpdateAsync(Guid tenantId, int categoryId, UpdateCategoryRequest request)
+    {
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Id == categoryId);
+
+        if (category == null)
+            return null; // Let controller handle 404
+
+        // Update fields
+        category.Name = request.Name;
+        
+        // Prevent setting parent to itself
+        if (request.ParentId.HasValue && request.ParentId.Value == categoryId)
+        {
+            throw new InvalidOperationException("A category cannot be its own parent.");
+        }
+        category.ParentId = request.ParentId;
+
+        await _context.SaveChangesAsync();
+
+        return new CategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            ParentId = category.ParentId
         };
     }
 
@@ -56,9 +87,14 @@ public class CategoryService : ICategoryService
         if (category == null)
             return false;
 
-        // Optionally check if products are attached to this category and prevent deletion or handle it
+        // Check if products are attached
         var hasProducts = await _context.Products.AnyAsync(p => p.TenantId == tenantId && p.CategoryId == categoryId);
         if (hasProducts)
+            return false;
+
+        // Check if it has subcategories
+        var hasSubcategories = await _context.Categories.AnyAsync(c => c.TenantId == tenantId && c.ParentId == categoryId);
+        if (hasSubcategories)
             return false;
 
         _context.Categories.Remove(category);

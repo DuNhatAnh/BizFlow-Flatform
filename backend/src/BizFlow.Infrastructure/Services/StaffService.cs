@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Staff;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
 
@@ -19,20 +20,42 @@ public class StaffService : IStaffService
         _context = context;
     }
 
-    public async Task<IEnumerable<StaffDto>> GetStaffMembersAsync(Guid tenantId)
+    public async Task<PagedResult<StaffDto>> GetStaffMembersAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
     {
-        return await _context.Users
-            .Where(u => u.TenantId == tenantId && u.Role == UserRole.Cashier)
-            .Select(u => new StaffDto
-            {
-                Id = u.Id,
-                Username = u.Username,
-                Fullname = u.Fullname,
-                Role = u.Role.ToString(),
-                IsActive = u.IsActive,
-                CreatedAt = u.CreatedAt
-            })
+        var query = _context.Users
+            .Where(u => u.TenantId == tenantId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerTerm = searchTerm.ToLower();
+            query = query.Where(u => u.Username.ToLower().Contains(lowerTerm) || u.Fullname.ToLower().Contains(lowerTerm));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var staffEntities = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        var staff = staffEntities.Select(u => new StaffDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Fullname = u.Fullname,
+            Role = u.Role.ToString(),
+            IsActive = u.IsActive,
+            CreatedAt = u.CreatedAt
+        }).ToList();
+
+        return new PagedResult<StaffDto>
+        {
+            Items = staff,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
     }
 
     public async Task<StaffDto> CreateStaffAsync(Guid tenantId, CreateStaffRequest request)
@@ -102,7 +125,7 @@ public class StaffService : IStaffService
     public async Task<bool> ToggleStaffStatusAsync(Guid tenantId, Guid staffId)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
             
         if (user == null) return false;
 
@@ -114,7 +137,7 @@ public class StaffService : IStaffService
     public async Task<bool> ResetStaffPasswordAsync(Guid tenantId, Guid staffId, string newPassword)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
             
         if (user == null) return false;
 

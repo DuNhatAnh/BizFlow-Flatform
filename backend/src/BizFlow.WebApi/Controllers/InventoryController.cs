@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.DTOs.Inventory;
+using BizFlow.Application.DTOs.Inventory;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
 
 namespace BizFlow.WebApi.Controllers;
@@ -36,11 +38,15 @@ public class InventoryController : ApiControllerBase
     }
 
     [HttpGet("receipts")]
-    public async Task<ActionResult<List<ReceiptDto>>> GetReceipts([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    public async Task<ActionResult<PagedResult<ReceiptDto>>> GetReceipts(
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        [FromQuery] int type = -1,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
 
-        var receipts = await _inventoryService.GetReceiptsAsync(tenantId);
+        var receipts = await _inventoryService.GetReceiptsAsync(tenantId, type, page, pageSize);
         return Ok(receipts);
     }
 
@@ -49,12 +55,14 @@ public class InventoryController : ApiControllerBase
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, 
         [FromQuery] Guid productId, 
         [FromQuery] DateTime? startDate, 
-        [FromQuery] DateTime? endDate)
+        [FromQuery] DateTime? endDate,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
         if (productId == Guid.Empty) return BadRequest("ProductId is required.");
 
-        var ledger = await _inventoryService.GetS2LedgerAsync(tenantId, productId, startDate, endDate);
+        var ledger = await _inventoryService.GetS2LedgerAsync(tenantId, productId, startDate, endDate, page, pageSize);
         return Ok(ledger);
     }
 }

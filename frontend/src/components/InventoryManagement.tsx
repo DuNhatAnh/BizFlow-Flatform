@@ -19,6 +19,10 @@ import {
   Printer,
   MoreHorizontal
 } from "lucide-react";
+import { Skeleton } from "./ui/Skeleton";
+import { FadeIn } from "./ui/FadeIn";
+import { Pagination } from "./ui/Pagination";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:5178/api";
 
@@ -34,6 +38,7 @@ const getAuthInfo = () => {
 };
 
 export default function InventoryManagement() {
+  const queryClient = useQueryClient();
   const [activeSubTab, setActiveSubTab] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("bizflow_inventory_tab") || "stock";
@@ -49,12 +54,52 @@ export default function InventoryManagement() {
 
   const [cogsMethod, setCogsMethod] = useState("weighted_average");
 
-  const [products, setProducts] = useState<any[]>([]);
-  const [receipts, setReceipts] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any>(null);
+  const [productPage, setProductPage] = useState(1);
+  const [productSearch, setProductSearch] = useState("");
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedProductSearch(productSearch);
+      setProductPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  const { data: productsData, isLoading: isProductsLoading } = useQuery({
+    queryKey: ["inventory_products", productPage, debouncedProductSearch],
+    queryFn: async () => {
+      const auth = getAuthInfo();
+      const queryParams = new URLSearchParams({
+        page: productPage.toString(),
+        pageSize: "10",
+      });
+      if (debouncedProductSearch) queryParams.append("search", debouncedProductSearch);
+
+      const res = await fetch(`${API_URL}/products?${queryParams.toString()}`, {
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    },
+    placeholderData: keepPreviousData,
+  });
+
+  const products = productsData?.items || [];
+  const productTotalPages = productsData?.totalPages || 0;
+
+  const [receiptPage, setReceiptPage] = useState(1);
+
+  const [ledgerPage, setLedgerPage] = useState(1);
+
   const [selectedLedgerProduct, setSelectedLedgerProduct] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  const [hasAnyReceipts, setHasAnyReceipts] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
@@ -87,80 +132,86 @@ export default function InventoryManagement() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchProducts = async () => {
-    const auth = getAuthInfo();
-    try {
-      const res = await fetch(`${API_URL}/products`, {
+  useEffect(() => {
+    if (products.length > 0 && !selectedLedgerProduct) {
+      setSelectedLedgerProduct(products[0].id);
+    }
+  }, [products, selectedLedgerProduct]);
+  const { data: receiptsData, isLoading: isReceiptsLoading } = useQuery({
+    queryKey: ["inventory_receipts", activeSubTab, receiptPage],
+    queryFn: async () => {
+      if (activeSubTab !== "receipts_in" && activeSubTab !== "receipts_out") return null;
+      const auth = getAuthInfo();
+      const type = activeSubTab === "receipts_in" ? 0 : 1;
+      const res = await fetch(`${API_URL}/inventory/receipts?type=${type}&page=${receiptPage}&pageSize=10`, {
         headers: { 
           "X-Tenant-Id": auth.tenantId,
           "Authorization": `Bearer ${auth.token}`
         }
+      });
+      if (!res.ok) throw new Error("Failed to fetch receipts");
+      return res.json();
+    },
+    placeholderData: keepPreviousData,
+    enabled: activeSubTab === "receipts_in" || activeSubTab === "receipts_out"
+  });
+
+  const receipts = receiptsData?.items || [];
+  const receiptTotalPages = receiptsData?.totalPages || 0;
+
+  // Track if we have any receipts
+  useEffect(() => {
+    if (receiptsData?.totalCount > 0 && !hasAnyReceipts) {
+      setHasAnyReceipts(true);
+    }
+  }, [receiptsData?.totalCount, hasAnyReceipts]);
+
+  const { data: ledgerData, isLoading: isLedgerLoading } = useQuery({
+    queryKey: ["inventory_ledger", selectedLedgerProduct, selectedMonth, selectedYear, ledgerPage],
+    queryFn: async () => {
+      if (!selectedLedgerProduct) return null;
+      const auth = getAuthInfo();
+      const startDate = new Date(selectedYear, selectedMonth - 1, 1, 0, 0, 0).toISOString();
+      const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59).toISOString();
+      const res = await fetch(`${API_URL}/inventory/reports/s2?productId=${selectedLedgerProduct}&startDate=${startDate}&endDate=${endDate}&page=${ledgerPage}&pageSize=10`, {
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch ledger");
+      return res.json();
+    },
+    placeholderData: keepPreviousData,
+    enabled: activeSubTab === "ledger" && !!selectedLedgerProduct
+  });
+
+  const ledger = ledgerData || null;
+
+  const checkHasAnyReceipts = async () => {
+    const auth = getAuthInfo();
+    try {
+      const res = await fetch(`${API_URL}/inventory/receipts?pageSize=1`, {
+        headers: { "X-Tenant-Id": auth.tenantId, "Authorization": `Bearer ${auth.token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setProducts(data);
-        if (data.length > 0 && !selectedLedgerProduct) {
-          setSelectedLedgerProduct(data[0].id);
-        }
+        setHasAnyReceipts(data.totalCount > 0);
       }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const fetchReceipts = async () => {
-    const auth = getAuthInfo();
-    try {
-      const res = await fetch(`${API_URL}/inventory/receipts`, {
-        headers: { 
-          "X-Tenant-Id": auth.tenantId,
-          "Authorization": `Bearer ${auth.token}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setReceipts(data);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsInitialReceiptsLoaded(true);
-    }
-  };
-
-  const fetchLedger = async (productId: string, month: number, year: number) => {
-    if (!productId) return;
-    const auth = getAuthInfo();
-    try {
-      setIsLoading(true);
-      const startDate = new Date(year, month - 1, 1, 0, 0, 0).toISOString();
-      const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
-      const res = await fetch(`${API_URL}/inventory/reports/s2?productId=${productId}&startDate=${startDate}&endDate=${endDate}`, {
-        headers: { 
-          "X-Tenant-Id": auth.tenantId,
-          "Authorization": `Bearer ${auth.token}`
-        }
-      });
-      if (res.ok) {
-        setLedger(await res.json());
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (e) {}
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchReceipts();
-  }, []);
+    if (activeSubTab === "settings") {
+      checkHasAnyReceipts();
+    }
+  }, [activeSubTab]);
 
   useEffect(() => {
-    if (activeSubTab === "ledger" && selectedLedgerProduct) {
-      fetchLedger(selectedLedgerProduct, selectedMonth, selectedYear);
+    if (activeSubTab === "receipts_in" || activeSubTab === "receipts_out") {
+      setReceiptPage(1); // Reset page when switching tab
     }
-  }, [activeSubTab, selectedLedgerProduct, selectedMonth, selectedYear]);
+  }, [activeSubTab]);
 
   const handleOpenReceiptModal = (type: number) => {
     setReceiptForm({
@@ -222,7 +273,7 @@ export default function InventoryManagement() {
         referenceDocumentDate: receiptForm.referenceDocumentDate ? new Date(receiptForm.referenceDocumentDate).toISOString() : null,
         referenceDocumentIssuer: receiptForm.referenceDocumentIssuer || null,
         warehouseLocation: receiptForm.warehouseLocation || null,
-        items: receiptForm.items.map(i => ({
+        items: receiptForm.items.map((i: any) => ({
           productId: i.productId,
           documentQuantity: Number(i.documentQuantity),
           quantity: Number(i.quantity),
@@ -244,9 +295,9 @@ export default function InventoryManagement() {
       if (res.ok) {
         showToast("Tạo phiếu thành công!");
         setIsReceiptModalOpen(false);
-        fetchReceipts();
-        fetchProducts(); // Refresh stock
-        if (activeSubTab === "ledger" && selectedLedgerProduct) fetchLedger(selectedLedgerProduct, selectedMonth, selectedYear);
+        queryClient.invalidateQueries({ queryKey: ["inventory_receipts"] });
+        queryClient.invalidateQueries({ queryKey: ["inventory_products"] });
+        queryClient.invalidateQueries({ queryKey: ["inventory_ledger"] });
       } else {
         const error = await res.text();
         showToast(`Lỗi: ${error}`, "error");
@@ -281,8 +332,8 @@ export default function InventoryManagement() {
         showToast("Đã hủy phiếu thành công");
         setCancelModalOpen(false);
         setCancelReason("");
-        fetchReceipts();
-        fetchProducts(); // Refresh stock
+        queryClient.invalidateQueries({ queryKey: ["inventory_receipts"] });
+        queryClient.invalidateQueries({ queryKey: ["inventory_products"] });
       } else {
         const err = await res.json();
         showToast(err.error || "Lỗi hủy phiếu", "error");
@@ -454,7 +505,16 @@ export default function InventoryManagement() {
               <div className="flex gap-3">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                  <input type="text" placeholder="Tìm kiếm..." className="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <input 
+                    type="text" 
+                    placeholder="Tìm kiếm..." 
+                    value={productSearch}
+                    onChange={(e: any) => {
+                      setProductSearch(e.target.value);
+                      setProductPage(1);
+                    }}
+                    className="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary" 
+                  />
                 </div>
               </div>
             </div>
@@ -470,10 +530,19 @@ export default function InventoryManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-container-low">
-                  {products.length === 0 ? (
+                  {isProductsLoading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={`skeleton-${idx}`}>
+                        <td className="p-4"><Skeleton className="h-5 w-24" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-48" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-16 mx-auto" /></td>
+                        <td className="p-4"><Skeleton className="h-6 w-16 ml-auto rounded-md" /></td>
+                      </tr>
+                    ))
+                  ) : products.length === 0 ? (
                     <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu hàng hóa</td></tr>
-                  ) : products.map((s, i) => (
-                    <tr key={s.id} className="hover:bg-surface-container-low/50 transition-colors">
+                  ) : products.filter((s: any, i: number) => i < 10).map((s: any, i: number) => (
+                    <tr key={s.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
                       <td className="p-4 font-semibold text-primary">{s.code || "N/A"}</td>
                       <td className="p-4 font-bold text-on-surface">{s.name}</td>
                       <td className="p-4 text-center text-on-surface-variant">{s.baseUnit}</td>
@@ -487,6 +556,17 @@ export default function InventoryManagement() {
                 </tbody>
               </table>
             </div>
+
+            {(productsData?.totalCount || 0) > 0 && (
+              <Pagination
+                currentPage={productPage}
+                totalPages={productTotalPages}
+                pageSize={10}
+                totalItems={productsData?.totalCount || 0}
+                itemName="hàng hóa"
+                onPageChange={setProductPage}
+              />
+            )}
           </div>
         )}
 
@@ -531,10 +611,22 @@ export default function InventoryManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-container-low">
-                  {receipts.filter(r => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).length === 0 ? (
+                  {isReceiptsLoading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={`skeleton-${idx}`}>
+                        <td className="p-4"><Skeleton className="h-5 w-32" /></td>
+                        <td className="p-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-32" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-48" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-24 ml-auto" /></td>
+                        <td className="p-4"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></td>
+                        <td className="p-4"><Skeleton className="h-8 w-8 mx-auto rounded-lg" /></td>
+                      </tr>
+                    ))
+                  ) : receipts.filter((r: any) => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).length === 0 ? (
                     <tr><td colSpan={7} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-                  ) : receipts.filter(r => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).map((r, i) => (
-                    <tr key={r.id} className="hover:bg-surface-container-low/50 transition-colors">
+                  ) : receipts.filter((r: any) => activeSubTab === "receipts_in" ? r.type === 0 : r.type === 1).map((r: any, i: number) => (
+                    <tr key={r.id} className="hover:bg-surface-container-low/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
                       <td className="p-4 text-on-surface-variant">{new Date(r.createdAt || r.date).toLocaleString('vi-VN')}</td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${r.type === 1 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -606,6 +698,17 @@ export default function InventoryManagement() {
                 </tbody>
               </table>
             </div>
+
+            {(receiptsData?.totalCount || 0) > 0 && (
+              <Pagination
+                currentPage={receiptPage}
+                totalPages={receiptTotalPages}
+                pageSize={10}
+                totalItems={receiptsData?.totalCount || 0}
+                itemName="phiếu"
+                onPageChange={setReceiptPage}
+              />
+            )}
           </div>
         )}
 
@@ -620,17 +723,17 @@ export default function InventoryManagement() {
               <div className="flex flex-wrap gap-3">
                 <select
                   value={selectedLedgerProduct}
-                  onChange={(e) => setSelectedLedgerProduct(e.target.value)}
+                  onChange={(e: any) => setSelectedLedgerProduct(e.target.value)}
                   className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary max-w-[200px]"
                 >
-                  {products.map(p => (
+                  {products.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
 
                 <select
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  onChange={(e: any) => setSelectedMonth(Number(e.target.value))}
                   className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary"
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
@@ -640,7 +743,7 @@ export default function InventoryManagement() {
 
                 <select
                   value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  onChange={(e: any) => setSelectedYear(Number(e.target.value))}
                   className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary"
                 >
                   {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
@@ -664,92 +767,117 @@ export default function InventoryManagement() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-surface-container-lowest text-xs uppercase tracking-wider text-on-surface-variant">
-                      <th className="p-3 border-b border-surface-container-high text-center w-28">Ngày tháng</th>
-                      <th className="p-3 border-b border-surface-container-high text-center">Chứng từ</th>
-                      <th className="p-3 border-b border-surface-container-high text-left">Diễn giải</th>
-                      <th className="p-2 border-b border-surface-container-high text-center border-l bg-emerald-50/50" colSpan={2}>Nhập</th>
-                      <th className="p-2 border-b border-surface-container-high text-center border-l bg-amber-50/50" colSpan={2}>Xuất</th>
-                      <th className="p-2 border-b border-surface-container-high text-center border-l bg-blue-50/50" colSpan={2}>Tồn</th>
+                      <th className="p-2 border-b border-surface-container-high text-center border-r" colSpan={2}>Chứng từ</th>
+                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Diễn giải</th>
+                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Đơn vị tính</th>
+                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Đơn giá</th>
+                      <th className="p-2 border-b border-surface-container-high text-center border-r bg-emerald-50/50" colSpan={2}>Nhập</th>
+                      <th className="p-2 border-b border-surface-container-high text-center border-r bg-amber-50/50" colSpan={2}>Xuất</th>
+                      <th className="p-2 border-b border-surface-container-high text-center bg-blue-50/50" colSpan={2}>Tồn</th>
                     </tr>
                     <tr className="bg-surface-container-lowest text-xs uppercase tracking-wider text-on-surface-variant border-b border-surface-container-high">
-                      <th className="p-2 border-r border-surface-container-high"></th>
-                      <th className="p-2 border-r border-surface-container-high"></th>
-                      <th className="p-2 border-r border-surface-container-high"></th>
-                      <th className="p-2 border-r border-surface-container-high bg-emerald-50/50 border-l">Số lượng</th>
+                      <th className="p-2 border-r border-surface-container-high w-24">Số hiệu</th>
+                      <th className="p-2 border-r border-surface-container-high w-24">Ngày, tháng</th>
+                      <th className="p-2 border-r border-surface-container-high bg-emerald-50/50">Số lượng</th>
                       <th className="p-2 border-r border-surface-container-high bg-emerald-50/50">Thành tiền</th>
-                      <th className="p-2 border-r border-surface-container-high bg-amber-50/50 border-l">Số lượng</th>
+                      <th className="p-2 border-r border-surface-container-high bg-amber-50/50">Số lượng</th>
                       <th className="p-2 border-r border-surface-container-high bg-amber-50/50">Thành tiền</th>
-                      <th className="p-2 border-r border-surface-container-high bg-blue-50/50 border-l">Số lượng</th>
+                      <th className="p-2 border-r border-surface-container-high bg-blue-50/50">Số lượng</th>
                       <th className="p-2 bg-blue-50/50">Thành tiền</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-container-high">
-                    {/* Số dư đầu kỳ */}
-                    <tr className="bg-surface-container-low/30 font-semibold text-right">
-                      <td colSpan={3} className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">SỐ DƯ ĐẦU KỲ</td>
-                      <td className="p-3 border-r border-surface-container-high border-l">-</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high border-l">-</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high text-primary border-l">{ledger.openingQuantity}</td>
-                      <td className="p-3 text-primary">{ledger.openingValue.toLocaleString()}</td>
-                    </tr>
-
-                    {ledger.records.length === 0 ? (
-                      <tr><td colSpan={9} className="p-8 text-center text-on-surface-variant">Không có phát sinh trong kỳ</td></tr>
-                    ) : ledger.records.map((l: any, i: number) => {
-                      const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
-                      return (
-                        <tr key={i} className={`hover:bg-surface-container-low/30 transition-colors text-right ${isCancel ? 'bg-red-50/50' : ''}`}>
-                          <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
-                          <td className="p-3 text-center border-r border-surface-container-high font-semibold">{l.documentRef || "N/A"}</td>
-                          <td className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">
-                            {l.type === 0
-                              ? (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu nhập</span> : "Nhập kho")
-                              : (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu xuất</span> : "Xuất kho")}
-                          </td>
-
-                          {/* Nhập */}
-                          <td className="p-3 border-r border-surface-container-high text-emerald-700 border-l">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
-                          <td className="p-3 border-r border-surface-container-high text-emerald-700">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
-
-                          {/* Xuất */}
-                          <td className="p-3 border-r border-surface-container-high text-amber-700 border-l">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
-                          <td className="p-3 border-r border-surface-container-high text-amber-700">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
-
-                          {/* Tồn */}
-                          <td className="p-3 border-r border-surface-container-high font-bold text-primary border-l">{l.quantityBalance}</td>
-                          <td className="p-3 font-bold text-primary">{l.valueBalance?.toLocaleString() || "0"}</td>
+                    {isLedgerLoading ? (
+                      Array.from({ length: 5 }).map((s: any, idx: number) => (
+                        <tr key={`skeleton-${idx}`}>
+                          <td colSpan={11} className="p-3"><Skeleton className="h-6 w-full" /></td>
                         </tr>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <>
+                        {/* Số dư đầu kỳ */}
+                        <tr className="bg-surface-container-low/30 font-semibold text-right">
+                          <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">SỐ DƯ ĐẦU KỲ</td>
+                          <td className="p-3 border-r border-surface-container-high">-</td>
+                          <td className="p-3 border-r border-surface-container-high">-</td>
+                          <td className="p-3 border-r border-surface-container-high">-</td>
+                          <td className="p-3 border-r border-surface-container-high">-</td>
+                          <td className="p-3 border-r border-surface-container-high text-primary">{ledger.openingQuantity}</td>
+                          <td className="p-3 text-primary">{ledger.openingValue?.toLocaleString()}</td>
+                        </tr>
+
+                        {ledger.records.items.length === 0 ? (
+                          <tr><td colSpan={11} className="p-8 text-center text-on-surface-variant">Không có phát sinh trong kỳ</td></tr>
+                        ) : ledger.records.items.map((l: any, i: number) => {
+                          const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
+                          const unitPrice = (l.quantityIn > 0 && l.valueIn > 0) ? (l.valueIn / l.quantityIn) : ((l.quantityOut > 0 && l.valueOut > 0) ? (l.valueOut / l.quantityOut) : 0);
+                          const productName = products.find((p: any) => p.id === selectedLedgerProduct)?.name;
+                          const productUnit = products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit || "Cái";
+                          return (
+                            <FadeIn as="tr" delay={i * 50} key={i} className={`hover:bg-surface-container-low/30 transition-colors text-right ${isCancel ? 'bg-red-50/50' : ''}`}>
+                              <td className="p-3 text-center border-r border-surface-container-high font-semibold">{l.documentRef || "N/A"}</td>
+                              <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
+                              <td className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">
+                                {l.type === 0
+                                  ? (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu nhập</span> : "Nhập kho")
+                                  : (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu xuất</span> : "Xuất kho")}
+                              </td>
+                              <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{productUnit}</td>
+                              <td className="p-3 border-r border-surface-container-high text-on-surface-variant">{unitPrice > 0 ? unitPrice.toLocaleString() : "-"}</td>
+
+                              {/* Nhập */}
+                              <td className="p-3 border-r border-surface-container-high text-emerald-700">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
+                              <td className="p-3 border-r border-surface-container-high text-emerald-700">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
+
+                              {/* Xuất */}
+                              <td className="p-3 border-r border-surface-container-high text-amber-700">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
+                              <td className="p-3 border-r border-surface-container-high text-amber-700">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
+
+                              {/* Tồn */}
+                              <td className="p-3 border-r border-surface-container-high font-bold text-primary">{l.quantityBalance}</td>
+                              <td className="p-3 font-bold text-primary">{l.valueBalance?.toLocaleString() || "0"}</td>
+                            </FadeIn>
+                          );
+                        })}
+                      </>
+                    )}
                   </tbody>
                   <tfoot className="bg-surface-container-lowest font-bold text-right border-t-2 border-surface-container-high">
                     {/* Cộng phát sinh trong kỳ */}
                     <tr className="border-b border-surface-container-high">
-                      <td colSpan={3} className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">CỘNG PHÁT SINH TRONG KỲ</td>
-                      <td className="p-3 border-r border-surface-container-high text-emerald-700 border-l">{ledger.totalQuantityIn}</td>
+                      <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">CỘNG PHÁT SINH TRONG KỲ</td>
+                      <td className="p-3 border-r border-surface-container-high text-emerald-700">{ledger.totalQuantityIn}</td>
                       <td className="p-3 border-r border-surface-container-high text-emerald-700">{ledger.totalValueIn.toLocaleString()}</td>
-                      <td className="p-3 border-r border-surface-container-high text-amber-700 border-l">{ledger.totalQuantityOut}</td>
+                      <td className="p-3 border-r border-surface-container-high text-amber-700">{ledger.totalQuantityOut}</td>
                       <td className="p-3 border-r border-surface-container-high text-amber-700">{ledger.totalValueOut.toLocaleString()}</td>
-                      <td className="p-3 border-r border-surface-container-high text-on-surface-variant border-l">x</td>
+                      <td className="p-3 border-r border-surface-container-high text-on-surface-variant">x</td>
                       <td className="p-3 text-on-surface-variant">x</td>
                     </tr>
-
                     {/* Số dư cuối kỳ */}
                     <tr>
-                      <td colSpan={3} className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">SỐ DƯ CUỐI KỲ</td>
-                      <td className="p-3 border-r border-surface-container-high border-l">-</td>
+                      <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">SỐ DƯ CUỐI KỲ</td>
                       <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high border-l">-</td>
                       <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high text-primary border-l">{ledger.closingQuantity}</td>
+                      <td className="p-3 border-r border-surface-container-high">-</td>
+                      <td className="p-3 border-r border-surface-container-high">-</td>
+                      <td className="p-3 border-r border-surface-container-high text-primary">{ledger.closingQuantity}</td>
                       <td className="p-3 text-primary">{ledger.closingValue.toLocaleString()}</td>
                     </tr>
                   </tfoot>
                 </table>
               )}
             </div>
+
+            {ledger && ledger.records.totalCount > 0 && (
+              <Pagination
+                currentPage={ledgerPage}
+                totalPages={ledger.records.totalPages}
+                pageSize={10}
+                totalItems={ledger.records.totalCount}
+                itemName="giao dịch"
+                onPageChange={setLedgerPage}
+              />
+            )}
 
             {/* PRINT S2 LAYOUT */}
             {ledger && (
@@ -771,8 +899,8 @@ export default function InventoryManagement() {
                 </div>
 
                 <div className="mb-4 space-y-1.5 text-[13px]">
-                  <div>Tên vật liệu, dụng cụ, sản phẩm, hàng hóa: <span className="font-semibold">{products.find(p => p.id === selectedLedgerProduct)?.name}</span></div>
-                  <div>Đơn vị tính: <span className="font-semibold">{products.find(p => p.id === selectedLedgerProduct)?.baseUnit}</span></div>
+                  <div>Tên vật liệu, dụng cụ, sản phẩm, hàng hóa: <div className="font-bold text-on-surface">{products.find((p: any) => p.id === selectedLedgerProduct)?.name}</div></div>
+                  <div>Đơn vị tính: <span className="font-bold text-secondary text-right">{products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit}</span></div>
                 </div>
 
                 <table className="w-full border-collapse border border-black mb-4 text-center text-[13px]">
@@ -820,7 +948,7 @@ export default function InventoryManagement() {
                       <td className="border border-black p-1.5">{ledger.openingQuantity}</td>
                       <td className="border border-black p-1.5">{ledger.openingValue.toLocaleString()}</td>
                     </tr>
-                    {ledger.records.map((l: any, i: number) => {
+                    {ledger.records.items.map((l: any, i: number) => {
                       const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
                       const dienGiai = l.type === 0 ? (isCancel ? "Hủy phiếu nhập" : "Nhập kho") : (isCancel ? "Hủy phiếu xuất" : "Xuất kho");
                       return (
@@ -890,7 +1018,7 @@ export default function InventoryManagement() {
           <div className="max-w-2xl mx-auto">
             <h3 className="text-lg font-bold text-on-surface mb-6">Cài đặt Phương pháp Tính giá Vốn (COGS)</h3>
 
-            {receipts.length > 0 && (
+            {hasAnyReceipts && (
               <div className="mb-6 bg-error-container text-on-error-container p-4 rounded-xl border border-error/20 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-error" />
                 <div>
@@ -901,7 +1029,7 @@ export default function InventoryManagement() {
             )}
 
             <div className="space-y-6">
-              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${receipts.length > 0 ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
+              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${hasAnyReceipts ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
                 <div className="flex items-start gap-4">
                   <div className="mt-1">
                     <input
@@ -911,12 +1039,12 @@ export default function InventoryManagement() {
                       value="weighted_average"
                       checked={cogsMethod === "weighted_average"}
                       onChange={(e) => setCogsMethod(e.target.value)}
-                      disabled={receipts.length > 0}
+                      disabled={hasAnyReceipts}
                       className="w-5 h-5 text-primary focus:ring-primary disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
-                    <label htmlFor="wa" className={`font-bold text-base ${receipts.length > 0 ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Bình quân gia quyền cả kỳ dự trữ (Mặc định)</label>
+                    <label htmlFor="wa" className={`font-bold text-base ${hasAnyReceipts ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Bình quân gia quyền cả kỳ dự trữ (Mặc định)</label>
                     <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
                       Phù hợp với hầu hết các hộ kinh doanh bán lẻ. Giá trị mỗi đơn vị hàng hóa xuất kho được tính bằng trung bình cộng của giá trị hàng tồn đầu kỳ và giá trị hàng nhập trong kỳ.
                     </p>
@@ -930,7 +1058,7 @@ export default function InventoryManagement() {
                 </div>
               </div>
 
-              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${receipts.length > 0 ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
+              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${hasAnyReceipts ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
                 <div className="flex items-start gap-4">
                   <div className="mt-1">
                     <input
@@ -940,12 +1068,12 @@ export default function InventoryManagement() {
                       value="fifo"
                       checked={cogsMethod === "fifo"}
                       onChange={(e) => setCogsMethod(e.target.value)}
-                      disabled={receipts.length > 0}
+                      disabled={hasAnyReceipts}
                       className="w-5 h-5 text-primary focus:ring-primary disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
-                    <label htmlFor="fifo" className={`font-bold text-base ${receipts.length > 0 ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Nhập trước, Xuất trước (FIFO)</label>
+                    <label htmlFor="fifo" className={`font-bold text-base ${hasAnyReceipts ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Nhập trước, Xuất trước (FIFO)</label>
                     <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
                       Phù hợp với các mặt hàng có hạn sử dụng (Thực phẩm, Dược phẩm). Hệ thống sẽ trừ xuất kho vào những lô hàng được nhập vào kho sớm nhất.
                     </p>
@@ -1091,14 +1219,14 @@ export default function InventoryManagement() {
                           onChange={(e) => handleItemChange(index, "productId", e.target.value)}
                           className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
                         >
-                          <option value="">-- Chọn sản phẩm --</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          <option key="empty" value="">Chọn sản phẩm</option>
+                          {products.map((p: any) => (<option key={p.id} value={p.id}>{p.name}</option>))}
                         </select>
                       </div>
                       <div className="w-16">
                         <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold text-center">ĐVT</label>
                         <div className="w-full px-2 py-1.5 border border-outline-variant rounded bg-surface-container-highest text-sm text-center text-on-surface-variant">
-                          {products.find(p => p.id === item.productId)?.baseUnit || "-"}
+                          {products.find((p: any) => p.id === item.productId)?.baseUnit || "-"}
                         </div>
                       </div>
                       <div className="w-20">
@@ -1301,11 +1429,12 @@ export default function InventoryManagement() {
                     </thead>
                     <tbody className="divide-y divide-surface-container-low">
                       {viewReceiptDetails.details?.map((d: any, idx: number) => {
-                        const prod = products.find(p => p.id === d.productId);
                         return (
                           <tr key={idx} className="hover:bg-surface-container-low/30">
-                            <td className="p-3 font-semibold text-on-surface">{prod?.name || d.productName || "Sản phẩm không xác định"}</td>
-                            <td className="p-3 text-center text-on-surface-variant">{prod?.baseUnit || "-"}</td>
+                            <td className="p-3">
+                              <span className="font-bold text-on-surface">{products.find((p: any) => p.id === d.productId)?.name || d.productName}</span>
+                            </td>
+                            <td className="p-3 text-center text-on-surface-variant">{products.find((p: any) => p.id === d.productId)?.baseUnit || "-"}</td>
                             <td className="p-3 text-right text-on-surface-variant">{d.documentQuantity}</td>
                             <td className="p-3 text-right font-bold text-emerald-700">{d.quantity}</td>
                             <td className="p-3 text-right text-on-surface-variant">{d.unitPrice.toLocaleString()} đ</td>
@@ -1389,7 +1518,7 @@ export default function InventoryManagement() {
               </thead>
               <tbody>
                 {viewReceiptDetails.details?.map((d: any, idx: number) => {
-                  const prod = products.find(p => p.id === d.productId);
+                  const prod = products.find((p: any) => p.id === d.productId);
                   return (
                     <tr key={idx}>
                       <td className="border border-black p-1.5">{idx + 1}</td>

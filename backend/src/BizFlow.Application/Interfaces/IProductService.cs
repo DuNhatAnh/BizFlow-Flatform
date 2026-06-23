@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BizFlow.Application.DTOs.Products;
+using BizFlow.Application.DTOs.Common;
 
 namespace BizFlow.Application.Interfaces;
 
 public interface IProductService
 {
-    Task<List<ProductDto>> GetAllAsync(Guid tenantId);
+    Task<PagedResult<ProductDto>> GetAllAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null);
     Task<ProductDto?> GetByIdAsync(Guid tenantId, Guid productId);
     Task<ProductDto> CreateAsync(Guid tenantId, CreateProductRequest request);
     Task<ProductDto?> UpdateAsync(Guid tenantId, Guid productId, UpdateProductRequest request);

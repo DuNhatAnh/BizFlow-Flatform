@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using BizFlow.Application.DTOs.Staff;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Staff;
 
@@ -30,11 +32,26 @@ public class StaffController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StaffDto>>> GetStaffMembers()
+    public async Task<ActionResult<PagedResult<StaffDto>>> GetStaffMembers(
+        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
     {
-        var tenantId = GetTenantId();
-        var staff = await _staffService.GetStaffMembersAsync(tenantId);
-        return Ok(staff);
+        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        try {
+            var staff = await _staffService.GetStaffMembersAsync(id, page, pageSize, search);
+            return Ok(staff);
+        } catch (Exception ex) {
+            return Ok(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("debug-all")]
+    public async Task<ActionResult> GetAllUsers([FromServices] BizFlow.Application.Common.Interfaces.IApplicationDbContext dbContext)
+    {
+        var allUsers = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(dbContext.Users);
+        return Ok(allUsers);
     }
 
     [HttpPost]

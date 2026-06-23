@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BizFlow.Application.DTOs.Common;
 
 namespace BizFlow.Application.DTOs.Inventory;
 
@@ -16,5 +17,5 @@ public class S2LedgerReportDto
     public decimal ClosingQuantity { get; set; }
     public decimal ClosingValue { get; set; }
     
-    public List<LedgerS2Dto> Records { get; set; } = new();
+    public PagedResult<LedgerS2Dto> Records { get; set; } = new();
 }

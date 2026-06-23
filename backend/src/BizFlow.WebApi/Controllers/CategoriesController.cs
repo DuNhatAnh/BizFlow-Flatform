@@ -46,4 +46,22 @@ public class CategoriesController : ApiControllerBase
 
         return NoContent();
     }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<CategoryDto>> UpdateCategory([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, int id, [FromBody] UpdateCategoryRequest request)
+    {
+        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Name is required.");
+
+        try
+        {
+            var category = await _categoryService.UpdateAsync(tenantId, id, request);
+            if (category == null) return NotFound();
+            return Ok(category);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

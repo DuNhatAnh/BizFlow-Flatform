@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Products;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
 
@@ -19,15 +20,33 @@ public class ProductService : IProductService
         _context = context;
     }
 
-    public async Task<List<ProductDto>> GetAllAsync(Guid tenantId)
+    public async Task<PagedResult<ProductDto>> GetAllAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
     {
-        var products = await _context.Products
+        var query = _context.Products
             .Include(p => p.ProductUnits)
-            .Where(p => p.TenantId == tenantId && !p.IsDeleted)
+            .Where(p => p.TenantId == tenantId && !p.IsDeleted);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerTerm = searchTerm.ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(lowerTerm) || p.Code.ToLower().Contains(lowerTerm));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var products = await query
             .OrderByDescending(p => p.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return products.Select(p => MapToDto(p)).ToList();
+        return new PagedResult<ProductDto>
+        {
+            Items = products.Select(p => MapToDto(p)).ToList(),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
     }
 
     public async Task<ProductDto?> GetByIdAsync(Guid tenantId, Guid productId)

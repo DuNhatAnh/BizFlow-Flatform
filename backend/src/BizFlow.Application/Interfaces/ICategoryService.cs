@@ -9,5 +9,6 @@ public interface ICategoryService
 {
     Task<List<CategoryDto>> GetAllAsync(Guid tenantId);
     Task<CategoryDto> CreateAsync(Guid tenantId, CreateCategoryRequest request);
+    Task<CategoryDto> UpdateAsync(Guid tenantId, int categoryId, UpdateCategoryRequest request);
     Task<bool> DeleteAsync(Guid tenantId, int categoryId);
 }

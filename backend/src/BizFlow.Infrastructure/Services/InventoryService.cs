@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Inventory;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
@@ -230,19 +231,37 @@ public class InventoryService : IInventoryService
         }
     }
 
-    public async Task<List<ReceiptDto>> GetReceiptsAsync(Guid tenantId)
+    public async Task<PagedResult<ReceiptDto>> GetReceiptsAsync(Guid tenantId, int type = -1, int pageNumber = 1, int pageSize = 10)
     {
-        var receipts = await _context.InventoryReceipts
+        var query = _context.InventoryReceipts
             .Include(r => r.Details)
                 .ThenInclude(d => d.Product)
-            .Where(r => r.TenantId == tenantId)
+            .Where(r => r.TenantId == tenantId);
+
+        if (type != -1)
+        {
+            var receiptType = (ReceiptType)type;
+            query = query.Where(r => r.Type == receiptType);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var receipts = await query
             .OrderByDescending(r => r.Date)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return receipts.Select(MapToDto).ToList();
+        return new PagedResult<ReceiptDto>
+        {
+            Items = receipts.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
     }
 
-    public async Task<S2LedgerReportDto> GetS2LedgerAsync(Guid tenantId, Guid productId, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<S2LedgerReportDto> GetS2LedgerAsync(Guid tenantId, Guid productId, DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10)
     {
         decimal openingQuantity = 0;
         decimal openingValue = 0;
@@ -287,6 +306,9 @@ public class InventoryService : IInventoryService
             ValueBalance = l.ValueBalance
         }).ToList();
         
+        var totalCount = records.Count;
+        var pagedRecords = records.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
         return new S2LedgerReportDto
         {
             OpeningQuantity = openingQuantity,
@@ -297,7 +319,13 @@ public class InventoryService : IInventoryService
             TotalValueOut = records.Sum(r => r.ValueOut),
             ClosingQuantity = records.LastOrDefault()?.QuantityBalance ?? openingQuantity,
             ClosingValue = records.LastOrDefault()?.ValueBalance ?? openingValue,
-            Records = records
+            Records = new PagedResult<LedgerS2Dto>
+            {
+                Items = pagedRecords,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            }
         };
     }
 

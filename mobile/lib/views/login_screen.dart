@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              const Text(
                 'Mobile Cashier App',
                 style: TextStyle(
                   color: silverColor,
@@ -183,13 +183,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _usernameController,
                         style: const TextStyle(color: navyColor),
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Tên đăng nhập',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          prefixIcon: const Icon(Icons.person_outline, color: navyColor),
+                          labelStyle: TextStyle(color: Colors.grey),
+                          prefixIcon: Icon(Icons.person_outline, color: navyColor),
                           filled: true,
                           fillColor: lightBg,
-                          border: const OutlineInputBorder(
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                             borderSide: BorderSide.none,
                           ),

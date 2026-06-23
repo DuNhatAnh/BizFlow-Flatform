@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, 
   Plus, 
@@ -14,15 +15,23 @@ import {
   Clock,
   MoreHorizontal
 } from "lucide-react";
+import { Skeleton } from "./ui/Skeleton";
+import { FadeIn } from "./ui/FadeIn";
+import { Pagination } from "./ui/Pagination";
 
 export default function StaffManagement() {
-  const [staffList, setStaffList] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
@@ -46,39 +55,38 @@ export default function StaffManagement() {
     return { tenantId: "11111111-1111-1111-1111-111111111111", token: "" };
   };
 
-  const fetchStaff = async () => {
-    setLoading(true);
-    const auth = getAuthInfo();
-    try {
-      // In a real scenario, this would be a real API call.
-      // We will mock it first, then try fetching.
-      const res = await fetch("http://localhost:5178/api/staff", {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: staffData, isLoading: loading } = useQuery({
+    queryKey: ["staffs", currentPage, debouncedSearch],
+    queryFn: async () => {
+      const auth = getAuthInfo();
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        pageSize: itemsPerPage.toString(),
+      });
+      if (debouncedSearch) queryParams.append("search", debouncedSearch);
+
+      const res = await fetch(`http://localhost:5178/api/staff?${queryParams.toString()}`, {
         headers: { 
           "X-Tenant-Id": auth.tenantId,
           "Authorization": `Bearer ${auth.token}`
         }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setStaffList(data);
-      } else {
-        // Fallback mock data if backend API is not yet available
-        setStaffList([
-          { id: "1", fullname: "Trần Thị B", username: "cashier@bizflow.com", role: "Thu ngân", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
-        ]);
-      }
-    } catch (e) {
-      console.error(e);
-      setStaffList([
-        { id: "1", fullname: "Trần Thị B", username: "cashier@bizflow.com", role: "Thu ngân", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
-      ]);
-    }
-    setLoading(false);
-  };
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
+  const staffList = staffData?.items || [];
+  const totalPages = staffData?.totalPages || 0;
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +122,8 @@ export default function StaffManagement() {
         setNewUsername("");
         setNewFullname("");
         setNewPassword("");
-        fetchStaff();
+        setNewPassword("");
+        queryClient.invalidateQueries({ queryKey: ["staffs"] });
       } else {
         const errorData = await res.json().catch(() => null);
         const errMsg = errorData?.inner 
@@ -138,13 +147,13 @@ export default function StaffManagement() {
         }
       });
       if (res.ok) {
-        fetchStaff();
+        queryClient.invalidateQueries({ queryKey: ["staffs"] });
       } else {
-        // fallback
-        setStaffList(staffList.map(s => s.id === staffId ? { ...s, isActive: !s.isActive } : s));
+        // fallback - will be re-fetched anyway, but we can do a soft invalidate
+        queryClient.invalidateQueries({ queryKey: ["staffs"] });
       }
     } catch (e) {
-      setStaffList(staffList.map(s => s.id === staffId ? { ...s, isActive: !s.isActive } : s));
+      queryClient.invalidateQueries({ queryKey: ["staffs"] });
     }
   };
 
@@ -174,10 +183,7 @@ export default function StaffManagement() {
     }
   };
 
-  const filteredStaff = staffList.filter(s => 
-    s.fullname.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Client-side filtering removed since we fetch paginated & searched data from backend
 
   return (
     <div className="space-y-6">
@@ -204,7 +210,10 @@ export default function StaffManagement() {
             type="text"
             placeholder="Tìm kiếm theo tên hoặc username..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full text-sm bg-transparent outline-none text-on-surface"
           />
         </div>
@@ -222,105 +231,124 @@ export default function StaffManagement() {
             </thead>
             <tbody className="divide-y divide-surface-container-low">
               {loading ? (
-                <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Đang tải...</td></tr>
-              ) : filteredStaff.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Không tìm thấy nhân viên nào.</td></tr>
-              ) : (
-                filteredStaff.map(staff => (
-                  <tr key={staff.id} className="hover:bg-surface-container-low/30 transition-colors">
-                    <td className="p-4 font-bold text-on-surface">{staff.fullname}</td>
-                    <td className="p-4 text-on-surface-variant">{staff.username}</td>
-                    <td className="p-4 text-on-surface-variant">{new Date(staff.createdAt).toLocaleDateString("vi-VN")}</td>
-                    <td className="p-4">
-                      {staff.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-semibold rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-error/10 text-error text-xs font-semibold rounded-full">
-                          <XCircle className="w-3.5 h-3.5" /> Bị khóa
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 text-right">
-                      <button 
-                        onClick={(e) => {
-                          if (openDropdownId === staff.id) {
-                            setOpenDropdownId(null);
-                          } else {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setDropdownPos({
-                              top: rect.bottom + 4,
-                              right: window.innerWidth - rect.right
-                            });
-                            setOpenDropdownId(staff.id);
-                          }
-                        }}
-                        className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
-                      >
-                        <MoreHorizontal className="w-5 h-5" />
-                      </button>
-                      {openDropdownId === staff.id && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
-                          <div 
-                            className="fixed w-56 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
-                            style={{ top: dropdownPos.top, right: dropdownPos.right }}
-                          >
-                            <button
-                              onClick={() => {
-                                toggleStatus(staff.id);
-                                setOpenDropdownId(null);
-                              }}
-                              className={`w-full text-left px-4 py-3 text-sm flex items-center gap-2 transition-colors ${staff.isActive ? 'text-error hover:bg-error/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
-                            >
-                              {staff.isActive ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
-                              {staff.isActive ? "Khóa tài khoản" : "Mở khóa tài khoản"}
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newPass = prompt("Nhập mật khẩu mới cho " + staff.username);
-                                if (newPass) {
-                                  if (newPass.length < 6) {
-                                    showToast("Mật khẩu mới quá ngắn!", "error");
-                                    return;
-                                  }
-                                  fetch(`http://localhost:5178/api/staff/${staff.id}/reset-password`, {
-                                    method: "PUT",
-                                    headers: { 
-                                      "Content-Type": "application/json", 
-                                      "X-Tenant-Id": getAuthInfo().tenantId,
-                                      "Authorization": `Bearer ${getAuthInfo().token}` 
-                                    },
-                                    body: JSON.stringify(newPass)
-                                  }).then(() => showToast("Đổi mật khẩu thành công!", "success"))
-                                    .catch(() => showToast("Lỗi khi đổi mật khẩu", "error"));
-                                }
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors border-t border-surface-container-low"
-                            >
-                              <Lock className="w-4 h-4 text-on-surface-variant" /> Đổi mật khẩu
-                            </button>
-                            <button
-                              onClick={() => {
-                                viewAuditLogs(staff);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors border-t border-surface-container-low"
-                            >
-                              <History className="w-4 h-4 text-primary" /> Xem lịch sử hoạt động
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </td>
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`skeleton-${idx}`}>
+                    <td className="p-4"><Skeleton className="h-5 w-40" /></td>
+                    <td className="p-4"><Skeleton className="h-5 w-48" /></td>
+                    <td className="p-4"><Skeleton className="h-5 w-24" /></td>
+                    <td className="p-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="h-8 w-8 ml-auto rounded-lg" /></td>
                   </tr>
                 ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ) : staffList.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Không tìm thấy nhân viên nào.</td></tr>
+                  ) : (
+                    staffList.map((staff: any, index: number) => (
+                      <tr key={staff.id} className="hover:bg-surface-container-low/30 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                        <td className="p-4 font-bold text-on-surface">{staff.fullname}</td>
+                        <td className="p-4 text-on-surface-variant">{staff.username}</td>
+                        <td className="p-4 text-on-surface-variant">{new Date(staff.createdAt).toLocaleDateString("vi-VN")}</td>
+                        <td className="p-4">
+                          {staff.isActive ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-semibold rounded-full">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-error/10 text-error text-xs font-semibold rounded-full">
+                              <XCircle className="w-3.5 h-3.5" /> Bị khóa
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right">
+                          <button 
+                            onClick={(e) => {
+                              if (openDropdownId === staff.id) {
+                                setOpenDropdownId(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setDropdownPos({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right
+                                });
+                                setOpenDropdownId(staff.id);
+                              }
+                            }}
+                            className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </button>
+                          {openDropdownId === staff.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                              <div 
+                                className="fixed w-56 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+                                style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                              >
+                                <button
+                                  onClick={() => {
+                                    toggleStatus(staff.id);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className={`w-full text-left px-4 py-3 text-sm flex items-center gap-2 transition-colors ${staff.isActive ? 'text-error hover:bg-error/10' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                                >
+                                  {staff.isActive ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
+                                  {staff.isActive ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const newPass = prompt("Nhập mật khẩu mới cho " + staff.username);
+                                    if (newPass) {
+                                      if (newPass.length < 6) {
+                                        showToast("Mật khẩu mới quá ngắn!", "error");
+                                        return;
+                                      }
+                                      fetch(`http://localhost:5178/api/staff/${staff.id}/reset-password`, {
+                                        method: "PUT",
+                                        headers: { 
+                                          "Content-Type": "application/json", 
+                                          "X-Tenant-Id": getAuthInfo().tenantId,
+                                          "Authorization": `Bearer ${getAuthInfo().token}` 
+                                        },
+                                        body: JSON.stringify(newPass)
+                                      }).then(() => showToast("Đổi mật khẩu thành công!", "success"))
+                                        .catch(() => showToast("Lỗi khi đổi mật khẩu", "error"));
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors border-t border-surface-container-low"
+                                >
+                                  <Lock className="w-4 h-4 text-on-surface-variant" /> Đổi mật khẩu
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    viewAuditLogs(staff);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors border-t border-surface-container-low"
+                                >
+                                  <History className="w-4 h-4 text-primary" /> Xem lịch sử hoạt động
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+        {(staffData?.totalCount || 0) > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={itemsPerPage}
+            totalItems={staffData?.totalCount || 0}
+            itemName="nhân viên"
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       {/* Add Staff Modal */}

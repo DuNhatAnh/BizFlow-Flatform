@@ -180,6 +180,9 @@ using (var scope = app.Services.CreateScope())
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"DateOfBirth\" timestamp with time zone;");
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"JoinDate\" timestamp with time zone;");
 
+        // Add Category Multi-level Fields
+        SafeSql("ALTER TABLE categories ADD COLUMN IF NOT EXISTS \"ParentId\" integer;");
+
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
             ""Id"" uuid NOT NULL,

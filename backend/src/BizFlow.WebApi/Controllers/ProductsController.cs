@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.DTOs.Products;
+using BizFlow.Application.DTOs.Products;
+using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
 
 namespace BizFlow.WebApi.Controllers;
@@ -14,11 +16,15 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ProductDto>>> GetProducts([FromHeader(Name = "X-Tenant-Id")] Guid? tenantId)
+    public async Task<ActionResult<PagedResult<ProductDto>>> GetProducts(
+        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
     {
         var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
         try {
-            var products = await _productService.GetAllAsync(id);
+            var products = await _productService.GetAllAsync(id, page, pageSize, search);
             return Ok(products);
         } catch (Exception ex) {
             return Ok(new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace });
