@@ -383,4 +383,162 @@ public class OrderService : IOrderService
             throw;
         }
     }
+
+    public async Task<Order> ReturnOrderAsync(Guid orderId, Guid tenantId, List<ReturnOrderItemDto> returnItems, Guid performedBy, CancellationToken cancellationToken = default)
+    {
+        using var transaction = await _context.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == orderId && o.TenantId == tenantId, cancellationToken);
+
+            if (order == null)
+            {
+                throw new InvalidOperationException("Không tìm thấy đơn hàng");
+            }
+
+            if (order.Status == OrderStatus.Cancelled)
+            {
+                throw new InvalidOperationException("Đơn hàng đã bị hủy hoặc đã được trả lại hoàn toàn trước đó");
+            }
+
+            decimal refundAmount = 0;
+
+            foreach (var returnItem in returnItems)
+            {
+                if (returnItem.ReturnQuantity <= 0) continue;
+
+                var orderItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == returnItem.ProductId && oi.ProductUnitId == returnItem.ProductUnitId);
+                if (orderItem == null)
+                {
+                    throw new InvalidOperationException($"Không tìm thấy sản phẩm trong đơn hàng gốc");
+                }
+
+                if (returnItem.ReturnQuantity > orderItem.Quantity)
+                {
+                    throw new InvalidOperationException($"Số lượng trả lại ({returnItem.ReturnQuantity}) vượt quá số lượng còn lại trong đơn ({orderItem.Quantity})");
+                }
+
+                var unit = await _context.ProductUnits
+                    .FirstOrDefaultAsync(pu => pu.Id == orderItem.ProductUnitId && pu.ProductId == orderItem.ProductId, cancellationToken);
+                var conversionRate = unit?.ConversionRate ?? 1;
+                var baseReturnQty = returnItem.ReturnQuantity * conversionRate;
+
+                // 1. Revert stock quantity
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == orderItem.ProductId && p.TenantId == tenantId, cancellationToken);
+                if (product != null)
+                {
+                    product.StockQuantity += baseReturnQty;
+                }
+
+                // 2. Add inventory transaction
+                var invTx = new InventoryTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    ProductId = orderItem.ProductId,
+                    Type = InventoryTransactionType.Adjustment,
+                    Quantity = baseReturnQty,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = performedBy,
+                    Note = $"Nhập kho trả hàng - Đơn hàng {order.Id}"
+                };
+                _context.InventoryTransactions.Add(invTx);
+
+                // 3. Sync to S2 Ledger
+                await _inventoryService.RecordImportForReturnAsync(tenantId, order.Id, orderItem.ProductId, baseReturnQty, invTx.Note, cancellationToken);
+
+                refundAmount += returnItem.ReturnQuantity * orderItem.UnitPrice;
+
+                // 4. Update order item quantity and total price
+                orderItem.Quantity -= returnItem.ReturnQuantity;
+                orderItem.TotalPrice = orderItem.UnitPrice * orderItem.Quantity;
+            }
+
+            if (refundAmount <= 0)
+            {
+                throw new InvalidOperationException("Không có hàng hóa nào được chọn để trả lại");
+            }
+
+            // 5. Update order total amount
+            order.TotalAmount -= refundAmount;
+
+            // If all items are returned (all quantities are 0), mark order as Cancelled
+            if (order.OrderItems.All(oi => oi.Quantity == 0))
+            {
+                order.Status = OrderStatus.Cancelled;
+            }
+
+            // 6. Customer debt reduction (if debt order)
+            if (order.PaymentMethod == PaymentMethod.Debt && order.CustomerId != null)
+            {
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Id == order.CustomerId && c.TenantId == tenantId, cancellationToken);
+
+                if (customer != null)
+                {
+                    customer.TotalDebt -= refundAmount;
+
+                    var debtTx = new DebtTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        TenantId = tenantId,
+                        CustomerId = customer.Id,
+                        OrderId = order.Id,
+                        Type = DebtTransactionType.Decrease,
+                        Amount = refundAmount,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.DebtTransactions.Add(debtTx);
+                }
+            }
+
+            // 7. Create reversing accounting entry (Negative amount) for Circular 88
+            var accountingEntry = new AccountingEntry
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                TransactionDate = DateTime.UtcNow,
+                DocumentType = DocumentType.Sales,
+                DocumentRefId = order.Id.ToString(),
+                AccountCategory = AccountCategory.Revenue_Goods,
+                Amount = -refundAmount,
+                Description = $"Giảm trừ doanh thu trả hàng - Đơn hàng #{order.Id.ToString().Substring(0, 8)}"
+            };
+            _context.AccountingEntries.Add(accountingEntry);
+
+            // 8. Log audit action
+            var log = new AuditLog
+            {
+                TenantId = tenantId,
+                UserId = performedBy,
+                Action = "RETURN_ORDER",
+                EntityName = "Order",
+                EntityId = order.Id.ToString(),
+                Details = $"Trả hàng nhanh tại quầy cho đơn hàng #{order.Id.ToString().Substring(0, 8)}. Tổng tiền hoàn trả: {refundAmount:N0}đ."
+            };
+            _context.AuditLogs.Add(log);
+
+            // 9. Dispatch owner notification
+            try
+            {
+                await _notificationService.SendToTenantAsync(tenantId, $"Đơn hàng #{order.Id.ToString().Substring(0, 8)} đã được đổi trả một phần/toàn bộ hàng hóa bởi nhân viên. Số tiền hoàn trả: {refundAmount:N0}đ.");
+            }
+            catch
+            {
+                // Soft fail on notification to avoid blocking business transaction
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return order;
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
 }

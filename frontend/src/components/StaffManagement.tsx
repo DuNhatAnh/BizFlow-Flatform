@@ -181,19 +181,14 @@ export default function StaffManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-surface-container-high shadow-sm">
-        <div>
-          <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-            <Users className="w-6 h-6 text-primary" />
-            Quản lý Nhân sự
-          </h2>
-          <p className="text-sm text-on-surface-variant mt-1">Danh sách tài khoản nhân viên thu ngân của cửa hàng.</p>
-        </div>
+      {/* Header Area Buttons */}
+      <div className="flex justify-end -mt-2">
         <button 
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-primary hover:bg-primary-container text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all"
+          className="px-4 py-2.5 bg-primary hover:bg-primary-container text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all"
         >
-          <Plus className="w-4 h-4" /> Thêm Nhân viên
+          <Plus className="w-4 h-4" /> 
+          Thêm Nhân viên
         </button>
       </div>
 

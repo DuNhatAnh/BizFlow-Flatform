@@ -344,6 +344,40 @@ public class InventoryService : IInventoryService
         _context.AccountingLedgerS2s.Add(ledgerEntry);
     }
 
+    public async Task RecordImportForReturnAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default)
+    {
+        var tenant = await _context.Tenants.FindAsync(tenantId);
+        var product = await _context.Products.FindAsync(productId);
+        
+        if (tenant == null || product == null) return;
+
+        var lastLedger = await _context.AccountingLedgerS2s
+            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
+            .OrderByDescending(l => l.Date)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var prevQty = lastLedger?.QuantityBalance ?? 0;
+        var prevVal = lastLedger?.ValueBalance ?? 0;
+
+        var ledgerEntry = new AccountingLedgerS2
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ProductId = productId,
+            Date = DateTime.UtcNow,
+            Type = ReceiptType.Import,
+            QuantityIn = quantity
+        };
+
+        var unitCost = prevQty > 0 ? prevVal / prevQty : 0;
+        ledgerEntry.ValueIn = quantity * unitCost;
+
+        ledgerEntry.QuantityBalance = prevQty + quantity;
+        ledgerEntry.ValueBalance = prevVal + ledgerEntry.ValueIn;
+
+        _context.AccountingLedgerS2s.Add(ledgerEntry);
+    }
+
     private ReceiptDto MapToDto(InventoryReceipt r)
     {
         return new ReceiptDto
