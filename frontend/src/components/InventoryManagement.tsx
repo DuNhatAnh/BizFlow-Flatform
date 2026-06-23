@@ -451,7 +451,8 @@ export default function InventoryManagement() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <>
+      <div className="space-y-6 animate-in fade-in duration-300">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-full shadow-lg border animate-in slide-in-from-top-4 flex items-center gap-3 ${toast.type === 'success' ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-red-50 border-red-200 text-red-800'
@@ -1097,6 +1098,7 @@ export default function InventoryManagement() {
         )}
 
       </div>
+      </div>
 
       {/* Modal Lập Phiếu */}
       {isReceiptModalOpen && (
@@ -1595,6 +1597,6 @@ export default function InventoryManagement() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

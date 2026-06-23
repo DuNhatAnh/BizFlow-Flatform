@@ -180,7 +180,7 @@ public class AuthService : IAuthService
             "PlatformAdmin" => "Quản trị viên hệ thống",
             "Owner" => "Chủ cửa hàng",
             "Manager" => "Quản lý",
-            "Cashier" => "Thu ngân",
+            "Employee" => "Nhân viên",
             "Accountant" => "Kế toán",
             "Warehouse" => "Thủ kho",
             _ => "Nhân viên"

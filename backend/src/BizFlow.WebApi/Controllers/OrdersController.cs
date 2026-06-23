@@ -18,7 +18,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Order>>> GetOrders([FromQuery] Guid tenantId, [FromQuery] string? dateStr, [FromQuery] string? sourceStr)
+    public async Task<ActionResult<IEnumerable<Order>>> GetOrders([FromQuery] Guid tenantId, [FromQuery] string? dateStr, [FromQuery] string? sourceStr, [FromQuery] Guid? createdBy)
     {
         var query = _context.Orders
             .Where(o => o.TenantId == tenantId)
@@ -29,11 +29,16 @@ public class OrdersController : ApiControllerBase
             .ThenInclude(oi => oi.ProductUnit)
             .AsQueryable();
 
+        if (createdBy.HasValue && createdBy.Value != Guid.Empty)
+        {
+            query = query.Where(o => o.CreatedBy == createdBy.Value);
+        }
+
         // Optional date filter: yyyy-MM-dd
         if (!string.IsNullOrEmpty(dateStr) && DateTime.TryParse(dateStr, out var filterDate))
         {
-            var startDate = filterDate.Date;
-            var endDate = startDate.AddDays(1);
+            var startDate = DateTime.SpecifyKind(filterDate.Date, DateTimeKind.Utc);
+            var endDate = DateTime.SpecifyKind(startDate.AddDays(1), DateTimeKind.Utc);
             query = query.Where(o => o.CreatedAt >= startDate && o.CreatedAt < endDate);
         }
 
@@ -138,5 +143,29 @@ public class OrdersController : ApiControllerBase
 
         return Ok(new { Message = "Đã hủy đơn hàng nháp" });
     }
+
+    [HttpPost("{id}/return")]
+    public async Task<IActionResult> ReturnOrder(Guid id, [FromQuery] Guid tenantId, [FromBody] ReturnOrderRequest request)
+    {
+        try
+        {
+            var returnedOrder = await _orderService.ReturnOrderAsync(id, tenantId, request.Items, request.PerformedBy, CancellationToken.None);
+            return Ok(new { Message = "Đổi trả hàng thành công", Order = returnedOrder });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "Lỗi hệ thống khi thực hiện đổi trả hàng", Detail = ex.Message });
+        }
+    }
+}
+
+public class ReturnOrderRequest
+{
+    public List<ReturnOrderItemDto> Items { get; set; } = new();
+    public Guid PerformedBy { get; set; }
 }
 

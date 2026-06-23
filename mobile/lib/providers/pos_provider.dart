@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -21,6 +22,10 @@ class PosProvider extends ChangeNotifier {
   final List<OrderItem> _cartItems = [];
   Customer? _selectedCustomer;
 
+  // Real-time AI Draft Notifications
+  Order? _latestDraftNotification;
+  Timer? _draftPollTimer;
+
   // Getters
   User? get currentUser => _currentUser;
   String? get tenantId => _tenantId;
@@ -36,6 +41,49 @@ class PosProvider extends ChangeNotifier {
   Customer? get selectedCustomer => _selectedCustomer;
   double get cartTotal => _cartItems.fold(0.0, (sum, item) => sum + item.totalPrice);
   int get cartCount => _cartItems.fold(0, (sum, item) => sum + item.quantity);
+  Order? get latestDraftNotification => _latestDraftNotification;
+
+  void clearLatestDraftNotification() {
+    _latestDraftNotification = null;
+    notifyListeners();
+  }
+
+  // Background Draft Polling
+  void startDraftPolling() {
+    _draftPollTimer?.cancel();
+    _draftPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      checkNewDrafts();
+    });
+  }
+
+  void stopDraftPolling() {
+    _draftPollTimer?.cancel();
+    _draftPollTimer = null;
+  }
+
+  Future<void> checkNewDrafts() async {
+    if (_tenantId == null) return;
+    try {
+      final dfts = await _apiService.fetchDrafts(_tenantId!);
+      if (dfts.length > _drafts.length) {
+        final oldIds = _drafts.map((d) => d.id).toSet();
+        final newDrafts = dfts.where((d) => !oldIds.contains(d.id)).toList();
+        if (newDrafts.isNotEmpty) {
+          _latestDraftNotification = newDrafts.first;
+          final notifierDraft = newDrafts.first;
+          Timer(const Duration(seconds: 5), () {
+            if (_latestDraftNotification?.id == notifierDraft.id) {
+              clearLatestDraftNotification();
+            }
+          });
+        }
+      }
+      _drafts = dfts;
+      notifyListeners();
+    } catch (e) {
+      // Ignore background fetch errors
+    }
+  }
 
   String get connectionUrl => ApiService.baseUrl;
 
@@ -55,6 +103,7 @@ class PosProvider extends ChangeNotifier {
       _tenantId = user.tenantId;
       _setLoading(false);
       await loadPOSData();
+      startDraftPolling();
       return true;
     } else {
       _errorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác";
@@ -64,6 +113,7 @@ class PosProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    stopDraftPolling();
     await _apiService.logout();
     _currentUser = null;
     _tenantId = null;
@@ -75,6 +125,7 @@ class PosProvider extends ChangeNotifier {
     _cartItems.clear();
     _selectedCustomer = null;
     _shiftSummary = null;
+    _latestDraftNotification = null;
     notifyListeners();
   }
 
@@ -94,11 +145,27 @@ class PosProvider extends ChangeNotifier {
       _products = prods;
       _customers = custs;
       _orders = ords;
+
+      if (dfts.length > _drafts.length && _drafts.isNotEmpty) {
+        final oldIds = _drafts.map((d) => d.id).toSet();
+        final newDrafts = dfts.where((d) => !oldIds.contains(d.id)).toList();
+        if (newDrafts.isNotEmpty) {
+          _latestDraftNotification = newDrafts.first;
+          final notifierDraft = newDrafts.first;
+          Timer(const Duration(seconds: 5), () {
+            if (_latestDraftNotification?.id == notifierDraft.id) {
+              clearLatestDraftNotification();
+            }
+          });
+        }
+      }
+
       _drafts = dfts;
 
       if (_currentUser != null) {
         _shiftSummary = await _apiService.fetchShiftSummary(_tenantId!, _currentUser!.id);
       }
+      startDraftPolling();
     } catch (e) {
       _errorMessage = "Không thể đồng bộ dữ liệu với máy chủ";
     } finally {
@@ -200,7 +267,7 @@ class PosProvider extends ChangeNotifier {
   }
 
   // Checkout Operations
-  Future<Order> checkout(String paymentMethod) async {
+  Future<Order> checkout(String paymentMethod, {double discount = 0.0}) async {
     if (_tenantId == null || _currentUser == null) {
       throw Exception("Chưa đăng nhập hệ thống");
     }
@@ -209,12 +276,15 @@ class PosProvider extends ChangeNotifier {
       throw Exception("Vui lòng chọn khách hàng đăng ký để thực hiện ghi nợ");
     }
 
+    double finalTotal = cartTotal - discount;
+    if (finalTotal < 0) finalTotal = 0;
+
     final order = Order(
       id: '',
       tenantId: _tenantId!,
       customerId: _selectedCustomer?.id,
       createdBy: _currentUser!.id,
-      totalAmount: cartTotal,
+      totalAmount: finalTotal,
       paymentMethod: paymentMethod,
       status: 'Completed',
       orderSource: 'Manual',

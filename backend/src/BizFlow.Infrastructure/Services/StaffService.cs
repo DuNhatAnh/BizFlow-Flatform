@@ -75,7 +75,7 @@ public class StaffService : IStaffService
             Username = request.Username,
             Fullname = request.Fullname,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Role = UserRole.Cashier,
+            Role = UserRole.Employee,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -125,7 +125,7 @@ public class StaffService : IStaffService
     public async Task<bool> ToggleStaffStatusAsync(Guid tenantId, Guid staffId)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
             
         if (user == null) return false;
 
@@ -137,7 +137,7 @@ public class StaffService : IStaffService
     public async Task<bool> ResetStaffPasswordAsync(Guid tenantId, Guid staffId, string newPassword)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && (u.Role == UserRole.Cashier || u.Role == UserRole.Employee));
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Cashier);
             
         if (user == null) return false;
 

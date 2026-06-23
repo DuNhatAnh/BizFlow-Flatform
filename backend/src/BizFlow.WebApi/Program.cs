@@ -8,7 +8,12 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddSignalR();
 
 // Show detailed model validation errors (helps debug 400s)
@@ -70,7 +75,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080", "http://127.0.0.1:8080")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -208,8 +213,107 @@ using (var scope = app.Services.CreateScope())
             );
             db.SaveChanges();
         }
-    } 
-    catch (Exception ex) 
+
+        if (!db.Customers.Any())
+        {
+            db.Customers.AddRange(
+                new BizFlow.Domain.Entities.Customer
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    TenantId = storeTenantId,
+                    Fullname = "Chú Ba",
+                    Phone = "0912345678",
+                    TotalDebt = 5200000.00m,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new BizFlow.Domain.Entities.Customer
+                {
+                    Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                    TenantId = storeTenantId,
+                    Fullname = "Cô Tư",
+                    Phone = "0987654321",
+                    TotalDebt = 1500000.00m,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new BizFlow.Domain.Entities.Customer
+                {
+                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    TenantId = storeTenantId,
+                    Fullname = "Anh Năm",
+                    Phone = "0905556667",
+                    TotalDebt = 0.00m,
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
+            db.SaveChanges();
+        }
+
+        if (!db.Orders.Any(o => o.Status == BizFlow.Domain.Enums.OrderStatus.Draft))
+        {
+            var draft1Id = Guid.Parse("dddd1111-1111-1111-1111-111111111111");
+            var draft2Id = Guid.Parse("dddd2222-2222-2222-2222-222222222222");
+
+            db.Orders.AddRange(
+                new BizFlow.Domain.Entities.Order
+                {
+                    Id = draft1Id,
+                    TenantId = storeTenantId,
+                    CustomerId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    CreatedBy = Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999"),
+                    TotalAmount = 425000.00m,
+                    PaymentMethod = BizFlow.Domain.Enums.PaymentMethod.Debt,
+                    Status = BizFlow.Domain.Enums.OrderStatus.Draft,
+                    OrderSource = BizFlow.Domain.Enums.OrderSource.AI_Voice,
+                    CreatedAt = DateTime.UtcNow.AddMinutes(-10)
+                },
+                new BizFlow.Domain.Entities.Order
+                {
+                    Id = draft2Id,
+                    TenantId = storeTenantId,
+                    CustomerId = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    CreatedBy = Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999"),
+                    TotalAmount = 4900000.00m,
+                    PaymentMethod = BizFlow.Domain.Enums.PaymentMethod.Cash,
+                    Status = BizFlow.Domain.Enums.OrderStatus.Draft,
+                    OrderSource = BizFlow.Domain.Enums.OrderSource.AI_Text,
+                    CreatedAt = DateTime.UtcNow.AddMinutes(-25)
+                }
+            );
+
+            db.OrderItems.AddRange(
+                new BizFlow.Domain.Entities.OrderItem
+                {
+                    OrderId = draft1Id,
+                    ProductId = Guid.Parse("78f0cad1-8792-40e0-a79c-f55c9e990c66"),
+                    ProductUnitId = 1,
+                    Quantity = 5.00m,
+                    UnitPrice = 85000.00m,
+                    TotalPrice = 425000.00m
+                },
+                new BizFlow.Domain.Entities.OrderItem
+                {
+                    OrderId = draft2Id,
+                    ProductId = Guid.Parse("a67eb1b6-3a63-46d4-96db-5a283026eab2"),
+                    ProductUnitId = 7,
+                    Quantity = 2.00m,
+                    UnitPrice = 2450000.00m,
+                    TotalPrice = 4900000.00m
+                }
+            );
+
+            db.SaveChanges();
+        }
+
+        foreach (var product in db.Products.ToList())
+        {
+            if (product.StockQuantity <= 0)
+            {
+                product.StockQuantity = 500;
+            }
+        }
+        db.SaveChanges();
+    }
+    catch (Exception ex)
     {
         Console.WriteLine("Database seeding failed: " + ex.Message);
     }

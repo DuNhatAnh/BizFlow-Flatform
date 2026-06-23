@@ -11,8 +11,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'cashier@bizflow.com');
-  final _passwordController = TextEditingController(text: 'cashier123');
+  final _usernameController = TextEditingController(text: 'employee@bizflow.com');
+  final _passwordController = TextEditingController(text: 'employee123');
   bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
 
@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Mobile Cashier App',
+                'Mobile Employee App',
                 style: TextStyle(
                   color: silverColor,
                   fontSize: 14,

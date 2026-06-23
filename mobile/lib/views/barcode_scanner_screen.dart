@@ -13,6 +13,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
   late AnimationController _laserController;
   late Animation<double> _laserAnimation;
   bool _flashOn = false;
+  bool _cameraAccessDenied = false;
 
   final _barcodeInputController = TextEditingController();
 
@@ -115,56 +116,111 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
       ),
       body: Column(
         children: [
-          // 1. Mock Camera Viewport
+          // 1. Mock Camera Viewport / Fallback View
           Expanded(
             flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Stack(
                 children: [
-                  // Camera Box Border
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white54, width: 2),
-                      borderRadius: BorderRadius.circular(20),
+                  if (_cameraAccessDenied) ...[
+                    // Red error border container
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.red.shade400, width: 2),
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.grey.shade900.withValues(alpha: 0.9),
+                      ),
                     ),
-                  ),
-
-                  // Laser beam line animation
-                  AnimatedBuilder(
-                    animation: _laserAnimation,
-                    builder: (context, child) {
-                      return Positioned(
-                        left: 10,
-                        right: 10,
-                        top: MediaQuery.of(context).size.height * 0.45 * _laserAnimation.value,
-                        child: Container(
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            boxShadow: [
-                              BoxShadow(color: Colors.red, blurRadius: 8, spreadRadius: 2),
+                    Center(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.videocam_off,
+                                color: Colors.redAccent,
+                                size: 64,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Không thể kết nối Camera / Thiếu quyền truy cập. Vui lòng cấp quyền truy cập Camera trong Cài đặt của hệ thống hoặc nhập mã vạch bằng tay.',
+                                style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: TextField(
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Nhập mã vạch thủ công tại đây...',
+                                    hintStyle: TextStyle(color: Colors.white30, fontSize: 13),
+                                    border: InputBorder.none,
+                                    suffixIcon: Icon(Icons.keyboard_alt_outlined, color: Colors.white54),
+                                  ),
+                                  onSubmitted: (val) {
+                                    _processBarcode(val.trim());
+                                  },
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-
-                  // Helper center text
-                  const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.qr_code, color: Colors.white30, size: 80),
-                        SizedBox(height: 12),
-                        Text(
-                          'Căn chỉnh mã vạch vào khung hình',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                      ],
+                      ),
                     ),
-                  )
+                  ] else ...[
+                    // Camera Box Border
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white54, width: 2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+
+                    // Laser beam line animation
+                    AnimatedBuilder(
+                      animation: _laserAnimation,
+                      builder: (context, child) {
+                        return Positioned(
+                          left: 10,
+                          right: 10,
+                          top: MediaQuery.of(context).size.height * 0.45 * _laserAnimation.value,
+                          child: Container(
+                            height: 3,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              boxShadow: [
+                                BoxShadow(color: Colors.red, blurRadius: 8, spreadRadius: 2),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Helper center text
+                    const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.qr_code, color: Colors.white30, size: 80),
+                          SizedBox(height: 12),
+                          Text(
+                            'Căn chỉnh mã vạch vào khung hình',
+                            style: TextStyle(color: Colors.white70, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -180,60 +236,82 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
                 color: Color(0xFF00685F),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'GIẢ LẬP QUÉT MÃ VẠCH (DEV MODE)',
-                    style: TextStyle(color: Color(0xFFBCC9C6), fontWeight: FontWeight.bold, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'GIẢ LẬP QUÉT MÃ VẠCH (DEV MODE)',
+                      style: TextStyle(color: Color(0xFFBCC9C6), fontWeight: FontWeight.bold, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Selection of seeded products barcodes
-                  const Text('Chọn mã sản phẩm có sẵn để giả lập:', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: provider.products.where((p) => p.code != null && p.code!.isNotEmpty).map((p) {
-                      return ActionChip(
-                        label: Text(p.name, style: const TextStyle(fontSize: 12)),
-                        onPressed: () => _processBarcode(p.code!),
-                        backgroundColor: Colors.white,
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Manual Input fallback
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _barcodeInputController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
-                            hintText: 'Nhập mã vạch thủ công...',
-                            hintStyle: TextStyle(color: Colors.white30),
-                            border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white30)),
-                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white30)),
+                    // Selection of seeded products barcodes
+                    const Text('Chọn trạng thái giả lập:', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        ActionChip(
+                          avatar: Icon(
+                            _cameraAccessDenied ? Icons.videocam : Icons.videocam_off,
+                            color: _cameraAccessDenied ? Colors.green : Colors.red,
+                            size: 16,
                           ),
-                          onSubmitted: (val) {
-                            _processBarcode(val.trim());
+                          label: Text(
+                            _cameraAccessDenied ? 'Giả lập Camera hoạt động' : 'Giả lập Lỗi Camera / Quyền',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _cameraAccessDenied = !_cameraAccessDenied;
+                            });
+                          },
+                          backgroundColor: Colors.white,
+                        ),
+                        ...provider.products.where((p) => p.code != null && p.code!.isNotEmpty).map((p) {
+                          return ActionChip(
+                            label: Text(p.name, style: const TextStyle(fontSize: 12)),
+                            onPressed: () => _processBarcode(p.code!),
+                            backgroundColor: Colors.white,
+                          );
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Manual Input fallback
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _barcodeInputController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(
+                              hintText: 'Nhập mã vạch thủ công...',
+                              hintStyle: TextStyle(color: Colors.white30),
+                              border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white30)),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white30)),
+                            ),
+                            onSubmitted: (val) {
+                              _processBarcode(val.trim());
+                              _barcodeInputController.clear();
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Color(0xFF00F5D4)),
+                          onPressed: () {
+                            _processBarcode(_barcodeInputController.text.trim());
                             _barcodeInputController.clear();
                           },
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward, color: Color(0xFF00F5D4)),
-                        onPressed: () {
-                          _processBarcode(_barcodeInputController.text.trim());
-                          _barcodeInputController.clear();
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           )

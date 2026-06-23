@@ -34,6 +34,7 @@ export default function LoginPage() {
       if (res.ok) {
         // Store session and token
         const userSession = {
+          id: data.user.id,
           username: data.user.username,
           fullname: data.user.fullname,
           role: data.user.role,

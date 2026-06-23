@@ -16,4 +16,5 @@ public interface IInventoryService
     
     // Called by OrderService when an order is completed/cancelled
     Task RecordExportForOrderAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default);
+    Task RecordImportForReturnAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default);
 }

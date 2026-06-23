@@ -95,10 +95,56 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             if (!isCancelled) ...[
               // Reprint thermal invoice
               IconButton(
-                icon: const Icon(Icons.print_outlined, color: Colors.grey),
+                icon: const Icon(Icons.print_outlined, color: Colors.teal),
                 onPressed: () {
+                  final tenantName = provider.currentUser?.tenantName ?? 'Đại lý Kim Vy';
+                  final employeeName = provider.currentUser?.fullname ?? 'Nhân viên';
+                  final customerName = order.customerName ?? 'Khách lẻ';
+                  final dateStr = order.createdAt.toLocal().toString().split('.').first;
+
+                  final buffer = StringBuffer();
+                  buffer.writeln("==================================================");
+                  buffer.writeln("        BIZFLOW RECEIPT REPRINT (IN LẠI BILL)     ");
+                  buffer.writeln("==================================================");
+                  buffer.writeln("Cửa Hàng: $tenantName");
+                  buffer.writeln("Nhân Viên: $employeeName");
+                  buffer.writeln("Thời Gian: $dateStr");
+                  buffer.writeln("Mã Đơn Hàng: #${order.id.isEmpty ? 'MOCK-ORDER' : order.id.substring(0, 8).toUpperCase()}");
+                  buffer.writeln("Khách Hàng: $customerName");
+                  buffer.writeln("--------------------------------------------------");
+                  buffer.writeln("Sản Phẩm                 SL    ĐVT      Thành Tiền");
+                  buffer.writeln("--------------------------------------------------");
+
+                  for (var item in order.orderItems) {
+                    final name = item.productName.padRight(22).substring(0, 22);
+                    final qty = item.quantity.toString().padRight(4);
+                    final unit = item.unitName.padRight(7).substring(0, 7);
+                    final price = "${item.totalPrice.toStringAsFixed(0)}đ";
+                    buffer.writeln("$name $qty  $unit   $price");
+                  }
+
+                  buffer.writeln("--------------------------------------------------");
+                  buffer.writeln("Tổng Thanh Toán:                    ${order.totalAmount.toStringAsFixed(0)}đ");
+                  buffer.writeln("Thanh Toán Qua:                     ${order.paymentMethod == 'Cash' ? 'Tiền mặt' : order.paymentMethod == 'Transfer' ? 'Chuyển khoản' : 'Ghi nợ'}");
+                  buffer.writeln("==================================================");
+                  buffer.writeln("           CẢM ƠN QUÝ KHÁCH. HẸN GẶP LẠI!         ");
+                  buffer.writeln("==================================================");
+
+                  debugPrint(buffer.toString());
+
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đang in lại hóa đơn qua máy in nhiệt Bluetooth...')),
+                    SnackBar(
+                      content: const Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Đã gửi lệnh in lại hóa đơn nhiệt thành công!'),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF2D6A4F),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                   );
                 },
               ),
@@ -106,8 +152,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                 onPressed: () async {
-                  // Role validation check: standard cashiers cannot cancel completed invoices
-                  final role = provider.currentUser?.role ?? 'Cashier';
+                  // Role validation check: standard employees cannot cancel completed invoices
+                  final role = provider.currentUser?.role ?? 'Employee';
                   if (role != 'Admin' && role != 'Owner') {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

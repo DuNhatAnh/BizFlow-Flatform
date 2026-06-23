@@ -17,7 +17,7 @@ class BizFlowApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PosProvider()),
       ],
       child: MaterialApp(
-        title: 'BizFlow Cashier POS',
+        title: 'BizFlow Employee POS',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

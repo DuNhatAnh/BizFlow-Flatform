@@ -453,36 +453,31 @@ export default function ProductManagement() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header Area */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-on-surface">Danh mục Sản phẩm & Đơn vị tính</h2>
-          <p className="text-sm text-on-surface-variant mt-1">Quản lý hàng hóa, tỷ lệ quy đổi và giá bán theo đơn vị</p>
-        </div>
-        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-          <button 
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
-          >
-            <FolderTree className="w-5 h-5" />
-            Danh mục
-          </button>
-          <button 
-            onClick={handleViewGlobalHistory}
-            className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Package className="w-5 h-5" />
-            Lịch sử
-          </button>
-          <button 
-            onClick={() => handleOpenModal()}
-            className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            Thêm Sản phẩm
-          </button>
-        </div>
+    <>
+      <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header Area Buttons */}
+      <div className="flex justify-end gap-2 -mt-2">
+        <button 
+          onClick={() => setIsCategoryModalOpen(true)}
+          className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
+        >
+          <FolderTree className="w-4 h-4 text-on-surface-variant" />
+          Danh mục
+        </button>
+        <button 
+          onClick={handleViewGlobalHistory}
+          className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
+        >
+          <Package className="w-4 h-4 text-on-surface-variant" />
+          Lịch sử
+        </button>
+        <button 
+          onClick={() => handleOpenModal()}
+          className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Thêm Sản phẩm
+        </button>
       </div>
 
       {/* Toolbar */}
@@ -661,6 +656,7 @@ export default function ProductManagement() {
             onPageChange={setCurrentPage}
           />
         )}
+      </div>
       </div>
 
       {/* Add / Edit Modal */}
@@ -1088,6 +1084,6 @@ export default function ProductManagement() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
