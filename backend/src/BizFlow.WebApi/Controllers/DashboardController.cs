@@ -19,7 +19,7 @@ public class DashboardController : ApiControllerBase
     {
         var today = DateTime.UtcNow.Date;
 
-        // Completed orders created by the cashier today
+        // Completed orders created by the employee today
         var orders = await _context.Orders
             .Where(o => o.TenantId == tenantId && o.CreatedBy == userId && o.Status == OrderStatus.Completed && o.CreatedAt >= today)
             .ToListAsync();
@@ -39,7 +39,7 @@ public class DashboardController : ApiControllerBase
 
         return Ok(new ShiftSummaryResponse
         {
-            CashierId = userId,
+            EmployeeId = userId,
             ShiftStart = today, // Assuming shift started today
             TotalOrders = totalOrdersCount,
             TotalRevenue = totalSales,
@@ -54,7 +54,7 @@ public class DashboardController : ApiControllerBase
 
 public class ShiftSummaryResponse
 {
-    public Guid CashierId { get; set; }
+    public Guid EmployeeId { get; set; }
     public DateTime ShiftStart { get; set; }
     public int TotalOrders { get; set; }
     public decimal TotalRevenue { get; set; }

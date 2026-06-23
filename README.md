@@ -95,7 +95,7 @@ Hệ thống đã được thiết lập sẵn (Seed) dữ liệu tài khoản t
 | :--- | :--- | :--- | :--- |
 | `admin@bizflow.com` | `admin123` | **Admin (Platform Administrator)** | **Hệ thống điều hành SaaS:** Quản lý danh sách các doanh nghiệp đăng ký (Tenants), kết nối CSDL biệt lập (Isolated DB Connection), cấu hình gói thuê bao và cài đặt hệ thống. |
 | `owner@bizflow.com` | `owner123` | **Owner (Chủ doanh nghiệp)** | **Bảng quản trị cửa hàng:** Báo cáo doanh số bán hàng tổng quan, biểu đồ trực quan doanh thu theo thời gian, quản lý danh mục, báo cáo TT88, quản lý kho hàng và giao dịch công nợ. |
-| `cashier@bizflow.com` | `cashier123` | **Cashier (Nhân viên bán hàng)** | **Quầy bán hàng POS:** Giao diện quét/chọn nhanh sản phẩm, nhập thông tin khách hàng, tích hợp hạch toán bán nợ nhanh và phân hệ phê duyệt đơn nháp AI đồng bộ thời gian thực từ Mobile. |
+| `employee@bizflow.com` | `employee123` | **Employee (Nhân viên bán hàng)** | **Quầy bán hàng POS:** Giao diện quét/chọn nhanh sản phẩm, nhập thông tin khách hàng, tích hợp hạch toán bán nợ nhanh và phân hệ phê duyệt đơn nháp AI đồng bộ thời gian thực từ Mobile. |
 
 > [!NOTE]
 > Để đăng nhập và kiểm thử các phân hệ, vui lòng điền một trong các tài khoản trên vào ô **Tên đăng nhập (Email)** trên màn hình đăng nhập. Dữ liệu này được tự động thiết lập trong cơ sở dữ liệu khi khởi động dự án.

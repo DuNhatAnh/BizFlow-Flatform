@@ -31,6 +31,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [imageError, setImageError] = React.useState(false);
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [draftCount, setDraftCount] = React.useState<number>(0);
 
   React.useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
@@ -38,6 +39,34 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       setUser(JSON.parse(stored));
     }
   }, []);
+
+  React.useEffect(() => {
+    if (!user || user.role !== "Employee") return;
+
+    const fetchCount = async () => {
+      try {
+        const stored = localStorage.getItem("bizflow_user");
+        if (!stored) return;
+        const userObj = JSON.parse(stored);
+        const res = await fetch(`http://localhost:5178/api/orders/drafts?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"}`, {
+          headers: { 
+            "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+            "Authorization": `Bearer ${userObj.token}` 
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDraftCount(data.length);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 5000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -62,11 +91,11 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           { id: "tt88-config", label: "Cấu hình sổ sách TT88", icon: FileSpreadsheet },
           { id: "settings", label: "Thiết lập hệ thống", icon: Settings },
         ];
-      case "Cashier":
+      case "Employee":
         return [
           { id: "pos", label: "Bán hàng POS", icon: PlusCircle },
           { id: "orders", label: "Đơn hàng của tôi", icon: ShoppingCart },
-          { id: "ai-drafts", label: "Đơn nháp AI", icon: Mic },
+          { id: "ai-drafts", label: "Đơn nháp AI [F8]", icon: Mic, badge: draftCount > 0 ? draftCount : undefined },
           { id: "products", label: "Tra cứu sản phẩm", icon: Package },
           { id: "debts", label: "Ghi nợ nhanh", icon: CreditCard },
         ];
@@ -111,7 +140,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
       {/* Menu Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {menuItems.map((item: any) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
@@ -125,7 +154,12 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               }`}
             >
               <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-on-surface-variant"}`} />
-              <span>{item.label}</span>
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge !== undefined && (
+                <span className="w-5 h-5 rounded-full bg-error text-white font-bold text-[10px] flex items-center justify-center animate-pulse">
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}

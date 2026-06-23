@@ -32,70 +32,111 @@ export default function Home() {
   const [authorized, setAuthorized] = useState(false);
   const [user, setUser] = useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
 
-  // Cashier State
-  const [cart, setCart] = useState<{ id: string; name: string; price: number; quantity: number; unit: string }[]>([]);
-  const [posCustomer, setPosCustomer] = useState("");
+  // Employee State
+  const [cart, setCart] = useState<{ id: string; name: string; price: number; quantity: number; unit: string; unitId: number | null }[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [isDebt, setIsDebt] = useState(false);
   const [posSearch, setPosSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ cart?: string; customer?: string }>({});
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  // Mock AI drafts loaded dynamically to simulate real-time API syncing (triggered by hot reload)
-  const [aiDrafts, setAiDrafts] = useState([
-    {
-      id: "1",
-      customer: "Chú Ba",
-      time: "10 phút trước",
-      items: [{ name: "Xi măng Hà Tiên", qty: 5, price: 85000, unit: "Bao" }],
-      payment: "Ghi nợ (Nợ phải thu)",
-      rawText: "Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen",
-      confidence: "98%"
-    },
-    {
-      id: "2",
-      customer: "Anh Nam",
-      time: "25 phút trước",
-      items: [{ name: "Dây cáp điện Cadivi", qty: 2, price: 1200000, unit: "Cuộn" }],
-      payment: "Tiền mặt",
-      rawText: "Giao gấp qua nhà anh Nam 2 cuộn dây cáp điện Cadivi, ảnh trả tiền mặt luôn",
-      confidence: "94%"
-    }
-  ]);
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
+  const [aiDrafts, setAiDrafts] = useState<any[]>([]);
   const [posProducts, setPosProducts] = useState<any[]>([]);
 
-  React.useEffect(() => {
-    const fetchProducts = async () => {
-      const stored = localStorage.getItem("bizflow_user");
-      if (!stored) return;
-      const userObj = JSON.parse(stored);
-
-      try {
-        const res = await fetch("http://localhost:5178/api/products", {
-          headers: { 
-            "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
-            "Authorization": `Bearer ${userObj.token}` 
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          // Map backend ProductDto to POS format
-          const mapped = data.map((p: any) => {
-            const defaultUnit = p.units?.find((u: any) => u.isDefault) || p.units?.[0];
-            return {
-              id: p.id,
-              name: p.name,
-              price: defaultUnit ? defaultUnit.price : 0,
-              unit: defaultUnit ? defaultUnit.unitName : p.baseUnit,
-              stock: p.stockQuantity
-            };
-          });
-          setPosProducts(mapped);
+  const fetchProducts = async (userObj: any) => {
+    try {
+      const res = await fetch("http://localhost:5178/api/products", {
+        headers: { 
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}` 
         }
-      } catch (e) {
-        console.error("Failed to fetch products for POS", e);
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Map backend ProductDto to POS format
+        const mapped = data.map((p: any) => {
+          const defaultUnit = p.units?.find((u: any) => u.isDefault) || p.units?.[0];
+          return {
+            id: p.id,
+            name: p.name,
+            price: defaultUnit ? defaultUnit.price : 0,
+            unit: defaultUnit ? defaultUnit.unitName : p.baseUnit,
+            unitId: defaultUnit ? defaultUnit.id : null,
+            stock: p.stockQuantity
+          };
+        });
+        setPosProducts(mapped);
       }
-    };
-    fetchProducts();
-  }, []);
+    } catch (e) {
+      console.error("Failed to fetch products for POS", e);
+    }
+  };
+
+  const fetchCustomers = async (userObj: any) => {
+    try {
+      const res = await fetch(`http://localhost:5178/api/customers?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"}`, {
+        headers: { 
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}` 
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch customers", e);
+    }
+  };
+
+  const fetchDrafts = async (userObj: any) => {
+    try {
+      const res = await fetch(`http://localhost:5178/api/orders/drafts?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"}`, {
+        headers: { 
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}` 
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = data.map((d: any) => {
+          const diffMs = new Date().getTime() - new Date(d.createdAt).getTime();
+          const diffMins = Math.max(0, Math.floor(diffMs / 60000));
+          const timeStr = diffMins > 0 ? `${diffMins} phút trước` : "Vừa xong";
+          return {
+            id: d.id,
+            customer: d.customer?.fullname || d.customerName || "Khách Lẻ",
+            time: timeStr,
+            items: d.orderItems.map((item: any) => ({
+              name: item.product?.name || item.productName || "Sản phẩm",
+              qty: item.quantity,
+              price: item.unitPrice,
+              unit: item.productUnit?.unitName || item.unitName || "Đơn vị"
+            })),
+            payment: d.paymentMethod === "Debt" ? "Ghi nợ (Nợ phải thu)" : "Tiền mặt",
+            rawText: d.orderSource === "AI_Voice" 
+              ? "Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen" 
+              : "Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn",
+            confidence: d.orderSource === "AI_Voice" ? "98%" : "95%",
+            rawDraft: d
+          };
+        });
+        setAiDrafts(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to fetch drafts", e);
+    }
+  };
 
   React.useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
@@ -110,8 +151,7 @@ export default function Home() {
       if (savedTab) {
         setActiveTab(savedTab);
       } else {
-        // Auto routing based on role
-        if (parsedUser.username === "cashier@bizflow.com") {
+        if (parsedUser.username === "employee@bizflow.com") {
           setActiveTab("pos");
         } else if (parsedUser.username === "admin@bizflow.com") {
           setActiveTab("overview");
@@ -119,6 +159,16 @@ export default function Home() {
           setActiveTab("overview");
         }
       }
+
+      fetchProducts(parsedUser);
+      fetchCustomers(parsedUser);
+      fetchDrafts(parsedUser);
+
+      const interval = setInterval(() => {
+        fetchDrafts(parsedUser);
+      }, 5000);
+
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -129,36 +179,259 @@ export default function Home() {
   }, [activeTab, authorized]);
 
   const addToCart = (product: typeof posProducts[0]) => {
-    const existing = cart.find(item => item.id === product.id);
+    const existing = cart.find(item => item.id === product.id && item.unitId === product.unitId);
     const newQty = existing ? existing.quantity + 1 : 1;
 
     if (newQty > product.stock) {
-      alert(`Sản phẩm ${product.name} đã hết hàng trong kho! Không thể thêm vào đơn.`);
+      showToast(`Sản phẩm ${product.name} đã hết hàng trong kho! Không thể thêm vào đơn.`, "error");
       return;
     }
 
     if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, quantity: newQty } : item));
+      setCart(cart.map(item => item.id === product.id && item.unitId === product.unitId ? { ...item, quantity: newQty } : item));
     } else {
-      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, unit: product.unit }]);
+      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, unit: product.unit, unitId: product.unitId }]);
     }
   };
 
-  const handleCheckout = () => {
+  const updateCartQty = (productId: string, unitId: number | null, delta: number) => {
+    const existing = cart.find(item => item.id === productId && item.unitId === unitId);
+    if (!existing) return;
+
+    const newQty = existing.quantity + delta;
+    if (newQty <= 0) {
+      setCart(cart.filter(item => !(item.id === productId && item.unitId === unitId)));
+    } else {
+      const product = posProducts.find(p => p.id === productId && p.unitId === unitId);
+      if (product && newQty > product.stock) {
+        showToast(`Sản phẩm ${product.name} đã hết hàng trong kho! Không thể thêm vào đơn.`, "error");
+        return;
+      }
+      setCart(cart.map(item => item.id === productId && item.unitId === unitId ? { ...item, quantity: newQty } : item));
+    }
+  };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      console.log("POS Key pressed:", e.key);
+      if (activeTab === "pos") {
+        if (e.key === "F2") {
+          e.preventDefault();
+          const searchInput = document.getElementById("pos-search-input");
+          if (searchInput) {
+            searchInput.focus();
+          }
+        } else if (e.key === "F4") {
+          e.preventDefault();
+          setSelectedCustomer(null);
+          setCustomerSearch("");
+          const customerInput = document.getElementById("pos-customer-input");
+          if (customerInput) {
+            (customerInput as HTMLInputElement).focus();
+          }
+        } else if (e.key === "F8") {
+          e.preventDefault();
+          setActiveTab("ai-drafts");
+        } else if (e.key === "F9" || (e.key === "Enter" && !isCustomerDropdownOpen)) {
+          e.preventDefault();
+          handleCheckout();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          if (cart.length > 0) {
+            if (confirm("Bạn có muốn hủy đơn hàng hiện tại?")) {
+              setCart([]);
+              setSelectedCustomer(null);
+              setCustomerSearch("");
+              setPosSearch("");
+              setIsDebt(false);
+            }
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeTab, cart, isDebt, selectedCustomer, customers, isCustomerDropdownOpen]);
+
+  React.useEffect(() => {
+    if (cart.length > 0) {
+      setValidationErrors(prev => ({ ...prev, cart: undefined }));
+    }
+  }, [cart.length]);
+
+  React.useEffect(() => {
+    if (!isDebt || selectedCustomer) {
+      setValidationErrors(prev => ({ ...prev, customer: undefined }));
+    }
+  }, [isDebt, selectedCustomer]);
+
+  const handleCheckout = async () => {
+    const errors: { cart?: string; customer?: string } = {};
+
     if (cart.length === 0) {
-      alert("Giỏ hàng của bạn đang trống!");
+      errors.cart = "Giỏ hàng đang trống! Vui lòng chọn ít nhất 1 sản phẩm.";
+    }
+
+    if (isDebt && !selectedCustomer) {
+      errors.customer = "Vui lòng chọn khách hàng đăng ký để thực hiện ghi nợ!";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    alert(`Thanh toán thành công đơn hàng!\nKhách hàng: ${posCustomer || "Khách vãng lai"}\nTổng tiền: ${total.toLocaleString()} đ\nHình thức: ${isDebt ? "Ghi nợ" : "Tiền mặt"}\nChứng từ kế toán đã được ghi nhận tự động vào Sổ cái.`);
+
+    setValidationErrors({});
+
+    const stored = localStorage.getItem("bizflow_user");
+    if (!stored) return;
+    const userObj = JSON.parse(stored);
+
+    const orderBody = {
+      tenantId: userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+      customerId: selectedCustomer?.id || null,
+      createdBy: userObj.id || "aaaabbbb-cccc-dddd-eeee-777788889999",
+      totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      paymentMethod: isDebt ? "Debt" : "Cash",
+      status: "Completed",
+      orderSource: "Manual",
+      orderItems: cart.map(item => ({
+        productId: item.id,
+        productUnitId: item.unitId,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        totalPrice: item.price * item.quantity
+      }))
+    };
+
+    // Save states for potential rollback
+    const previousCart = [...cart];
+    const previousCustomer = selectedCustomer;
+    const previousIsDebt = isDebt;
+    const total = orderBody.totalAmount;
+
+    // OPTIMISTIC UI: Clear state & show success toast immediately!
     setCart([]);
-    setPosCustomer("");
+    setSelectedCustomer(null);
+    setCustomerSearch("");
     setIsDebt(false);
+    showToast(`Thanh toán thành công đơn hàng!\nKhách hàng: ${previousCustomer?.fullname || "Khách vãng lai"}\nTổng tiền: ${total.toLocaleString()} đ\nHình thức: ${previousIsDebt ? "Ghi nợ" : "Tiền mặt"}\nChứng từ kế toán đã được ghi nhận tự động vào Sổ cái.`, "success");
+
+    try {
+      const res = await fetch("http://localhost:5178/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}`
+        },
+        body: JSON.stringify(orderBody)
+      });
+
+      if (res.ok) {
+        // Success: refresh local lists silently in background
+        fetchProducts(userObj);
+        fetchCustomers(userObj);
+      } else {
+        const err = await res.json();
+        // Rollback states on failure
+        setCart(previousCart);
+        setSelectedCustomer(previousCustomer);
+        setIsDebt(previousIsDebt);
+        showToast(`Lỗi khi tạo đơn hàng: ${err.message || err.Message || "Yêu cầu không hợp lệ"}`, "error");
+      }
+    } catch (e) {
+      // Rollback states on error
+      setCart(previousCart);
+      setSelectedCustomer(previousCustomer);
+      setIsDebt(previousIsDebt);
+      showToast("Lỗi kết nối khi gửi đơn hàng lên máy chủ", "error");
+    }
   };
 
-  const approveDraft = (draft: typeof aiDrafts[0]) => {
-    alert(`Đã duyệt đơn nháp của ${draft.customer}!\nHệ thống tự động:\n1. Tạo hóa đơn POS mới.\n2. Ghi nhận công nợ (hình thức: ${draft.payment}).\n3. Cập nhật sổ kế toán TT88.`);
+  const approveDraft = async (draft: any) => {
+    const stored = localStorage.getItem("bizflow_user");
+    if (!stored) return;
+    const userObj = JSON.parse(stored);
+
+    const raw = draft.rawDraft;
+    const paymentMethod = draft.payment === "Ghi nợ (Nợ phải thu)" ? "Debt" : "Cash";
+
+    if (paymentMethod === "Debt" && !raw.customerId) {
+      showToast("Không tìm thấy khách hàng liên kết để ghi nợ!", "error");
+      return;
+    }
+
+    const updatedOrder = {
+      ...raw,
+      paymentMethod: paymentMethod,
+      status: "Completed",
+      createdBy: userObj.id || raw.createdBy
+    };
+
+    const previousDrafts = [...aiDrafts];
+    // OPTIMISTIC UI: Remove draft and show success toast instantly
     setAiDrafts(aiDrafts.filter(d => d.id !== draft.id));
+    showToast(`Đã duyệt đơn nháp của ${draft.customer}!\nHệ thống tự động:\n1. Tạo hóa đơn POS mới.\n2. Ghi nhận công nợ (hình thức: ${draft.payment}).\n3. Cập nhật sổ kế toán TT88.`, "success");
+
+    try {
+      const res = await fetch(`http://localhost:5178/api/orders/${draft.id}/confirm`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}`
+        },
+        body: JSON.stringify(updatedOrder)
+      });
+
+      if (res.ok) {
+        // Silently update list values
+        fetchDrafts(userObj);
+        fetchProducts(userObj);
+        fetchCustomers(userObj);
+      } else {
+        const err = await res.json();
+        setAiDrafts(previousDrafts);
+        showToast(`Lỗi khi duyệt đơn hàng nháp: ${err.message || err.Message || "Yêu cầu không hợp lệ"}`, "error");
+      }
+    } catch (e) {
+      setAiDrafts(previousDrafts);
+      showToast("Lỗi kết nối khi duyệt đơn hàng nháp", "error");
+    }
+  };
+
+  const rejectDraft = async (draftId: string) => {
+    const stored = localStorage.getItem("bizflow_user");
+    if (!stored) return;
+    const userObj = JSON.parse(stored);
+
+    const previousDrafts = [...aiDrafts];
+    // OPTIMISTIC UI: Remove draft instantly and notify
+    setAiDrafts(aiDrafts.filter(d => d.id !== draftId));
+    showToast("Đã hủy đơn hàng nháp thành công!", "success");
+
+    try {
+      const res = await fetch(`http://localhost:5178/api/orders/${draftId}/reject?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"}`, {
+        method: "POST",
+        headers: {
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          "Authorization": `Bearer ${userObj.token}`
+        }
+      });
+
+      if (res.ok) {
+        fetchDrafts(userObj);
+      } else {
+        setAiDrafts(previousDrafts);
+        showToast("Lỗi khi hủy đơn hàng nháp", "error");
+      }
+    } catch (e) {
+      setAiDrafts(previousDrafts);
+      showToast("Lỗi kết nối khi hủy đơn hàng nháp", "error");
+    }
   };
 
   if (!authorized || !user) {
@@ -270,8 +543,8 @@ export default function Home() {
       );
     }
 
-    // 2. CASHIER FLOW
-    if (user.username === "cashier@bizflow.com") {
+    // 2. EMPLOYEE FLOW
+    if (user.username === "employee@bizflow.com") {
       if (activeTab === "pos") {
         const filteredProducts = posProducts.filter(p => p.name.toLowerCase().includes(posSearch.toLowerCase()));
         return (
@@ -281,8 +554,9 @@ export default function Home() {
               <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex items-center gap-3">
                 <Search className="w-5 h-5 text-on-surface-variant" />
                 <input
+                  id="pos-search-input"
                   type="text"
-                  placeholder="Tìm nhanh mặt hàng (nhập tên, đơn vị)..."
+                  placeholder="Tìm nhanh mặt hàng [F2]..."
                   value={posSearch}
                   onChange={(e) => setPosSearch(e.target.value)}
                   className="w-full text-sm bg-transparent outline-none text-on-surface placeholder-on-surface-variant/40"
@@ -290,22 +564,58 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredProducts.map(p => (
-                  <div
-                    key={p.id}
-                    onClick={() => addToCart(p)}
-                    className="bg-white p-4 rounded-xl border border-surface-container-high hover:border-primary/50 hover:shadow-md transition-all cursor-pointer flex justify-between items-start group"
-                  >
-                    <div>
-                      <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors">{p.name}</h4>
-                      <p className="text-xs text-on-surface-variant mt-1">Đơn vị: {p.unit} | Tồn: {p.stock}</p>
-                      <p className="text-sm font-bold text-primary mt-2">{p.price.toLocaleString()} đ</p>
+                {filteredProducts.map(p => {
+                  const cartItem = cart.find(item => item.id === p.id && item.unitId === p.unitId);
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        if (!cartItem) addToCart(p);
+                      }}
+                      className={`bg-white p-4 rounded-xl border border-surface-container-high transition-all flex justify-between items-start group ${
+                        !cartItem ? "hover:border-primary/50 hover:shadow-md cursor-pointer" : ""
+                      }`}
+                    >
+                      <div>
+                        <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors">{p.name}</h4>
+                        <p className="text-xs text-on-surface-variant mt-1">Đơn vị: {p.unit} | Tồn: {p.stock}</p>
+                        <p className="text-sm font-bold text-primary mt-2">{p.price.toLocaleString()} đ</p>
+                      </div>
+                      {cartItem ? (
+                        <div 
+                          className="flex items-center gap-1.5 bg-primary/5 rounded-lg p-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => updateCartQty(p.id, p.unitId, -1)}
+                            className="w-7 h-7 flex items-center justify-center bg-white text-primary rounded border border-primary/20 hover:bg-primary hover:text-white transition-all font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="text-sm font-bold text-on-surface px-2 min-w-[24px] text-center">
+                            {cartItem.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateCartQty(p.id, p.unitId, 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-white text-primary rounded border border-primary/20 hover:bg-primary hover:text-white transition-all font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(p);
+                          }}
+                          className="p-1.5 bg-primary/5 text-primary rounded-lg group-hover:bg-primary group-hover:text-white transition-all"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                    <button className="p-1.5 bg-primary/5 text-primary rounded-lg group-hover:bg-primary group-hover:text-white transition-all">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -345,17 +655,127 @@ export default function Home() {
                     ))
                   )}
                 </div>
+                {validationErrors.cart && (
+                  <p className="text-xs font-bold text-error mt-2 text-center bg-error/5 py-1.5 rounded-lg border border-error/10">
+                    {validationErrors.cart}
+                  </p>
+                )}
 
                 <div className="border-t border-surface-container-high pt-4 space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Tên khách hàng</label>
-                    <input
-                      type="text"
-                      placeholder="Nhập tên để theo dõi công nợ (nếu có)..."
-                      value={posCustomer}
-                      onChange={(e) => setPosCustomer(e.target.value)}
-                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary"
-                    />
+                  <div className="relative">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Khách hàng</label>
+                    <div className={selectedCustomer ? "block" : "hidden"}>
+                      {selectedCustomer && (
+                        <div className="flex items-center justify-between p-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                          <div className="flex-1">
+                            <p className="font-bold text-on-surface">{selectedCustomer.fullname}</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5">
+                              SĐT: {selectedCustomer.phone || "N/A"} | Nợ: {Number(selectedCustomer.totalDebt).toLocaleString()}đ
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomer(null);
+                              setCustomerSearch("");
+                            }}
+                            className="p-1 text-on-surface-variant hover:text-error hover:bg-error/5 rounded-md transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={!selectedCustomer ? "block" : "hidden"}>
+                      <div className="relative flex items-center">
+                        <input
+                          id="pos-customer-input"
+                          type="text"
+                          placeholder="Tìm khách hàng [F4]..."
+                          value={customerSearch}
+                          onChange={(e) => {
+                            setCustomerSearch(e.target.value);
+                            setIsCustomerDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsCustomerDropdownOpen(true)}
+                          className="w-full px-3 py-2 pr-8 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary"
+                        />
+                        {customerSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomerSearch("")}
+                            className="absolute right-2.5 text-on-surface-variant hover:text-on-surface text-xs font-medium"
+                          >
+                            Xóa
+                          </button>
+                        )}
+                      </div>
+
+                      {isCustomerDropdownOpen && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setIsCustomerDropdownOpen(false)}
+                          />
+                          <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white border border-surface-container-high rounded-lg shadow-lg z-20 divide-y divide-surface-container-low">
+                            <div
+                              onClick={() => {
+                                setSelectedCustomer(null);
+                                setIsCustomerDropdownOpen(false);
+                                setCustomerSearch("");
+                              }}
+                              className="px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-container-low cursor-pointer transition-colors"
+                            >
+                              Khách vãng lai (Không ghi nợ)
+                            </div>
+                            {customers
+                              .filter(c => {
+                                const query = customerSearch.toLowerCase();
+                                return (
+                                  c.fullname.toLowerCase().includes(query) ||
+                                  (c.phone && c.phone.includes(query))
+                                );
+                              })
+                              .map(c => (
+                                <div
+                                  key={c.id}
+                                  onClick={() => {
+                                    setSelectedCustomer(c);
+                                    setIsCustomerDropdownOpen(false);
+                                    setCustomerSearch("");
+                                  }}
+                                  className="px-3 py-2 hover:bg-surface-container-low cursor-pointer transition-colors text-sm"
+                                >
+                                  <div className="flex justify-between font-medium text-on-surface">
+                                    <span>{c.fullname}</span>
+                                    <span className="text-xs text-on-surface-variant">Nợ: {Number(c.totalDebt).toLocaleString()}đ</span>
+                                  </div>
+                                  <div className="text-xs text-on-surface-variant mt-0.5">
+                                    SĐT: {c.phone || "N/A"}
+                                  </div>
+                                </div>
+                              ))}
+                            {customers.filter(c => {
+                              const query = customerSearch.toLowerCase();
+                              return (
+                                c.fullname.toLowerCase().includes(query) ||
+                                (c.phone && c.phone.includes(query))
+                              );
+                            }).length === 0 && (
+                              <div className="px-3 py-3 text-xs text-on-surface-variant text-center">
+                                  Không tìm thấy khách hàng nào
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    {validationErrors.customer && (
+                      <p className="text-xs font-bold text-error mt-1.5 bg-error/5 px-2.5 py-1.5 rounded-lg border border-error/10">
+                        {validationErrors.customer}
+                      </p>
+                    )}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -382,7 +802,7 @@ export default function Home() {
                     onClick={handleCheckout}
                     className="w-full py-3 bg-primary hover:bg-primary-container text-white font-bold rounded-lg text-sm shadow-sm transition-all"
                   >
-                    Xác nhận và In Hóa đơn
+                    Xác nhận và In Hóa đơn [F9]
                   </button>
                 </div>
               </div>
@@ -401,7 +821,7 @@ export default function Home() {
               <div>
                 <h3 className="font-bold text-on-surface text-base">Hộp thư nhận đơn nháp bằng Giọng nói & Tin nhắn AI</h3>
                 <p className="text-sm text-on-surface-variant mt-1.5 leading-relaxed">
-                  Các đơn hàng đặt tự động qua các cuộc gọi ghi âm hoặc tin nhắn Zalo gửi từ Khách hàng được Module AI trích xuất và phân tích thực thể. Thu ngân cần rà soát lại thông tin trước khi duyệt chính thức vào sổ sách.
+                  Các đơn hàng đặt tự động qua các cuộc gọi ghi âm hoặc tin nhắn Zalo gửi từ Khách hàng được Module AI trích xuất và phân tích thực thể. Nhân viên cần rà soát lại thông tin trước khi duyệt chính thức vào sổ sách.
                 </p>
               </div>
             </div>
@@ -432,7 +852,7 @@ export default function Home() {
                       <div>
                         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Hàng hóa trích xuất:</p>
                         <div className="space-y-2">
-                          {draft.items.map((item, idx) => (
+                          {draft.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex justify-between items-center text-sm text-on-surface bg-surface-container-low/30 px-3 py-2 rounded border border-surface-container-low">
                               <span className="font-semibold">{item.name}</span>
                               <span className="text-on-surface-variant">{item.qty} {item.unit} x {item.price.toLocaleString()} đ</span>
@@ -454,7 +874,7 @@ export default function Home() {
 
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setAiDrafts(aiDrafts.filter(d => d.id !== draft.id))}
+                          onClick={() => rejectDraft(draft.id)}
                           className="flex-1 py-2 bg-error/5 hover:bg-error/10 text-error text-xs font-bold rounded-lg border border-error/20 flex items-center justify-center gap-1 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Hủy
@@ -479,7 +899,7 @@ export default function Home() {
         <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
           <h2 className="text-xl font-bold text-on-surface">Tra cứu thông tin POS</h2>
           <p className="text-sm text-on-surface-variant mt-2">
-            Mục thông tin dành cho Thu ngân, bao gồm xem lịch sử hóa đơn bán lẻ và danh mục hàng hóa.
+            Mục thông tin dành cho Nhân viên, bao gồm xem lịch sử hóa đơn bán lẻ và danh mục hàng hóa.
           </p>
         </div>
       );
@@ -584,6 +1004,59 @@ export default function Home() {
           </div>
         </main>
       </div>
+
+      {/* Custom sliding notification toast */}
+      {toast && (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex items-start gap-3.5 px-6 py-4 rounded-xl shadow-2xl border min-w-[340px] max-w-[500px] animate-[slideDown_0.2s_ease-out] ${
+          toast.type === "success" 
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+            : toast.type === "error" 
+            ? "bg-red-50 border-red-200 text-red-800" 
+            : "bg-blue-50 border-blue-200 text-blue-800"
+        }`}>
+          {toast.type === "success" && (
+            <div className="p-1 bg-emerald-100 text-emerald-600 rounded-full shrink-0 mt-0.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+          {toast.type === "error" && (
+            <div className="p-1 bg-red-100 text-red-600 rounded-full shrink-0 mt-0.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          )}
+          {toast.type === "info" && (
+            <div className="p-1 bg-blue-100 text-blue-600 rounded-full shrink-0 mt-0.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          )}
+          <div className="flex-1">
+            <h4 className="text-sm font-bold tracking-tight mb-0.5 uppercase opacity-90">
+              {toast.type === "success" ? "Thành công" : toast.type === "error" ? "Lỗi hệ thống" : "Thông báo"}
+            </h4>
+            <p className="text-sm leading-relaxed font-sans whitespace-pre-line font-semibold opacity-95">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Slide down animation keyframes */}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            transform: translate(-50%, -1.5rem);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

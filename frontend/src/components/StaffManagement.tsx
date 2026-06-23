@@ -64,13 +64,13 @@ export default function StaffManagement() {
       } else {
         // Fallback mock data if backend API is not yet available
         setStaffList([
-          { id: "1", fullname: "Trần Thị B", username: "cashier@bizflow.com", role: "Thu ngân", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
+          { id: "1", fullname: "Trần Thị B", username: "employee@bizflow.com", role: "Nhân viên", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
         ]);
       }
     } catch (e) {
       console.error(e);
       setStaffList([
-        { id: "1", fullname: "Trần Thị B", username: "cashier@bizflow.com", role: "Thu ngân", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
+        { id: "1", fullname: "Trần Thị B", username: "employee@bizflow.com", role: "Nhân viên", isActive: true, createdAt: "2026-06-11T00:00:00Z" }
       ]);
     }
     setLoading(false);
@@ -104,7 +104,7 @@ export default function StaffManagement() {
           username: newUsername,
           fullname: newFullname,
           password: newPassword,
-          role: "Cashier"
+          role: "Employee"
         })
       });
 
@@ -347,7 +347,7 @@ export default function StaffManagement() {
                 <input 
                   type="email" required
                   value={newUsername} onChange={e => setNewUsername(e.target.value)}
-                  className="w-full p-3 border border-outline-variant rounded-lg text-sm" placeholder="cashier@bizflow.com"
+                  className="w-full p-3 border border-outline-variant rounded-lg text-sm" placeholder="employee@bizflow.com"
                 />
               </div>
               <div>

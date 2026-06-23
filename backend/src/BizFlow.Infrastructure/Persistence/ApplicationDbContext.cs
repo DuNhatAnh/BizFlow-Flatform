@@ -99,6 +99,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("inventory_transactions");
             entity.Property(e => e.Type).HasConversion<string>();
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // 8. Customer configurations
@@ -116,6 +120,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.PaymentMethod).HasConversion<string>();
             entity.Property(e => e.Status).HasConversion<string>();
             entity.Property(e => e.OrderSource).HasConversion<string>();
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // 10. OrderItem configurations
@@ -261,7 +269,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             }
         );
 
-        // Seed default users (Admin, Owner, Cashier)
+        // Seed default users (Admin, Owner, Employee)
         modelBuilder.Entity<User>().HasData(
             new User
             {
@@ -289,10 +297,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             {
                 Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999"),
                 TenantId = storeTenantId,
-                Username = "cashier@bizflow.com",
-                PasswordHash = "cashier123",
+                Username = "employee@bizflow.com",
+                PasswordHash = "employee123",
                 Fullname = "Trần Thị B",
-                Role = UserRole.Cashier,
+                Role = UserRole.Employee,
                 IsActive = true,
                 CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
             }

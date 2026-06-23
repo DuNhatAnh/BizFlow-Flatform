@@ -13,7 +13,7 @@ public class OrderItem
     public decimal TotalPrice { get; set; } = 0.00m;
 
     // Navigation properties
-    public Order Order { get; set; } = null!;
-    public Product Product { get; set; } = null!;
+    public Order? Order { get; set; }
+    public Product? Product { get; set; }
     public ProductUnit? ProductUnit { get; set; }
 }

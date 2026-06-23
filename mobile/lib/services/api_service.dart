@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import '../models/models.dart';
 
 class ApiService {
-  static String baseUrl = 'http://10.0.2.2:5178'; // Android emulator-friendly host loopback IP
+  static String baseUrl = kIsWeb ? 'http://localhost:5178' : 'http://10.0.2.2:5178'; // Android emulator-friendly host loopback IP or localhost for Web
   final _storage = const FlutterSecureStorage();
 
 
@@ -40,6 +41,7 @@ class ApiService {
 
         await _storage.write(key: 'access_token', value: data['accessToken']);
         await _storage.write(key: 'tenant_id', value: data['tenantId']);
+        await _storage.write(key: 'tenant_name', value: data['tenantName'] ?? '');
         await _storage.write(key: 'user_id', value: data['userId']);
         await _storage.write(key: 'fullname', value: data['fullname']);
         await _storage.write(key: 'role', value: data['role']);
@@ -55,6 +57,7 @@ class ApiService {
   Future<void> logout() async {
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'tenant_id');
+    await _storage.delete(key: 'tenant_name');
     await _storage.delete(key: 'user_id');
     await _storage.delete(key: 'fullname');
     await _storage.delete(key: 'role');

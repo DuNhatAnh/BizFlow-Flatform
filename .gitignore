@@ -82,3 +82,9 @@ redisdata/
 
 # Crash logs
 flutter_*.log
+
+# Project log files
+backend/backend-log.txt
+**/backend-log.txt
+*.log
+

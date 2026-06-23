@@ -58,8 +58,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final provider = Provider.of<PosProvider>(context);
     final summary = provider.shiftSummary;
 
-    final cashierName = provider.currentUser?.fullname ?? 'Nhân viên';
-    final role = provider.currentUser?.role ?? 'Cashier';
+    final employeeName = provider.currentUser?.fullname ?? 'Nhân viên';
+    final role = provider.currentUser?.role ?? 'Employee';
     final shiftStart = summary != null
         ? "${summary.shiftStart.toLocal().hour}:${summary.shiftStart.toLocal().minute.toString().padLeft(2, '0')} - ${summary.shiftStart.toLocal().day}/${summary.shiftStart.toLocal().month}/${summary.shiftStart.toLocal().year}"
         : "-";
@@ -78,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Cashier & Shift Info Card
+                  // 1. Employee & Shift Info Card
                   Card(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -101,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    cashierName,
+                                    employeeName,
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF00685F)),
                                   ),
                                   Text(

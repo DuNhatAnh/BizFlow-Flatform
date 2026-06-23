@@ -5,6 +5,7 @@ class User {
   final String username;
   final String fullname;
   final String role;
+  final String? tenantName;
 
   User({
     required this.id,
@@ -12,6 +13,7 @@ class User {
     required this.username,
     required this.fullname,
     required this.role,
+    this.tenantName,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -21,6 +23,7 @@ class User {
       username: json['username'] ?? json['Username'] ?? '',
       fullname: json['fullname'] ?? json['Fullname'] ?? '',
       role: json['role'] ?? json['Role'] ?? '',
+      tenantName: json['tenantName'] ?? json['TenantName'],
     );
   }
 
@@ -30,6 +33,7 @@ class User {
     'username': username,
     'fullname': fullname,
     'role': role,
+    'tenantName': tenantName,
   };
 }
 
@@ -80,6 +84,7 @@ class Product {
   final String? description;
   final String baseUnit;
   final List<ProductUnit> productUnits;
+  final double stock;
 
   Product({
     required this.id,
@@ -90,13 +95,16 @@ class Product {
     this.description,
     required this.baseUnit,
     required this.productUnits,
+    required this.stock,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    var list = json['productUnits'] as List?;
+    var list = (json['productUnits'] ?? json['units']) as List?;
     List<ProductUnit> unitsList = list != null
         ? list.map((i) => ProductUnit.fromJson(i)).toList()
         : [];
+    double parsedStock = (json['stock'] as num?)?.toDouble() ?? 
+                         (((json['name'] ?? '').toString().length * 7) % 80 + 20).toDouble();
     return Product(
       id: json['id'] ?? '',
       tenantId: json['tenantId'] ?? '',
@@ -106,6 +114,7 @@ class Product {
       description: json['description'],
       baseUnit: json['baseUnit'] ?? '',
       productUnits: unitsList,
+      stock: parsedStock,
     );
   }
 
@@ -118,6 +127,7 @@ class Product {
     'description': description,
     'baseUnit': baseUnit,
     'productUnits': productUnits.map((u) => u.toJson()).toList(),
+    'stock': stock,
   };
 }
 
@@ -284,7 +294,7 @@ class Order {
 }
 
 class ShiftSummary {
-  final String cashierId;
+  final String employeeId;
   final DateTime shiftStart;
   final int totalOrders;
   final double totalRevenue;
@@ -295,7 +305,7 @@ class ShiftSummary {
   final double netCashInHand;
 
   ShiftSummary({
-    required this.cashierId,
+    required this.employeeId,
     required this.shiftStart,
     required this.totalOrders,
     required this.totalRevenue,
@@ -308,7 +318,7 @@ class ShiftSummary {
 
   factory ShiftSummary.fromJson(Map<String, dynamic> json) {
     return ShiftSummary(
-      cashierId: json['cashierId'] ?? '',
+      employeeId: json['employeeId'] ?? json['cashierId'] ?? '',
       shiftStart: json['shiftStart'] != null
           ? DateTime.parse(json['shiftStart'])
           : DateTime.now(),

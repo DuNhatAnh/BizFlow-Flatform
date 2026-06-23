@@ -9,7 +9,7 @@ Tài liệu này đặc tả chi tiết các yêu cầu chức năng, phi chức
 
 Hệ thống được thiết kế theo kiến trúc Multi-Tenant, phân tách dữ liệu độc lập giữa các hộ kinh doanh (Tenants). Người dùng được phân chia thành 3 nhóm quyền chính:
 
-### 1.1. Nhân viên bán hàng (Cashier / Employee)
+### 1.1. Nhân viên bán hàng (Employee)
 Là người trực tiếp thao tác tại quầy thu ngân. Giao diện tối ưu cho tốc độ và tính chính xác cao.
 *   **Đăng nhập hệ thống:** Xác thực tài khoản do Chủ cửa hàng cung cấp trong phạm vi Tenant của mình.
 *   **Tạo đơn hàng tại quầy (POS):** Lọc sản phẩm nhanh bằng mã vạch (Barcode), tên viết tắt hoặc phím tắt. Chọn số lượng, đơn vị tính quy đổi (Lon/Lốc/Thùng) và gán khách hàng (nếu có).
