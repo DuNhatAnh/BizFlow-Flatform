@@ -109,6 +109,18 @@ export default function POSCart({
           </span>
         </div>
 
+        {isDebt && selectedCustomer && (selectedCustomer.totalDebt + totalAmount) > (selectedCustomer.debtLimit !== undefined ? selectedCustomer.debtLimit : 10000000) && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-600 animate-in fade-in duration-200">
+            <span className="text-sm shrink-0">⚠️</span>
+            <div className="space-y-0.5">
+              <p className="text-[11px] font-black uppercase tracking-wider">Cảnh báo: Vượt hạn mức nợ!</p>
+              <p className="text-[10px] text-red-500 font-medium">
+                Nợ cũ: {selectedCustomer.totalDebt.toLocaleString()}đ. Hóa đơn mới: {totalAmount.toLocaleString()}đ. Tổng nợ sẽ vượt hạn mức cho phép ({(selectedCustomer.debtLimit || 10000000).toLocaleString()}đ).
+              </p>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleCheckout}
           className="w-full py-3 bg-primary hover:bg-primary-container text-white font-bold rounded-lg text-sm shadow-sm transition-all"

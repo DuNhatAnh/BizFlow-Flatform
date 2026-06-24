@@ -243,6 +243,26 @@ public class OrdersController : ApiControllerBase
             return StatusCode(500, new { Message = "Lỗi hệ thống khi gửi báo cáo lỗi AI", Detail = ex.Message });
         }
     }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Order>> GetOrderById(Guid id, [FromQuery] Guid tenantId)
+    {
+        var order = await _context.Orders
+            .Where(o => o.Id == id && o.TenantId == tenantId)
+            .Include(o => o.Customer)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Product)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.ProductUnit)
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+            return NotFound(new { Message = "Không tìm thấy đơn hàng" });
+        }
+
+        return Ok(order);
+    }
 }
 
 public class ReturnOrderRequest

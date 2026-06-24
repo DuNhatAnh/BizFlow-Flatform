@@ -10,6 +10,7 @@ public class Customer
     public string Fullname { get; set; } = string.Empty;
     public string? Phone { get; set; }
     public decimal TotalDebt { get; set; } = 0.00m;
+    public decimal DebtLimit { get; set; } = 10000000.00m;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

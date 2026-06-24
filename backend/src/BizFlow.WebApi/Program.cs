@@ -191,6 +191,9 @@ using (var scope = app.Services.CreateScope())
         // Add Category Multi-level Fields
         SafeSql("ALTER TABLE categories ADD COLUMN IF NOT EXISTS \"ParentId\" integer;");
 
+        // Add Customer Debt Limit Field
+        SafeSql("ALTER TABLE customers ADD COLUMN IF NOT EXISTS \"DebtLimit\" numeric(15,2) NOT NULL DEFAULT 10000000;");
+
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
             ""Id"" uuid NOT NULL,
