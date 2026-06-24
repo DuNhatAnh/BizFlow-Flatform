@@ -60,6 +60,14 @@ public class OrdersController : ApiControllerBase
         try
         {
             var createdOrder = await _orderService.CreateOrderAsync(order, CancellationToken.None);
+            try
+            {
+                await _notificationService.SendToTenantAsync(createdOrder.TenantId, "STOCK_CHANGED");
+            }
+            catch
+            {
+                // Soft fail to avoid blocking order creation if SignalR Hub is not running
+            }
             return Ok(createdOrder);
         }
         catch (ArgumentException ex)
@@ -78,6 +86,14 @@ public class OrdersController : ApiControllerBase
         try
         {
             var cancelledOrder = await _orderService.CancelOrderAsync(id, tenantId, CancellationToken.None);
+            try
+            {
+                await _notificationService.SendToTenantAsync(tenantId, "STOCK_CHANGED");
+            }
+            catch
+            {
+                // Soft fail
+            }
             return Ok(new { Message = "Hủy đơn hàng thành công", Order = cancelledOrder });
         }
         catch (Exception ex)
@@ -127,6 +143,14 @@ public class OrdersController : ApiControllerBase
         try
         {
             var confirmedOrder = await _orderService.ConfirmDraftOrderAsync(id, updatedOrder, CancellationToken.None);
+            try
+            {
+                await _notificationService.SendToTenantAsync(confirmedOrder.TenantId, "STOCK_CHANGED");
+            }
+            catch
+            {
+                // Soft fail
+            }
             return Ok(confirmedOrder);
         }
         catch (ArgumentException ex)
@@ -162,6 +186,14 @@ public class OrdersController : ApiControllerBase
         try
         {
             var returnedOrder = await _orderService.ReturnOrderAsync(id, tenantId, request.Items, request.PerformedBy, CancellationToken.None);
+            try
+            {
+                await _notificationService.SendToTenantAsync(tenantId, "STOCK_CHANGED");
+            }
+            catch
+            {
+                // Soft fail
+            }
             return Ok(new { Message = "Đổi trả hàng thành công", Order = returnedOrder });
         }
         catch (InvalidOperationException ex)

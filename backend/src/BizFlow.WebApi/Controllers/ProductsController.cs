@@ -9,10 +9,12 @@ namespace BizFlow.WebApi.Controllers;
 public class ProductsController : ApiControllerBase
 {
     private readonly IProductService _productService;
+    private readonly INotificationService _notificationService;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, INotificationService notificationService)
     {
         _productService = productService;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
@@ -48,6 +50,14 @@ public class ProductsController : ApiControllerBase
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
 
         var product = await _productService.CreateAsync(tenantId, request);
+        try
+        {
+            await _notificationService.SendToTenantAsync(tenantId, "STOCK_CHANGED");
+        }
+        catch
+        {
+            // Soft fail to avoid blocking if SignalR is not running
+        }
         return CreatedAtAction(nameof(GetProduct), new { id = product.Id, tenantId }, product);
     }
 
@@ -70,6 +80,15 @@ public class ProductsController : ApiControllerBase
         var product = await _productService.UpdateAsync(tenantId, id, request);
         if (product == null) return NotFound();
 
+        try
+        {
+            await _notificationService.SendToTenantAsync(tenantId, "STOCK_CHANGED");
+        }
+        catch
+        {
+            // Soft fail
+        }
+
         return Ok(product);
     }
 
@@ -80,6 +99,15 @@ public class ProductsController : ApiControllerBase
 
         var result = await _productService.DeleteAsync(tenantId, id);
         if (!result) return NotFound();
+
+        try
+        {
+            await _notificationService.SendToTenantAsync(tenantId, "STOCK_CHANGED");
+        }
+        catch
+        {
+            // Soft fail
+        }
 
         return NoContent();
     }

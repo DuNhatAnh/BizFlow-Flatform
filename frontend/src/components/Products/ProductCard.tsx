@@ -1,0 +1,136 @@
+"use client";
+
+import React from "react";
+import { ShoppingCart } from "lucide-react";
+import StockBadge from "./StockBadge";
+import { parseDescriptionMetadata } from "../../utils/metadata";
+
+interface ProductCardProps {
+  product: any;
+  categories: any[];
+  isReadOnly: boolean;
+  onEdit: (product: any) => void;
+  onDelete: (id: string) => void;
+  onAddToCart: (mappedProduct: any) => void;
+  onSelectCalcProduct: (product: any) => void;
+  showToast: (msg: string, type?: "success" | "error") => void;
+}
+
+export default function ProductCard({
+  product,
+  categories,
+  isReadOnly,
+  onEdit,
+  onDelete,
+  onAddToCart,
+  onSelectCalcProduct,
+  showToast
+}: ProductCardProps) {
+  const catName = categories.find((c: any) => c.id === product.categoryId)?.name || "Không xác định";
+  const defaultUnit = product.units?.find((u: any) => u.isDefault) || product.units?.[0];
+
+  const getMockLocation = (categoryName: string) => {
+    if (categoryName.includes("Sắt") || categoryName.includes("Thép")) return "Bãi chứa số 1";
+    if (categoryName.includes("Xi măng")) return "Kho A - Kệ 2";
+    if (categoryName.includes("Gạch")) return "Khu bãi ngoài trời";
+    if (categoryName.includes("Cát") || categoryName.includes("Đá")) return "Bãi xúc cát/đá";
+    if (categoryName.includes("Sơn") || categoryName.includes("Hóa chất")) return "Khu Kệ B";
+    return "Kho tổng - Kệ C";
+  };
+  
+  const defaultLocation = getMockLocation(catName);
+  const { minStock, location: customLocation } = parseDescriptionMetadata(product.description);
+  const displayLocation = customLocation || defaultLocation;
+  const minStockLimit = minStock !== null ? minStock : 10;
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex justify-between items-start">
+        <div>
+          <div 
+            className="font-bold text-on-surface text-base hover:text-primary cursor-pointer select-none"
+            onClick={() => onSelectCalcProduct(product)}
+            title="Click để tính quy đổi"
+          >
+            {product.name}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-[10px] text-on-surface-variant font-mono bg-surface-container-high px-1.5 py-0.5 rounded">
+              {product.code || "N/A"}
+            </span>
+            <span className="text-[10px] text-primary bg-primary/5 px-1.5 py-0.5 rounded">
+              📍 {displayLocation}
+            </span>
+          </div>
+        </div>
+        <div>
+          <StockBadge stockQuantity={product.stockQuantity} baseUnit={product.baseUnit} minStockLimit={minStockLimit} />
+        </div>
+      </div>
+
+      <div className="bg-surface-container-low p-2.5 rounded-lg border border-surface-container-high text-xs space-y-1.5">
+        <div className="font-semibold text-on-surface-variant uppercase text-[9px] tracking-wider border-b pb-1 border-surface-container-high">
+          Bảng giá quy đổi
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {product.units.map((u: any, idx: number) => (
+            <div key={u.id ?? `u-${idx}`} className="flex flex-col">
+              <span className="font-medium text-on-surface flex items-center gap-1">
+                {u.unitName} {u.isDefault && <span className="text-[8px] bg-primary text-white px-0.5 rounded font-bold">Mặc định</span>}
+              </span>
+              <span className="text-secondary font-bold">{u.price.toLocaleString()}đ</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={() => onSelectCalcProduct(product)}
+          className="px-3 py-1.5 border border-outline-variant hover:bg-surface-container-low rounded-lg text-xs font-semibold text-on-surface"
+        >
+          Tính quy đổi
+        </button>
+        {isReadOnly ? (
+          <button
+            onClick={() => {
+              const mappedProduct = {
+                id: product.id,
+                name: product.name,
+                price: defaultUnit ? defaultUnit.price : 0,
+                unit: defaultUnit ? defaultUnit.unitName : product.baseUnit,
+                unitId: defaultUnit ? defaultUnit.id : null,
+                stock: product.stockQuantity
+              };
+              onAddToCart(mappedProduct);
+              showToast(`Đã thêm 1 ${mappedProduct.unit} ${product.name} vào giỏ POS!`);
+            }}
+            disabled={product.stockQuantity <= 0}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm text-white ${
+              product.stockQuantity <= 0
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-primary hover:bg-primary-container"
+            }`}
+          >
+            <ShoppingCart className="w-3.5 h-3.5" /> Bán hàng
+          </button>
+        ) : (
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => onEdit(product)}
+              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-lg"
+            >
+              Sửa
+            </button>
+            <button
+              onClick={() => onDelete(product.id)}
+              className="px-3 py-1.5 bg-error/10 hover:bg-error/20 text-error text-xs font-semibold rounded-lg"
+            >
+              Xóa
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

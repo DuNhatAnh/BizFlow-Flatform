@@ -29,6 +29,7 @@ export default function Home() {
     tenantId?: string;
     token?: string;
   } | null>(null);
+  const [stockUpdateTrigger, setStockUpdateTrigger] = useState(0);
 
   // Employee State
   const [cart, setCart] = useState<
@@ -173,29 +174,39 @@ export default function Home() {
 
   useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) {
+    if (!stored || stored === "undefined") {
       window.location.href = "/login";
     } else {
-      const parsedUser = JSON.parse(stored);
-      setUser(parsedUser);
-      setAuthorized(true);
-
-      const savedTab = localStorage.getItem("bizflow_active_tab");
-      if (savedTab) {
-        setActiveTab(savedTab);
-      } else {
-        if (parsedUser.username === "employee@bizflow.com") {
-          setActiveTab("pos");
-        } else if (parsedUser.username === "admin@bizflow.com") {
-          setActiveTab("overview");
-        } else {
-          setActiveTab("overview");
+      try {
+        const parsedUser = JSON.parse(stored);
+        if (!parsedUser) {
+          window.location.href = "/login";
+          return;
         }
-      }
+        setUser(parsedUser);
+        setAuthorized(true);
 
-      fetchProducts(parsedUser);
-      fetchCustomers(parsedUser);
-      fetchDrafts(parsedUser);
+        const savedTab = localStorage.getItem("bizflow_active_tab");
+        if (savedTab) {
+          setActiveTab(savedTab);
+        } else {
+          if (parsedUser.username === "employee@bizflow.com") {
+            setActiveTab("pos");
+          } else if (parsedUser.username === "admin@bizflow.com") {
+            setActiveTab("overview");
+          } else {
+            setActiveTab("overview");
+          }
+        }
+
+        fetchProducts(parsedUser);
+        fetchCustomers(parsedUser);
+        fetchDrafts(parsedUser);
+      } catch (e) {
+        console.error("Error parsing user storage", e);
+        localStorage.removeItem("bizflow_user");
+        window.location.href = "/login";
+      }
     }
   }, []);
 
@@ -229,6 +240,9 @@ export default function Home() {
         } catch (err) {
           console.error("Audio play error:", err);
         }
+      } else if (message === "STOCK_CHANGED") {
+        fetchProducts(user);
+        setStockUpdateTrigger((prev) => prev + 1);
       }
     });
 
@@ -706,7 +720,14 @@ export default function Home() {
       }
 
       if (activeTab === "products") {
-        return <ProductManagement />;
+        return (
+          <ProductManagement
+            isReadOnly={user?.role === "Employee"}
+            user={user}
+            onAddToCart={addToCart}
+            stockUpdateTrigger={stockUpdateTrigger}
+          />
+        );
       }
 
       return (
@@ -725,7 +746,14 @@ export default function Home() {
     }
 
     if (activeTab === "products") {
-      return <ProductManagement />;
+      return (
+        <ProductManagement
+          isReadOnly={user?.role === "Employee"}
+          user={user}
+          onAddToCart={addToCart}
+          stockUpdateTrigger={stockUpdateTrigger}
+        />
+      );
     }
 
     if (activeTab === "inventory") {
