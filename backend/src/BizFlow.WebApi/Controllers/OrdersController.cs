@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
+using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
 
@@ -10,11 +11,13 @@ public class OrdersController : ApiControllerBase
 {
     private readonly IApplicationDbContext _context;
     private readonly IOrderService _orderService;
+    private readonly INotificationService _notificationService;
 
-    public OrdersController(IApplicationDbContext context, IOrderService orderService)
+    public OrdersController(IApplicationDbContext context, IOrderService orderService, INotificationService notificationService)
     {
         _context = context;
         _orderService = orderService;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
@@ -106,6 +109,15 @@ public class OrdersController : ApiControllerBase
         _context.Orders.Add(order);
         await _context.SaveChangesAsync(CancellationToken.None);
 
+        try
+        {
+            await _notificationService.SendToTenantAsync(order.TenantId, "NEW_DRAFT_ORDER");
+        }
+        catch
+        {
+            // Soft fail to avoid blocking order creation if SignalR Hub is not running
+        }
+
         return Ok(order);
     }
 
@@ -161,11 +173,58 @@ public class OrdersController : ApiControllerBase
             return StatusCode(500, new { Message = "Lỗi hệ thống khi thực hiện đổi trả hàng", Detail = ex.Message });
         }
     }
+
+    [HttpPost("{id}/report-ai-error")]
+    public async Task<IActionResult> ReportAIError(Guid id, [FromQuery] Guid tenantId, [FromBody] AIErrorRequest request)
+    {
+        try
+        {
+            var userId = request.PerformedBy;
+            if (userId == Guid.Empty)
+            {
+                var tenantUser = await _context.Users.FirstOrDefaultAsync(u => u.TenantId == tenantId);
+                userId = tenantUser?.Id ?? Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999");
+            }
+
+            var auditLog = new AuditLog
+            {
+                TenantId = tenantId,
+                UserId = userId,
+                Action = "AI_TRANSLATION_ERROR",
+                EntityName = "Order",
+                EntityId = id.ToString(),
+                Details = $"Báo lỗi AI dịch sai.\n" +
+                          $"- Câu lệnh thô gốc: \"{request.RawTranscript}\"\n" +
+                          $"- Phân loại lỗi: {request.ErrorType}\n" +
+                          $"- Chi tiết lỗi/Ghi chú: {request.FeedbackMessage}\n" +
+                          $"- Giỏ hàng sau khi nhân viên đã sửa đổi: {request.CorrectedCartSummary}",
+                Timestamp = DateTime.UtcNow
+            };
+
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync(CancellationToken.None);
+
+            return Ok(new { Message = "Đã ghi nhận phản hồi lỗi AI thành công" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "Lỗi hệ thống khi gửi báo cáo lỗi AI", Detail = ex.Message });
+        }
+    }
 }
 
 public class ReturnOrderRequest
 {
     public List<ReturnOrderItemDto> Items { get; set; } = new();
     public Guid PerformedBy { get; set; }
+}
+
+public class AIErrorRequest
+{
+    public Guid PerformedBy { get; set; }
+    public string RawTranscript { get; set; } = string.Empty;
+    public string ErrorType { get; set; } = string.Empty;
+    public string FeedbackMessage { get; set; } = string.Empty;
+    public string CorrectedCartSummary { get; set; } = string.Empty;
 }
 

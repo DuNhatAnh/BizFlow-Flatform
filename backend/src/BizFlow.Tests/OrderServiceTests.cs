@@ -14,6 +14,22 @@ namespace BizFlow.Tests;
 
 public class OrderServiceTests
 {
+    private class MockNotificationService : BizFlow.Application.Interfaces.INotificationService
+    {
+        public Task SendToTenantAsync(Guid tenantId, string message) => Task.CompletedTask;
+        public Task SendToUserAsync(Guid userId, string message) => Task.CompletedTask;
+    }
+
+    private class MockInventoryService : BizFlow.Application.Interfaces.IInventoryService
+    {
+        public Task<BizFlow.Application.DTOs.Inventory.ReceiptDto> CreateReceiptAsync(Guid tenantId, BizFlow.Application.DTOs.Inventory.CreateReceiptRequest request, Guid? userId = null) => Task.FromResult(new BizFlow.Application.DTOs.Inventory.ReceiptDto());
+        public Task CancelReceiptAsync(Guid tenantId, Guid receiptId, BizFlow.Application.DTOs.Inventory.CancelReceiptRequest request, Guid? userId = null) => Task.CompletedTask;
+        public Task<BizFlow.Application.DTOs.Common.PagedResult<BizFlow.Application.DTOs.Inventory.ReceiptDto>> GetReceiptsAsync(Guid tenantId, int type = -1, int pageNumber = 1, int pageSize = 10) => Task.FromResult(new BizFlow.Application.DTOs.Common.PagedResult<BizFlow.Application.DTOs.Inventory.ReceiptDto>());
+        public Task<BizFlow.Application.DTOs.Inventory.S2LedgerReportDto> GetS2LedgerAsync(Guid tenantId, Guid productId, DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10) => Task.FromResult(new BizFlow.Application.DTOs.Inventory.S2LedgerReportDto());
+        public Task RecordExportForOrderAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task RecordImportForReturnAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
     // A subclass of ApplicationDbContext to simulate database failures during SaveChangesAsync
     private class TestDbContext : ApplicationDbContext
     {
@@ -79,7 +95,7 @@ public class OrderServiceTests
         // 3. Seed Category
         var category = new Category
         {
-            Id = 1,
+            Id = 99,
             TenantId = tenantId,
             Name = "Nước giải khát"
         };
@@ -93,7 +109,8 @@ public class OrderServiceTests
             CategoryId = category.Id,
             Code = "8934588012111",
             Name = "Coca-Cola",
-            BaseUnit = "Lon"
+            BaseUnit = "Lon",
+            StockQuantity = 100
         };
         context.Products.Add(product);
 
@@ -146,7 +163,7 @@ public class OrderServiceTests
 
             await SeedDataAsync(context, tenantId, productId, unitId, customerId);
 
-            var orderService = new OrderService(context);
+            var orderService = new OrderService(context, new MockNotificationService(), new MockInventoryService());
 
             var order = new Order
             {
@@ -201,7 +218,7 @@ public class OrderServiceTests
 
             await SeedDataAsync(context, tenantId, productId, unitId, customerId);
 
-            var orderService = new OrderService(context);
+            var orderService = new OrderService(context, new MockNotificationService(), new MockInventoryService());
 
             var order = new Order
             {
@@ -247,7 +264,7 @@ public class OrderServiceTests
             // Turn on failure toggle
             context.ThrowOnCustomerUpdate = true;
 
-            var orderService = new OrderService(context);
+            var orderService = new OrderService(context, new MockNotificationService(), new MockInventoryService());
 
             var order = new Order
             {
@@ -314,7 +331,7 @@ public class OrderServiceTests
 
             await SeedDataAsync(context, tenantId, productId, unitId, customerId);
 
-            var orderService = new OrderService(context);
+            var orderService = new OrderService(context, new MockNotificationService(), new MockInventoryService());
 
             // E2E Check step 1: Place a normal Cash order
             var cashOrder = new Order

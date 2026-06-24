@@ -24,9 +24,10 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  draftCount?: number;
 }
 
-export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraftCount }: SidebarProps) {
   const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
   const [imageError, setImageError] = React.useState(false);
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
@@ -41,6 +42,10 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   }, []);
 
   React.useEffect(() => {
+    if (propDraftCount !== undefined) {
+      setDraftCount(propDraftCount);
+      return;
+    }
     if (!user || user.role !== "Employee") return;
 
     const fetchCount = async () => {
@@ -66,7 +71,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     fetchCount();
     const interval = setInterval(fetchCount, 5000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, propDraftCount]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);

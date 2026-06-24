@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import * as signalR from "@microsoft/signalr";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import ProductManagement from "@/components/ProductManagement";
@@ -67,10 +68,13 @@ export default function Home() {
 
   const [aiDrafts, setAiDrafts] = useState<any[]>([]);
   const [posProducts, setPosProducts] = useState<any[]>([]);
+  const [rawProducts, setRawProducts] = useState<any[]>([]);
 
   const fetchProducts = async (userObj: any) => {
     try {
-      const res = await fetch("http://localhost:5178/api/products", {
+      // Fetch with a larger pageSize (e.g. 1000) so POS search and list works for all products,
+      // and map data.items since it's a PagedResult structure.
+      const res = await fetch("http://localhost:5178/api/products?pageSize=1000", {
         headers: {
           "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
           Authorization: `Bearer ${userObj.token}`
@@ -78,8 +82,10 @@ export default function Home() {
       });
       if (res.ok) {
         const data = await res.json();
+        const items = data.items || [];
+        setRawProducts(items);
         // Map backend ProductDto to POS format
-        const mapped = data.map((p: any) => {
+        const mapped = items.map((p: any) => {
           const defaultUnit =
             p.units?.find((u: any) => u.isDefault) || p.units?.[0];
           return {
@@ -190,14 +196,46 @@ export default function Home() {
       fetchProducts(parsedUser);
       fetchCustomers(parsedUser);
       fetchDrafts(parsedUser);
-
-      const interval = setInterval(() => {
-        fetchDrafts(parsedUser);
-      }, 5000);
-
-      return () => clearInterval(interval);
     }
   }, []);
+
+  useEffect(() => {
+    if (!authorized || !user || !user.token) return;
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5178/hubs/notifications")
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+      .then(() => {
+        console.log("Connected to SignalR Hub");
+        if (user.tenantId) {
+          connection.invoke("JoinTenantGroup", user.tenantId)
+            .catch(err => console.error("Failed to join tenant group:", err));
+        }
+      })
+      .catch(err => console.error("SignalR Connection failed: ", err));
+
+    connection.on("ReceiveNotification", (message: string) => {
+      console.log("SignalR notification: ", message);
+      if (message === "NEW_DRAFT_ORDER") {
+        fetchDrafts(user);
+        showToast("Có đơn hàng nháp AI mới cần duyệt!", "info");
+        try {
+          const audio = new Audio("/notification.wav");
+          audio.volume = 0.6;
+          audio.play().catch(e => console.log("Autoplay audio blocked by browser:", e));
+        } catch (err) {
+          console.error("Audio play error:", err);
+        }
+      }
+    });
+
+    return () => {
+      connection.stop().then(() => console.log("SignalR connection stopped"));
+    };
+  }, [authorized, user?.id]);
 
   useEffect(() => {
     if (authorized) {
@@ -647,6 +685,9 @@ export default function Home() {
             aiDrafts={aiDrafts}
             approveDraft={approveDraft}
             rejectDraft={rejectDraft}
+            rawProducts={rawProducts}
+            customers={customers}
+            setAiDrafts={setAiDrafts}
           />
         );
       }
@@ -753,7 +794,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} draftCount={aiDrafts.length} />
 
       {/* Main dashboard body */}
       <div className="pl-[260px] min-h-screen flex flex-col">
