@@ -27,6 +27,30 @@ class ApiService {
     return headers;
   }
 
+  Future<String?> fetchTenantName(String tenantId) async {
+    try {
+      final headers = await _getHeaders(tenantId);
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/tenants'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        final tenant = data.firstWhere(
+          (t) => t['id'] == tenantId,
+          orElse: () => null,
+        );
+        if (tenant != null) {
+          return tenant['name'];
+        }
+      }
+    } catch (e) {
+      // Error
+    }
+    return null;
+  }
+
   Future<User?> login(String username, String password) async {
     try {
       final response = await http.post(
@@ -37,14 +61,39 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final user = User.fromJson(data);
+        final userData = data['user'];
+        final token = data['token'];
+        
+        if (userData == null || token == null) {
+          return null;
+        }
 
-        await _storage.write(key: 'access_token', value: data['accessToken']);
-        await _storage.write(key: 'tenant_id', value: data['tenantId']);
-        await _storage.write(key: 'tenant_name', value: data['tenantName'] ?? '');
-        await _storage.write(key: 'user_id', value: data['userId']);
-        await _storage.write(key: 'fullname', value: data['fullname']);
-        await _storage.write(key: 'role', value: data['role']);
+        // Save token and tenantId temporarily to fetch tenant name
+        await _storage.write(key: 'access_token', value: token);
+        await _storage.write(key: 'tenant_id', value: userData['tenantId'] ?? '');
+
+        // Fetch tenant name from the backend
+        String tenantName = '';
+        try {
+          final tName = await fetchTenantName(userData['tenantId'] ?? '');
+          if (tName != null) {
+            tenantName = tName;
+          }
+        } catch (_) {}
+
+        final user = User(
+          id: userData['id'] ?? '',
+          tenantId: userData['tenantId'] ?? '',
+          username: userData['username'] ?? '',
+          fullname: userData['fullname'] ?? '',
+          role: userData['role'] ?? '',
+          tenantName: tenantName,
+        );
+
+        await _storage.write(key: 'tenant_name', value: tenantName);
+        await _storage.write(key: 'user_id', value: user.id);
+        await _storage.write(key: 'fullname', value: user.fullname);
+        await _storage.write(key: 'role', value: user.role);
 
         return user;
       }
@@ -84,17 +133,26 @@ class ApiService {
   Future<List<Product>> fetchProducts(String tenantId) async {
     try {
       final headers = await _getHeaders(tenantId);
+      final url = '$baseUrl/api/products?tenantId=$tenantId&pageSize=1000';
+      debugPrint("Calling fetchProducts API: $url");
       final response = await http.get(
-        Uri.parse('$baseUrl/api/products?tenantId=$tenantId'),
+        Uri.parse(url),
         headers: headers,
       );
 
+      debugPrint("fetchProducts Status Code: ${response.statusCode}");
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        return data.map((item) => Product.fromJson(item)).toList();
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List items = data['items'] ?? [];
+        debugPrint("fetchProducts Items count: ${items.length}");
+        final productsList = items.map((item) => Product.fromJson(item)).toList();
+        debugPrint("fetchProducts Parsed successfully count: ${productsList.length}");
+        return productsList;
+      } else {
+        debugPrint("fetchProducts Failed body: ${response.body}");
       }
-    } catch (e) {
-      // Error
+    } catch (e, stack) {
+      debugPrint("LỖI FETCH PRODUCTS: $e\n$stack");
     }
     return [];
   }

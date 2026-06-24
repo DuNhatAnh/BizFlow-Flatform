@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
 import '../models/models.dart';
+import 'customer/customer_search_field.dart';
+import 'customer/customer_list_tile.dart';
+import 'customer/add_customer_modal.dart';
 
 class CustomerListScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -43,7 +46,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text('Thu nợ: ${customer.fullname}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              title: Text('Thu nợ: ${customer.fullname}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -60,8 +63,8 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Tổng nợ hiện tại:', style: TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text('${customer.totalDebt.toStringAsFixed(0)}đ', style: const TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Text('Tổng nợ hiện tại:', style: TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Inter')),
+                            Text('${customer.totalDebt.toStringAsFixed(0)}đ', style: const TextStyle(color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
                           ],
                         ),
                       ),
@@ -73,6 +76,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                           suffixText: 'đ',
                         ),
+                        style: const TextStyle(fontFamily: 'Inter'),
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -99,16 +103,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                           hintText: 'Ví dụ: Trả nợ xi măng...',
                         ),
+                        style: const TextStyle(fontFamily: 'Inter'),
                       ),
                       const SizedBox(height: 16),
-                      const Text('Hình thức thanh toán:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                      const Text('Hình thức thanh toán:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87, fontFamily: 'Inter')),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
                             child: ChoiceChip(
                               label: const Center(
-                                child: Text('Tiền mặt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                child: Text('Tiền mặt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                               ),
                               selected: method == 'Cash',
                               selectedColor: const Color(0xFF00685F),
@@ -125,7 +130,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           Expanded(
                             child: ChoiceChip(
                               label: const Center(
-                                child: Text('Chuyển khoản', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                child: Text('Chuyển khoản', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                               ),
                               selected: method == 'Transfer',
                               selectedColor: const Color(0xFF00685F),
@@ -147,7 +152,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -197,7 +202,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                       }
                     }
                   },
-                  child: const Text('Xác nhận thu nợ'),
+                  child: const Text('Xác nhận thu nợ', style: TextStyle(fontFamily: 'Inter')),
                 )
               ],
             );
@@ -219,10 +224,10 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
           title: Row(
             children: [
               CircleAvatar(
-                backgroundColor: const Color(0xFF00685F).withValues(alpha: 0.1),
+                backgroundColor: const Color(0xFF00685F).withOpacity(0.1),
                 child: Text(
-                  customer.fullname.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(color: Color(0xFF00685F), fontWeight: FontWeight.bold),
+                  customer.fullname.isNotEmpty ? customer.fullname.substring(0, 1).toUpperCase() : 'K',
+                  style: const TextStyle(color: Color(0xFF00685F), fontWeight: FontWeight.bold, fontFamily: 'Inter'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -232,11 +237,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   children: [
                     Text(
                       customer.fullname,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87, fontFamily: 'Inter'),
                     ),
                     Text(
                       customer.phone ?? 'Không có SĐT',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.normal),
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.normal, fontFamily: 'Inter'),
                     ),
                   ],
                 ),
@@ -264,6 +269,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           color: customer.totalDebt > 0 ? const Color(0xFFBA1A1A) : const Color(0xFF006565),
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
+                          fontFamily: 'Inter',
                         ),
                       ),
                       Text(
@@ -272,6 +278,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           color: customer.totalDebt > 0 ? const Color(0xFFBA1A1A) : const Color(0xFF006565),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          fontFamily: 'Inter',
                         ),
                       ),
                     ],
@@ -280,14 +287,14 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 const SizedBox(height: 16),
                 const Text(
                   'Lịch sử mua hàng & nợ:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87, fontFamily: 'Inter'),
                 ),
                 const SizedBox(height: 8),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
                 Expanded(
                   child: customerOrders.isEmpty
-                      ? const Center(child: Text('Chưa có lịch sử giao dịch nào', style: TextStyle(color: Colors.grey, fontSize: 13)))
+                      ? const Center(child: Text('Chưa có lịch sử giao dịch nào', style: TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'Inter')))
                       : ListView.builder(
                           itemCount: customerOrders.length,
                           itemBuilder: (context, index) {
@@ -317,12 +324,12 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                       children: [
                                         Text(
                                           'Đơn #${o.id.substring(0, 8).toUpperCase()}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87, fontFamily: 'Inter'),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           '$date | TT: ${isDebt ? "Ghi nợ" : (o.paymentMethod == "Transfer" ? "Chuyển khoản" : "Tiền mặt")}',
-                                          style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                                          style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontFamily: 'Inter'),
                                         ),
                                       ],
                                     ),
@@ -333,6 +340,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                       color: isDebt ? const Color(0xFFBA1A1A) : Colors.black87,
+                                      fontFamily: 'Inter',
                                     ),
                                   ),
                                 ],
@@ -357,11 +365,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   _showCollectDebtDialog(customer);
                 },
                 icon: const Icon(Icons.payments_outlined, size: 16),
-                label: const Text('Thu nợ nhanh'),
+                label: const Text('Thu nợ nhanh', style: TextStyle(fontFamily: 'Inter')),
               ),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
             ),
           ],
         );
@@ -371,10 +379,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
   void _showAddCustomerBottomSheet() {
     final provider = Provider.of<PosProvider>(context, listen: false);
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       context: context,
@@ -383,127 +387,26 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Thêm khách hàng mới',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF00685F)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên khách hàng *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    prefixIcon: Icon(Icons.person),
+        return AddCustomerModal(
+          provider: provider,
+          onSaved: (cust) {
+            if (cust != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text('Đã thêm khách hàng mới thành công: ${cust.fullname}')),
+                    ],
                   ),
-                  validator: (value) {
-                     if (value == null || value.trim().isEmpty) {
-                       return 'Họ tên là bắt buộc';
-                     }
-                     return null;
-                  },
+                  backgroundColor: const Color(0xFF2D6A4F),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Số điện thoại *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    prefixIcon: Icon(Icons.phone),
-                    hintText: 'Ví dụ: 0912345678',
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                     if (value == null || value.trim().isEmpty) {
-                       return 'Số điện thoại là bắt buộc';
-                     }
-                     final phoneRegex = RegExp(r'^(0[3|5|7|8|9])[0-9]{8}$');
-                     if (!phoneRegex.hasMatch(value.trim())) {
-                       return 'Số điện thoại Việt Nam không hợp lệ (10 số)';
-                     }
-                     return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Địa chỉ (Tùy chọn)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00685F),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-
-                    // Show loading overlay
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const Center(child: CircularProgressIndicator()),
-                    );
-
-                    final cust = await provider.createCustomer(
-                      nameController.text.trim(),
-                      phoneController.text.trim(),
-                    );
-
-                    if (context.mounted) {
-                      Navigator.pop(context); // Pop loading
-                      Navigator.pop(context); // Close bottom sheet
-                      
-                      if (cust != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(Icons.check_circle, color: Colors.white),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text('Đã thêm khách hàng mới thành công: ${cust.fullname}')),
-                              ],
-                            ),
-                            backgroundColor: const Color(0xFF2D6A4F),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Lưu thông tin', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
+              );
+            }
+          },
         );
       },
     );
@@ -520,55 +423,15 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
     final content = Column(
       children: [
-        // Search bar & plus button Row
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      )
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'Tìm kiếm khách hàng theo tên, SĐT...',
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                      prefixIcon: Icon(Icons.search, color: Color(0xFF00685F)),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00685F),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  onPressed: _showAddCustomerBottomSheet,
-                ),
-              ),
-            ],
-          ),
+        // Search bar & plus button (Modular Component)
+        CustomerSearchField(
+          searchController: _searchController,
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val;
+            });
+          },
+          onAddPressed: _showAddCustomerBottomSheet,
         ),
 
         // Customers List
@@ -584,7 +447,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'Không tìm thấy khách hàng nào',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontFamily: 'Inter'),
                           ),
                         ],
                       ),
@@ -594,97 +457,10 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                       itemCount: filteredList.length,
                       itemBuilder: (context, index) {
                         final cust = filteredList[index];
-                        return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(color: Colors.grey.shade200, width: 1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: () => _showCustomerDetail(cust),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: const Color(0xFF00685F).withValues(alpha: 0.1),
-                                    child: Text(
-                                      cust.fullname.substring(0, 1).toUpperCase(),
-                                      style: const TextStyle(color: Color(0xFF00685F), fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          cust.fullname,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          cust.phone ?? 'Không có SĐT',
-                                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Debt Info & Quick Pay Button
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      RichText(
-                                        text: TextSpan(
-                                          style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
-                                          children: [
-                                            const TextSpan(text: 'Nợ: ', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                            TextSpan(
-                                              text: '${cust.totalDebt.toStringAsFixed(0)}đ',
-                                              style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      if (cust.totalDebt > 0)
-                                        SizedBox(
-                                          height: 28,
-                                          child: ElevatedButton.icon(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF2D6A4F),
-                                              foregroundColor: Colors.white,
-                                              elevation: 0,
-                                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                            ),
-                                            onPressed: () => _showCollectDebtDialog(cust),
-                                            icon: const Icon(Icons.check_circle_outline, size: 14),
-                                            label: const Text('Thu nợ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                          ),
-                                        )
-                                      else
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade100,
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            'Không nợ',
-                                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        return CustomerListTile(
+                          customer: cust,
+                          onTap: () => _showCustomerDetail(cust),
+                          onCollectDebt: () => _showCollectDebtDialog(cust),
                         );
                       },
                     ),
@@ -702,7 +478,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        title: const Text('Danh sách khách hàng', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('Danh sách khách hàng', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Inter')),
         backgroundColor: const Color(0xFF00685F),
         iconTheme: const IconThemeData(color: Colors.white),
       ),

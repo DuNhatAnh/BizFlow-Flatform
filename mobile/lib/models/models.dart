@@ -59,7 +59,7 @@ class ProductUnit {
       id: json['id'] ?? 0,
       productId: json['productId'] ?? '',
       unitName: json['unitName'] ?? '',
-      conversionRate: json['conversionRate'] ?? 1,
+      conversionRate: (json['conversionRate'] as num?)?.toInt() ?? 1,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       isDefault: json['isDefault'] ?? false,
     );
@@ -103,7 +103,8 @@ class Product {
     List<ProductUnit> unitsList = list != null
         ? list.map((i) => ProductUnit.fromJson(i)).toList()
         : [];
-    double parsedStock = (json['stock'] as num?)?.toDouble() ?? 
+    double parsedStock = (json['stockQuantity'] as num?)?.toDouble() ?? 
+                         (json['stock'] as num?)?.toDouble() ?? 
                          (((json['name'] ?? '').toString().length * 7) % 80 + 20).toDouble();
     return Product(
       id: json['id'] ?? '',
@@ -163,6 +164,7 @@ class Customer {
   final String fullname;
   final String? phone;
   final double totalDebt;
+  final double debtLimit;
 
   Customer({
     required this.id,
@@ -170,6 +172,7 @@ class Customer {
     required this.fullname,
     this.phone,
     required this.totalDebt,
+    this.debtLimit = 10000000.0,
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
@@ -179,6 +182,7 @@ class Customer {
       fullname: json['fullname'] ?? '',
       phone: json['phone'],
       totalDebt: (json['totalDebt'] as num?)?.toDouble() ?? 0.0,
+      debtLimit: (json['debtLimit'] as num?)?.toDouble() ?? 10000000.0,
     );
   }
 
@@ -188,6 +192,7 @@ class Customer {
     'fullname': fullname,
     'phone': phone,
     'totalDebt': totalDebt,
+    'debtLimit': debtLimit,
   };
 }
 
@@ -216,7 +221,7 @@ class OrderItem {
       productUnitId: json['productUnitId'] ?? 0,
       productName: json['product']?['name'] ?? json['productName'] ?? '',
       unitName: json['productUnit']?['unitName'] ?? json['unitName'] ?? '',
-      quantity: json['quantity'] ?? 1,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
     );
