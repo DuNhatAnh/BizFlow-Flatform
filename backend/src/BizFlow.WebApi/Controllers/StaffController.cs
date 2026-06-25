@@ -87,6 +87,21 @@ public class StaffController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id}")]
+    public async Task<ActionResult<StaffDto>> UpdateStaff(Guid id, [FromBody] UpdateStaffRequest request)
+    {
+        try
+        {
+            var tenantId = GetTenantId();
+            var staff = await _staffService.UpdateStaffAsync(tenantId, id, request);
+            return Ok(staff);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("{id}/audit-logs")]
     public async Task<ActionResult<IEnumerable<AuditLogDto>>> GetAuditLogs(Guid id)
     {

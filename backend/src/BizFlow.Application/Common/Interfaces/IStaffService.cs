@@ -12,5 +12,6 @@ public interface IStaffService
     Task<StaffDto> CreateStaffAsync(Guid tenantId, CreateStaffRequest request);
     Task<bool> ToggleStaffStatusAsync(Guid tenantId, Guid staffId);
     Task<bool> ResetStaffPasswordAsync(Guid tenantId, Guid staffId, string newPassword);
+    Task<StaffDto> UpdateStaffAsync(Guid tenantId, Guid staffId, UpdateStaffRequest request);
     Task<IEnumerable<AuditLogDto>> GetStaffAuditLogsAsync(Guid tenantId, Guid staffId);
 }

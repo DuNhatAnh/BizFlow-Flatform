@@ -46,6 +46,10 @@ public class StaffService : IStaffService
             Fullname = u.Fullname,
             Role = u.Role.ToString(),
             IsActive = u.IsActive,
+            Phone = u.Phone,
+            IdentityCard = u.IdentityCard,
+            DateOfBirth = u.DateOfBirth,
+            JoinDate = u.JoinDate,
             CreatedAt = u.CreatedAt
         }).ToList();
 
@@ -163,5 +167,59 @@ public class StaffService : IStaffService
                 UserFullname = a.User.Fullname
             })
             .ToListAsync();
+    }
+
+    public async Task<StaffDto> UpdateStaffAsync(Guid tenantId, Guid staffId, UpdateStaffRequest request)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Employee);
+            
+        if (user == null)
+            throw new Exception("Không tìm thấy nhân viên.");
+
+        // If username changed, ensure it's not taken by someone else
+        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
+        {
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == request.Username);
+                
+            if (existingUser != null)
+                throw new Exception("Tên đăng nhập (Email) đã tồn tại trong hệ thống.");
+                
+            user.Username = request.Username;
+        }
+
+        user.Fullname = request.Fullname;
+        user.Phone = request.Phone;
+        user.IdentityCard = request.IdentityCard;
+        user.DateOfBirth = request.DateOfBirth?.ToUniversalTime();
+        user.JoinDate = request.JoinDate?.ToUniversalTime();
+
+        var log = new AuditLog
+        {
+            TenantId = tenantId,
+            UserId = user.Id,
+            Action = "UPDATE_STAFF",
+            EntityName = "User",
+            EntityId = user.Id.ToString(),
+            Details = $"Cập nhật thông tin nhân viên: {user.Fullname}"
+        };
+        _context.AuditLogs.Add(log);
+
+        await _context.SaveChangesAsync();
+
+        return new StaffDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Fullname = user.Fullname,
+            Role = user.Role.ToString(),
+            IsActive = user.IsActive,
+            Phone = user.Phone,
+            IdentityCard = user.IdentityCard,
+            DateOfBirth = user.DateOfBirth,
+            JoinDate = user.JoinDate,
+            CreatedAt = user.CreatedAt
+        };
     }
 }
