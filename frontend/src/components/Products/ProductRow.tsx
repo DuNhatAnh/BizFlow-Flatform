@@ -36,7 +36,9 @@ export default function ProductRow({
   const [openDropdownId, setOpenDropdownId] = useState<boolean>(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
-  const catName = categories.find((c: any) => c.id === product.categoryId)?.name || "Không xác định";
+  const cat = categories.find((c: any) => c.id === product.categoryId);
+  const catName = cat?.name || "Không xác định";
+  const catColor = cat?.color;
 
   const getMockLocation = (categoryName: string) => {
     if (categoryName.includes("Sắt") || categoryName.includes("Thép")) return "Bãi chứa số 1";
@@ -86,12 +88,31 @@ export default function ProductRow({
         </div>
       </td>
       <td className="py-2 px-4">
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200/50">
+        <span 
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border flex-shrink-0"
+          style={catColor ? { 
+            backgroundColor: catColor + '1a', 
+            borderColor: catColor + '33',
+            color: '#334155' 
+          } : {
+            backgroundColor: '#f8fafc',
+            borderColor: '#e2e8f0',
+            color: '#475569'
+          }}
+        >
+          {catColor ? (
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }}></span>
+          ) : (
+            <Tag className="w-3 h-3 text-slate-400 flex-shrink-0" />
+          )}
           {catName}
         </span>
       </td>
-      <td className="py-2 px-4 font-semibold">
-        <StockBadge stockQuantity={product.stockQuantity} baseUnit={product.baseUnit} minStockLimit={minStockLimit} />
+      <td className="py-2 px-4 font-medium text-slate-700">
+        <div className="flex flex-col gap-1 items-start">
+          <span>{product.baseUnit}</span>
+          <StockBadge stockQuantity={product.stockQuantity || 0} baseUnit={product.baseUnit} minStockLimit={minStockLimit} />
+        </div>
       </td>
       <td className="py-2 px-4">
         <UnitPricesList units={product.units} baseUnit={product.baseUnit} />

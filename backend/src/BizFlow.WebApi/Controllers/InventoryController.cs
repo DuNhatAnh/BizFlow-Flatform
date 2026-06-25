@@ -65,4 +65,11 @@ public class InventoryController : ApiControllerBase
         var ledger = await _inventoryService.GetS2LedgerAsync(tenantId, productId, startDate, endDate, page, pageSize);
         return Ok(ledger);
     }
+
+    [HttpGet("cost-price/{productId}")]
+    public async Task<IActionResult> GetCostPrice([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, Guid productId)
+    {
+        var costPrice = await _inventoryService.GetCostPriceAsync(tenantId, productId);
+        return Ok(new { costPrice });
+    }
 }

@@ -124,18 +124,19 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
   return (
     <aside className="w-[260px] fixed top-0 left-0 bottom-0 bg-white border-r border-surface-container-high flex flex-col z-30">
       {/* Brand Logo */}
-      <div className="pt-8 pb-4 flex flex-col items-center">
-        <div className="relative w-44 h-44 flex items-center justify-center">
+      <div className="pt-6 pb-2 flex flex-col items-center shrink-0">
+        <div className="relative w-40 flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/logo.png" 
             alt="BizFlow Logo" 
-            className={`object-contain w-full h-full ${imageError ? 'hidden' : 'block'}`}
+            draggable={false}
+            className={`object-contain w-full h-auto mix-blend-multiply pointer-events-none select-none ${imageError ? 'hidden' : 'block'}`}
             onError={() => setImageError(true)}
           />
           {/* Logo fallback text */}
           {imageError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center font-bold text-primary">
+            <div className="flex flex-col items-center justify-center text-center font-bold text-primary py-4">
               <span className="text-xl tracking-wider uppercase font-sans">BizFlow</span>
               <span className="text-[10px] text-gray-400 font-normal">PLATFORM</span>
             </div>

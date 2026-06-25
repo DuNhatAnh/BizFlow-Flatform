@@ -43,9 +43,19 @@ export default function ProductEditModal({
 
   // Parse metadata from description
   const parsedMeta = parseDescriptionMetadata(initialProduct.description);
+  const getFallbackLocation = (categoryId: number) => {
+    const catName = categories.find((c: any) => c.id === categoryId)?.name || '';
+    if (catName.includes("Sắt") || catName.includes("Thép")) return "Bãi chứa số 1";
+    if (catName.includes("Xi măng")) return "Kho A - Kệ 2";
+    if (catName.includes("Gạch")) return "Khu bãi ngoài trời";
+    if (catName.includes("Cát") || catName.includes("Đá")) return "Bãi xúc cát/đá";
+    if (catName.includes("Sơn") || catName.includes("Hóa chất")) return "Khu Kệ B";
+    return "Kho tổng - Kệ C";
+  };
+
   const [descText, setDescText] = useState(parsedMeta.description);
-  const [customMinStock, setCustomMinStock] = useState<number | "">(parsedMeta.minStock !== null ? parsedMeta.minStock : "");
-  const [customLocation, setCustomLocation] = useState(parsedMeta.location || "");
+  const [customMinStock, setCustomMinStock] = useState<number | "">(parsedMeta.minStock !== null ? parsedMeta.minStock : 10);
+  const [customLocation, setCustomLocation] = useState(parsedMeta.location || getFallbackLocation(initialProduct.categoryId || 0));
 
   const handleUnitChange = (index: number, field: keyof ProductUnit, value: any) => {
     const newUnits = [...editingProduct.units];

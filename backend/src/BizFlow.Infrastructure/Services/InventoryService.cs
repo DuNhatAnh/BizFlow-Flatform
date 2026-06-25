@@ -122,6 +122,15 @@ public class InventoryService : IInventoryService
                         ledgerEntry.ValueOut = itemReq.Quantity * unitCost;
                     }
 
+                    if (!request.UseSellingPrice)
+                    {
+                        // Fix TotalAmount to reflect COGS for export receipts
+                        totalAmount -= detail.TotalPrice;
+                        totalAmount += ledgerEntry.ValueOut;
+                        detail.TotalPrice = ledgerEntry.ValueOut;
+                        detail.UnitPrice = itemReq.Quantity > 0 ? ledgerEntry.ValueOut / itemReq.Quantity : 0;
+                    }
+
                     ledgerEntry.QuantityBalance = prevQty - itemReq.Quantity;
                     ledgerEntry.ValueBalance = prevVal - ledgerEntry.ValueOut;
                     
@@ -351,7 +360,8 @@ public class InventoryService : IInventoryService
             ProductId = productId,
             Date = DateTime.UtcNow,
             Type = ReceiptType.Export,
-            QuantityOut = quantity
+            QuantityOut = quantity,
+            ReceiptId = orderId
         };
 
         if (tenant.CogsMethod == CogsMethod.WeightedAverage)
@@ -415,6 +425,7 @@ public class InventoryService : IInventoryService
             Type = r.Type,
             Date = r.Date,
             TotalAmount = r.TotalAmount,
+            TotalCostPrice = r.Type == ReceiptType.Export ? r.TotalAmount : 0,
             Note = r.Note,
             DelivererReceiverName = r.DelivererReceiverName,
             ReferenceDocumentNo = r.ReferenceDocumentNo,
@@ -434,5 +445,18 @@ public class InventoryService : IInventoryService
                 TotalPrice = d.TotalPrice
             }).ToList()
         };
+    }
+
+    public async Task<decimal> GetCostPriceAsync(Guid tenantId, Guid productId)
+    {
+        var lastLedger = await _context.AccountingLedgerS2s
+            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
+            .OrderByDescending(l => l.Date)
+            .FirstOrDefaultAsync();
+
+        var prevQty = lastLedger?.QuantityBalance ?? 0;
+        var prevVal = lastLedger?.ValueBalance ?? 0;
+        
+        return prevQty > 0 ? prevVal / prevQty : 0;
     }
 }

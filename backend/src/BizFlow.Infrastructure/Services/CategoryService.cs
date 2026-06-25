@@ -28,7 +28,8 @@ public class CategoryService : ICategoryService
         {
             Id = c.Id,
             Name = c.Name,
-            ParentId = c.ParentId
+            ParentId = c.ParentId,
+            Color = c.Color
         }).ToList();
     }
     public async Task<CategoryDto> CreateAsync(Guid tenantId, CreateCategoryRequest request)
@@ -37,7 +38,8 @@ public class CategoryService : ICategoryService
         {
             TenantId = tenantId,
             Name = request.Name,
-            ParentId = request.ParentId
+            ParentId = request.ParentId,
+            Color = request.Color
         };
 
         _context.Categories.Add(category);
@@ -47,7 +49,8 @@ public class CategoryService : ICategoryService
         {
             Id = category.Id,
             Name = category.Name,
-            ParentId = category.ParentId
+            ParentId = category.ParentId,
+            Color = category.Color
         };
     }
 
@@ -61,6 +64,7 @@ public class CategoryService : ICategoryService
 
         // Update fields
         category.Name = request.Name;
+        category.Color = request.Color;
         
         // Prevent setting parent to itself
         if (request.ParentId.HasValue && request.ParentId.Value == categoryId)
@@ -75,7 +79,8 @@ public class CategoryService : ICategoryService
         {
             Id = category.Id,
             Name = category.Name,
-            ParentId = category.ParentId
+            ParentId = category.ParentId,
+            Color = category.Color
         };
     }
 

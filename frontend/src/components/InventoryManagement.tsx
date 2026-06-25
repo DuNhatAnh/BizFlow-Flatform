@@ -46,6 +46,9 @@ export default function InventoryManagement() {
     return "stock";
   });
 
+  const [exportFilterTab, setExportFilterTab] = useState("all"); // "all", "export_slip", "sales_slip"
+
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("bizflow_inventory_tab", activeSubTab);
@@ -66,7 +69,7 @@ export default function InventoryManagement() {
     return () => clearTimeout(timer);
   }, [productSearch]);
 
-  const { data: productsData, isLoading: isProductsLoading } = useQuery({
+  const { data: productsData, isLoading: isProductsLoading, isError: isProductsError, error: productsError } = useQuery({
     queryKey: ["inventory_products", productPage, debouncedProductSearch],
     queryFn: async () => {
       const auth = getAuthInfo();
@@ -117,6 +120,7 @@ export default function InventoryManagement() {
 
   const [receiptForm, setReceiptForm] = useState({
     type: 1, // 1 = Import, 2 = Export
+    exportPriceType: "cogs", // "cogs" or "selling"
     date: new Date().toISOString().split('T')[0],
     note: "",
     delivererReceiverName: "",
@@ -137,7 +141,7 @@ export default function InventoryManagement() {
       setSelectedLedgerProduct(products[0].id);
     }
   }, [products, selectedLedgerProduct]);
-  const { data: receiptsData, isLoading: isReceiptsLoading } = useQuery({
+  const { data: receiptsData, isLoading: isReceiptsLoading, isError: isReceiptsError, error: receiptsError } = useQuery({
     queryKey: ["inventory_receipts", activeSubTab, receiptPage],
     queryFn: async () => {
       if (activeSubTab !== "receipts_in" && activeSubTab !== "receipts_out") return null;
@@ -158,6 +162,34 @@ export default function InventoryManagement() {
 
   const receipts = receiptsData?.items || [];
   const receiptTotalPages = receiptsData?.totalPages || 0;
+
+  const { data: ordersData, isLoading: isOrdersLoading, isError: isOrdersError, error: ordersError } = useQuery({
+    queryKey: ["inventory_orders"],
+    queryFn: async () => {
+      if (activeSubTab !== "receipts_out") return null;
+      if (exportFilterTab === "export_slip") return { items: [] };
+      const auth = getAuthInfo();
+      const res = await fetch(`${API_URL}/orders?tenantId=${auth.tenantId}`, {
+        headers: { 
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch orders");
+      const data = await res.json();
+      return { items: data || [] };
+    },
+    placeholderData: keepPreviousData,
+    enabled: activeSubTab === "receipts_out" && (exportFilterTab === "all" || exportFilterTab === "sales_slip")
+  });
+
+  const orders = ordersData?.items || [];
+
+  const isSalesTab = activeSubTab === "receipts_out" && exportFilterTab === "sales_slip";
+  const isExportTab = activeSubTab === "receipts_out" && exportFilterTab === "export_slip";
+  const displayData = activeSubTab === "receipts_in" ? receipts : 
+    (isSalesTab ? orders : 
+      (isExportTab ? receipts : [...receipts, ...orders].sort((a:any, b:any) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime())));
+
 
   // Track if we have any receipts
   useEffect(() => {
@@ -216,6 +248,7 @@ export default function InventoryManagement() {
   const handleOpenReceiptModal = (type: number) => {
     setReceiptForm({
       type,
+      exportPriceType: "cogs",
       date: new Date().toISOString().split('T')[0],
       note: "",
       delivererReceiverName: "",
@@ -223,7 +256,7 @@ export default function InventoryManagement() {
       referenceDocumentDate: "",
       referenceDocumentIssuer: "",
       warehouseLocation: "",
-      items: [{ productId: products.length > 0 ? products[0].id : "", documentQuantity: 1, quantity: 1, unitPrice: 0, productName: "" }]
+      items: [{ productId: "", documentQuantity: 1, quantity: 1, unitPrice: 0, productName: "" }]
     });
     setIsReceiptModalOpen(true);
   };
@@ -231,7 +264,7 @@ export default function InventoryManagement() {
   const handleAddReceiptItem = () => {
     setReceiptForm({
       ...receiptForm,
-      items: [...receiptForm.items, { productId: products.length > 0 ? products[0].id : "", documentQuantity: 1, quantity: 1, unitPrice: 0, productName: "" }]
+      items: [...receiptForm.items, { productId: "", documentQuantity: 1, quantity: 1, unitPrice: 0, productName: "" }]
     });
   };
 
@@ -241,10 +274,56 @@ export default function InventoryManagement() {
     setReceiptForm({ ...receiptForm, items: newItems });
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = async (index: number, field: string, value: any) => {
     const newItems = [...receiptForm.items];
     (newItems[index] as any)[field] = value;
+    
+    if (field === "productId" && receiptForm.type === 2) {
+      if (receiptForm.exportPriceType === "cogs") {
+        try {
+          const auth = getAuthInfo();
+          const res = await fetch(`${API_URL}/inventory/cost-price/${value}`, {
+            headers: { "X-Tenant-Id": auth.tenantId, "Authorization": `Bearer ${auth.token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            newItems[index].unitPrice = data.costPrice || 0;
+          }
+        } catch (e) {}
+      } else {
+        const product = products.find((p: any) => p.id === value);
+        const defaultUnit = product?.units?.find((u: any) => u.isDefault) || product?.units?.[0];
+        newItems[index].unitPrice = defaultUnit?.price || 0;
+      }
+    }
+    
     setReceiptForm({ ...receiptForm, items: newItems });
+  };
+
+  const handleExportPriceTypeChange = async (newType: string) => {
+    const newItems = [...receiptForm.items];
+    for (let i = 0; i < newItems.length; i++) {
+        const item = newItems[i];
+        if (item.productId) {
+            if (newType === "cogs") {
+                try {
+                  const auth = getAuthInfo();
+                  const res = await fetch(`${API_URL}/inventory/cost-price/${item.productId}`, {
+                    headers: { "X-Tenant-Id": auth.tenantId, "Authorization": `Bearer ${auth.token}` }
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    item.unitPrice = data.costPrice || 0;
+                  }
+                } catch (e) {}
+            } else {
+                const product = products.find((p: any) => p.id === item.productId);
+                const defaultUnit = product?.units?.find((u: any) => u.isDefault) || product?.units?.[0];
+                item.unitPrice = defaultUnit?.price || 0;
+            }
+        }
+    }
+    setReceiptForm({ ...receiptForm, exportPriceType: newType, items: newItems });
   };
 
   const handleSubmitReceipt = async () => {
@@ -260,6 +339,10 @@ export default function InventoryManagement() {
       showToast("Vui lòng thêm ít nhất 1 sản phẩm", "error");
       return;
     }
+    if (receiptForm.items.some(i => !i.productId)) {
+      showToast("Vui lòng chọn sản phẩm cho tất cả các dòng", "error");
+      return;
+    }
 
     if (isLoading) return;
     setIsLoading(true);
@@ -273,6 +356,7 @@ export default function InventoryManagement() {
         referenceDocumentDate: receiptForm.referenceDocumentDate ? new Date(receiptForm.referenceDocumentDate).toISOString() : null,
         referenceDocumentIssuer: receiptForm.referenceDocumentIssuer || null,
         warehouseLocation: receiptForm.warehouseLocation || null,
+        useSellingPrice: receiptForm.type === 2 && receiptForm.exportPriceType === "selling",
         items: receiptForm.items.map((i: any) => ({
           productId: i.productId,
           documentQuantity: Number(i.documentQuantity),
@@ -542,6 +626,19 @@ export default function InventoryManagement() {
                         <td className="p-4"><Skeleton className="h-6 w-16 ml-auto rounded-md" /></td>
                       </tr>
                     ))
+                  ) : isProductsError ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center bg-red-50">
+                        <div className="flex flex-col items-center justify-center text-red-600 gap-2">
+                          <AlertCircle className="w-8 h-8" />
+                          <p className="font-bold text-lg">Lỗi tải dữ liệu sản phẩm!</p>
+                          <p className="text-sm">Server đang lỗi do Hot Reload. Hãy thử khởi động lại Backend (docker-compose restart backend).</p>
+                          <code className="mt-2 text-xs bg-red-100 px-2 py-1 rounded text-red-800">
+                            {productsError?.message || "Unknown error"}
+                          </code>
+                        </div>
+                      </td>
+                    </tr>
                   ) : products.length === 0 ? (
                     <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu hàng hóa</td></tr>
                   ) : products.filter((s: any, i: number) => i < 10).map((s: any, i: number) => (
@@ -578,10 +675,19 @@ export default function InventoryManagement() {
         {(activeSubTab === "receipts_in" || activeSubTab === "receipts_out") && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-on-surface">
-                {activeSubTab === "receipts_in" ? "Lịch sử Nhập kho" : "Lịch sử Xuất kho"}
-              </h3>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-bold text-on-surface">
+                  {activeSubTab === "receipts_in" ? "Lịch sử Nhập kho" : "Lịch sử Xuất kho"}
+                </h3>
+                {activeSubTab === "receipts_out" && (
+                  <div className="flex gap-1 bg-surface-container-low p-1 rounded-lg w-max mt-2">
+                    <button onClick={() => setExportFilterTab("all")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "all" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Tất cả</button>
+                    <button onClick={() => setExportFilterTab("export_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "export_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Phiếu xuất kho</button>
+                    <button onClick={() => setExportFilterTab("sales_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "sales_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Xuất từ bán hàng</button>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 items-start">
                 {activeSubTab === "receipts_out" && (
                   <button
                     onClick={() => handleOpenReceiptModal(2)}
@@ -609,8 +715,19 @@ export default function InventoryManagement() {
                     <th className="p-4">Ngày Lập</th>
                     <th className="p-4">Loại</th>
                     <th className="p-4">Mã tham chiếu</th>
-                    <th className="p-4">Ghi Chú</th>
-                    <th className="p-4 text-right">Tổng Tiền</th>
+                    {activeSubTab === "receipts_out" && exportFilterTab === "sales_slip" ? (
+                      <>
+                        <th className="p-4">Khách Hàng</th>
+                        <th className="p-4 text-right">Doanh Thu</th>
+                        <th className="p-4 text-right">Tổng Giá Vốn</th>
+                        <th className="p-4 text-right">Lãi Gộp</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="p-4">Ghi Chú</th>
+                        <th className="p-4 text-right">{activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? "Tổng Giá Vốn" : "Tổng Tiền"}</th>
+                      </>
+                    )}
                     <th className="p-4 text-center">Trạng thái</th>
                     <th className="p-4 text-center">Thao tác</th>
                   </tr>
@@ -629,22 +746,58 @@ export default function InventoryManagement() {
                         <td className="p-4"><Skeleton className="h-8 w-8 mx-auto rounded-lg" /></td>
                       </tr>
                     ))
-                  ) : receipts.length === 0 ? (
-                    <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-                  ) : receipts.map((r: any, i: number) => {
-                    const isExport = r.type === 1 || r.type === "Export";
-                    return (
-                    <tr key={r.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
-                      <td className="p-4 text-center text-on-surface-variant font-medium">{(receiptPage - 1) * 10 + i + 1}</td>
-                      <td className="p-4 text-on-surface-variant">{new Date(r.createdAt || r.date).toLocaleString('vi-VN')}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${isExport ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {isExport ? 'Xuất kho' : 'Nhập kho'}
-                        </span>
+                  ) : (isReceiptsError || isOrdersError) ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center bg-red-50">
+                        <div className="flex flex-col items-center justify-center text-red-600 gap-2">
+                          <AlertCircle className="w-8 h-8" />
+                          <p className="font-bold text-lg">Lỗi hệ thống hoặc mất kết nối máy chủ!</p>
+                          <p className="text-sm">Đây không phải là dữ liệu trống. Hệ thống đang gặp lỗi (có thể do Hot Reload). Hãy thử khởi động lại Backend.</p>
+                          <code className="mt-2 text-xs bg-red-100 px-2 py-1 rounded text-red-800">
+                            {receiptsError?.message || ordersError?.message || "Unknown error"}
+                          </code>
+                        </div>
                       </td>
-                      <td className="p-4 text-on-surface-variant font-mono">{r.referenceDocumentNo || r.referenceId || "N/A"}</td>
-                      <td className="p-4 text-on-surface-variant max-w-[200px] truncate">{r.note}</td>
-                      <td className="p-4 text-right font-bold text-primary">{r.totalAmount.toLocaleString()} đ</td>
+                    </tr>
+                  ) : displayData.length === 0 ? (
+                    <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
+                  ) : displayData.map((r: any, i: number) => {
+                      const isOrder = r.customer !== undefined || r.orderItems !== undefined;
+                      const isExport = isOrder || r.type === 1 || r.type === "Export";
+                      const code = isOrder ? r.code : (r.referenceDocumentNo || r.referenceId || "N/A");
+                      const date = new Date(r.createdAt || r.date).toLocaleString('vi-VN');
+                      const totalAmount = r.totalAmount || 0;
+                      // Lãi gộp and Giá vốn mock for now if not available
+                      const totalCost = r.totalCostPrice || 0;
+                      const profit = isOrder ? (totalAmount - totalCost) : 0;
+                      
+                      return (
+                      <tr key={r.id || i} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                        <td className="p-4 text-center text-on-surface-variant font-medium">{(receiptPage - 1) * 10 + i + 1}</td>
+                        <td className="p-4 text-on-surface-variant">{date}</td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
+                            isOrder ? 'bg-blue-100 text-blue-700' : 
+                            (isExport ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')
+                          }`}>
+                            {isOrder ? 'Bán hàng' : (isExport ? 'Xuất kho' : 'Nhập kho')}
+                          </span>
+                        </td>
+                        <td className="p-4 text-on-surface-variant font-mono">{code}</td>
+                        
+                        {activeSubTab === "receipts_out" && exportFilterTab === "sales_slip" ? (
+                          <>
+                            <td className="p-4 text-on-surface-variant">{r.customer?.name || "Khách lẻ"}</td>
+                            <td className="p-4 text-right font-bold text-primary">{totalAmount.toLocaleString()} đ</td>
+                            <td className="p-4 text-right font-medium text-amber-700">{totalCost.toLocaleString()} đ</td>
+                            <td className="p-4 text-right font-bold text-emerald-600">{profit.toLocaleString()} đ</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-4 text-on-surface-variant max-w-[200px] truncate">{isOrder ? "Bán cho khách" : r.note}</td>
+                            <td className="p-4 text-right font-bold text-primary">{activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? totalCost.toLocaleString() : totalAmount.toLocaleString()} đ</td>
+                          </>
+                        )}
                       <td className="p-4 text-center">
                         {r.status === 1 ? (
                           <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700">Đã hủy</span>
@@ -677,13 +830,36 @@ export default function InventoryManagement() {
                               className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
                               style={{ top: dropdownPos.top, right: dropdownPos.right }}
                             >
-                              <button
-                                onClick={() => {
-                                  setViewReceiptDetails(r);
-                                  setOpenDropdownId(null);
-                                }}
-                                className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
-                              >
+                                <button
+                                  onClick={() => {
+                                    const isOrder = r.customer !== undefined || r.orderItems !== undefined;
+                                    if (isOrder) {
+                                      setViewReceiptDetails({
+                                        id: r.id,
+                                        type: 1, // Export
+                                        receiptCode: r.code,
+                                        date: r.createdAt,
+                                        status: r.status,
+                                        delivererReceiverName: r.customer?.name || "Khách lẻ",
+                                        referenceDocumentNo: r.code,
+                                        note: `Bán hàng cho ${r.customer?.name || "Khách lẻ"}`,
+                                        totalAmount: r.totalAmount,
+                                        details: r.orderItems?.map((oi:any) => ({
+                                          productId: oi.productId,
+                                          productName: oi.product?.name,
+                                          documentQuantity: oi.quantity,
+                                          quantity: oi.quantity,
+                                          unitPrice: oi.unitPrice,
+                                          totalPrice: oi.totalPrice
+                                        })) || []
+                                      });
+                                    } else {
+                                      setViewReceiptDetails(r);
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
+                                >
                                 <Eye className="w-4 h-4 text-primary" /> Xem chi tiết
                               </button>
                               {r.status === 0 && (
@@ -1210,6 +1386,22 @@ export default function InventoryManagement() {
                     className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
                   />
                 </div>
+
+                {receiptForm.type === 2 && (
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-on-surface-variant mb-2">Loại giá xuất (Đơn giá)</label>
+                    <div className="flex gap-6 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="exportPriceType" value="cogs" checked={receiptForm.exportPriceType === "cogs"} onChange={(e) => handleExportPriceTypeChange(e.target.value)} className="w-4 h-4 text-primary focus:ring-primary" />
+                        <span className="text-sm font-semibold">Giá gốc (Tự động lấy trung bình giá vốn hiện tại)</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="exportPriceType" value="selling" checked={receiptForm.exportPriceType === "selling"} onChange={(e) => handleExportPriceTypeChange(e.target.value)} className="w-4 h-4 text-primary focus:ring-primary" />
+                        <span className="text-sm font-semibold">Giá bán (Nhập thủ công hoặc theo giá bán)</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1262,17 +1454,17 @@ export default function InventoryManagement() {
                         <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Đơn giá</label>
                         <input
                           type="number" min="0"
-                          value={receiptForm.type === 2 ? 0 : item.unitPrice}
-                          onChange={(e) => receiptForm.type !== 2 && handleItemChange(index, "unitPrice", e.target.value)}
-                          disabled={receiptForm.type === 2}
-                          title={receiptForm.type === 2 ? "Hệ thống sẽ tự động tính giá vốn" : ""}
-                          className={`w-full px-3 py-1.5 border border-outline-variant rounded text-sm focus:border-primary focus:outline-none ${receiptForm.type === 2 ? 'bg-surface-container-highest cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
+                          value={item.unitPrice}
+                          onChange={(e) => handleItemChange(index, "unitPrice", e.target.value)}
+                          disabled={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs"}
+                          title={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? "Giá gốc được hệ thống tính tự động từ giá vốn" : ""}
+                          className={`w-full px-3 py-1.5 border border-outline-variant rounded text-sm focus:border-primary focus:outline-none ${receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? 'bg-surface-container-highest cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
                         />
                       </div>
                       <div className="w-28">
                         <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold text-right">Thành tiền</label>
-                        <div className={`w-full px-3 py-1.5 border border-outline-variant rounded text-sm font-semibold text-right ${receiptForm.type === 2 ? 'bg-surface-container-highest text-on-surface-variant italic' : 'bg-surface-container-highest text-primary'}`}>
-                          {receiptForm.type === 2 ? "Tự động" : (item.quantity * item.unitPrice).toLocaleString()}
+                        <div className="w-full px-3 py-1.5 border border-outline-variant rounded text-sm font-semibold text-right bg-surface-container-highest text-primary">
+                          {(item.quantity * item.unitPrice).toLocaleString()}
                         </div>
                       </div>
                       <button

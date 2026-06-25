@@ -16,6 +16,10 @@ public class Order
     public OrderSource OrderSource { get; set; } = OrderSource.Manual;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public decimal TotalCostPrice { get; set; }
+
+
     // Navigation properties
     public Tenant? Tenant { get; set; }
     public Customer? Customer { get; set; }

@@ -10,6 +10,8 @@ public class Category
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? Color { get; set; }
+
     public int? ParentId { get; set; }
 
     // Navigation properties

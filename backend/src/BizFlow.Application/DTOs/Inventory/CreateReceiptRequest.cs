@@ -21,6 +21,7 @@ public class CreateReceiptRequest
     public DateTime? ReferenceDocumentDate { get; set; }
     public string? ReferenceDocumentIssuer { get; set; }
     public string? WarehouseLocation { get; set; }
+    public bool UseSellingPrice { get; set; } = false;
 
     public List<CreateReceiptItemRequest> Items { get; set; } = new();
 }

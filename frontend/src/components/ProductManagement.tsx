@@ -265,11 +265,11 @@ export default function ProductManagement({
   };
 
   // Category Actions
-  const handleAddCategory = async (name: string, parentId: number | null) => {
+  const handleAddCategory = async (name: string, parentId: number | null, color: string | null) => {
     const res = await fetch(CATEGORY_API_URL, {
       method: "POST",
       headers: getHeaders("application/json"),
-      body: JSON.stringify({ name, parentId })
+      body: JSON.stringify({ name, parentId, color })
     });
     if (res.ok) {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -279,11 +279,11 @@ export default function ProductManagement({
     }
   };
 
-  const handleUpdateCategory = async (id: number, name: string, parentId: number | null) => {
+  const handleUpdateCategory = async (id: number, name: string, parentId: number | null, color: string | null) => {
     const res = await fetch(`${CATEGORY_API_URL}/${id}`, {
       method: "PUT",
       headers: getHeaders("application/json"),
-      body: JSON.stringify({ name, parentId })
+      body: JSON.stringify({ name, parentId, color })
     });
     if (res.ok) {
       queryClient.invalidateQueries({ queryKey: ["categories"] });

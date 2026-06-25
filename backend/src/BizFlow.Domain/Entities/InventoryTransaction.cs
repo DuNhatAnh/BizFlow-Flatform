@@ -10,6 +10,8 @@ public class InventoryTransaction
     public Guid ProductId { get; set; }
     public InventoryTransactionType Type { get; set; }
     public decimal Quantity { get; set; } // Số lượng thay đổi (tính theo base_unit)
+    public InventoryPriceType PriceType { get; set; } = InventoryPriceType.CostPrice; // Loại giá xuất
+    public decimal UnitPrice { get; set; } = 0; // Đơn giá ghi nhận
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Guid? CreatedBy { get; set; }
     public string? Note { get; set; }

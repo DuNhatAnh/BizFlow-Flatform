@@ -15,10 +15,24 @@ interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: any[];
-  onAddCategory: (name: string, parentId: number | null) => Promise<void>;
-  onUpdateCategory: (id: number, name: string, parentId: number | null) => Promise<void>;
+  onAddCategory: (name: string, parentId: number | null, color: string | null) => Promise<void>;
+  onUpdateCategory: (id: number, name: string, parentId: number | null, color: string | null) => Promise<void>;
   onDeleteCategory: (id: number, name: string) => Promise<void>;
 }
+
+const AVAILABLE_COLORS = [
+  "#ef4444", // red-500
+  "#f97316", // orange-500
+  "#f59e0b", // amber-500
+  "#84cc16", // lime-500
+  "#22c55e", // green-500
+  "#10b981", // emerald-500
+  "#14b8a6", // teal-500
+  "#0ea5e9", // sky-500
+  "#6366f1", // indigo-500
+  "#a855f7", // purple-500
+  "#ec4899", // pink-500
+];
 
 export default function CategoryModal({
   isOpen,
@@ -32,6 +46,17 @@ export default function CategoryModal({
   const [newCategoryParentId, setNewCategoryParentId] = useState<number | "">("");
   const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+
+  const usedColors = categories.map((c: any) => c.color).filter(Boolean);
+  const sortedColors = [...AVAILABLE_COLORS].sort((a, b) => {
+    const aUsed = usedColors.includes(a);
+    const bUsed = usedColors.includes(b);
+    if (aUsed && !bUsed) return 1;
+    if (!aUsed && bUsed) return -1;
+    return 0;
+  });
+
+  const [newCategoryColor, setNewCategoryColor] = useState<string>(sortedColors[0]);
 
   if (!isOpen) return null;
 
@@ -60,10 +85,15 @@ export default function CategoryModal({
     try {
       await onAddCategory(
         newCategoryName.trim(),
-        newCategoryParentId === "" ? null : newCategoryParentId
+        newCategoryParentId === "" ? null : newCategoryParentId,
+        newCategoryColor
       );
       setNewCategoryName("");
       setNewCategoryParentId("");
+      // select next unused color
+      const newUsedColors = [...usedColors, newCategoryColor];
+      const nextColor = sortedColors.find(c => !newUsedColors.includes(c)) || sortedColors[0];
+      setNewCategoryColor(nextColor);
     } finally {
       setIsSavingCategory(false);
     }
@@ -85,37 +115,54 @@ export default function CategoryModal({
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Nhập tên danh mục mới..."
-              className="flex-1 px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
-              onKeyDown={async (e) => {
-                if (e.key === "Enter" && newCategoryName.trim() && !isSavingCategory) {
-                  await handleAdd();
-                }
-              }}
-            />
-            <select
-              value={newCategoryParentId}
-              onChange={(e) => setNewCategoryParentId(e.target.value === "" ? "" : Number(e.target.value))}
-              className="px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary max-w-[150px] text-on-surface cursor-pointer"
-            >
-              <option value="">-- Không có cha --</option>
-              {categories.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <button 
-              onClick={handleAdd}
-              disabled={!newCategoryName.trim() || isSavingCategory}
-              className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-2 w-full">
+              <input 
+                type="text" 
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Nhập tên danh mục mới..."
+                className="flex-1 px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface min-w-[120px]"
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter" && newCategoryName.trim() && !isSavingCategory) {
+                    await handleAdd();
+                  }
+                }}
+              />
+              <select
+                value={newCategoryParentId}
+                onChange={(e) => setNewCategoryParentId(e.target.value === "" ? "" : Number(e.target.value))}
+                className="px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary max-w-[140px] text-on-surface cursor-pointer shrink-0"
+              >
+                <option value="">- Không có cha -</option>
+                {categories.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <button 
+                onClick={handleAdd}
+                disabled={!newCategoryName.trim() || isSavingCategory}
+                className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 transition-colors shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="flex gap-3 items-center px-1">
+              <span className="text-xs text-on-surface-variant font-medium shrink-0">Màu sắc:</span>
+              <div className="flex gap-2.5 flex-wrap">
+                {sortedColors.slice(0, 10).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setNewCategoryColor(color)}
+                    className={`w-6 h-6 rounded-full transition-transform shrink-0 ${newCategoryColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-110'}`}
+                    style={{ backgroundColor: color }}
+                    title="Chọn màu"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="mt-4 border border-surface-container-high rounded-xl overflow-hidden">

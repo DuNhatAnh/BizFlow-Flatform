@@ -129,7 +129,7 @@ export default function UomCalculatorModal({
             </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-on-surface-variant font-medium">Quy đổi tồn kho:</span>
-              <span className="font-bold text-primary">Tương đương {stockEquivalentUnit.toFixed(2)} {uName}</span>
+              <span className="font-bold text-primary">Tương đương {Number(stockEquivalentUnit.toFixed(2)).toLocaleString()} {uName}</span>
             </div>
             <div className="flex justify-between items-center text-xs border-t pt-2 border-primary/10 mt-1">
               <span className="text-on-surface-variant font-medium">Quy đổi lượng mua:</span>

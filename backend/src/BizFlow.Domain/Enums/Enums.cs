@@ -7,6 +7,12 @@ public enum InventoryTransactionType
     Adjustment
 }
 
+public enum InventoryPriceType
+{
+    CostPrice,    // Giá vốn
+    SellingPrice  // Giá bán
+}
+
 public enum PaymentMethod
 {
     Cash,

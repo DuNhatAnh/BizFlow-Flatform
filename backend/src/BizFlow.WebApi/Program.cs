@@ -160,6 +160,10 @@ using (var scope = app.Services.CreateScope())
         // Migrate Quantity to numeric to support float quantities
         SafeSql("ALTER TABLE inventory_transactions ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
         SafeSql("ALTER TABLE order_items ALTER COLUMN \"Quantity\" TYPE numeric(15,4);");
+        
+        // Add PriceType and UnitPrice
+        SafeSql("ALTER TABLE inventory_transactions ADD COLUMN IF NOT EXISTS \"PriceType\" integer NOT NULL DEFAULT 0;");
+        SafeSql("ALTER TABLE inventory_transactions ADD COLUMN IF NOT EXISTS \"UnitPrice\" numeric(18,4) NOT NULL DEFAULT 0;");
 
         // Add TT88 Fields to inventory_receipts and inventory_receipt_details
         SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"DelivererReceiverName\" text;");
@@ -190,6 +194,7 @@ using (var scope = app.Services.CreateScope())
 
         // Add Category Multi-level Fields
         SafeSql("ALTER TABLE categories ADD COLUMN IF NOT EXISTS \"ParentId\" integer;");
+        SafeSql("ALTER TABLE categories ADD COLUMN IF NOT EXISTS \"Color\" text;");
 
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
@@ -252,15 +257,6 @@ using (var scope = app.Services.CreateScope())
         }
 
 
-
-        foreach (var product in db.Products.ToList())
-        {
-            if (product.StockQuantity <= 0)
-            {
-                product.StockQuantity = 500;
-            }
-        }
-        db.SaveChanges();
     }
     catch (Exception ex)
     {

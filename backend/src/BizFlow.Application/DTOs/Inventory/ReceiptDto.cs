@@ -11,6 +11,7 @@ public class ReceiptDto
     public ReceiptType Type { get; set; }
     public DateTime Date { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal TotalCostPrice { get; set; }
     public string? Note { get; set; }
     public string? CreatorName { get; set; }
     

@@ -51,7 +51,41 @@ public class OrdersController : ApiControllerBase
             query = query.Where(o => o.OrderSource == filterSource);
         }
 
-        return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+
+        // Populate TotalCostPrice from Ledger
+        // Since we don't have OrderId in the Ledger, we match by ProductId and time proximity (within 5 seconds)
+        foreach (var order in orders)
+        {
+            decimal orderCost = 0;
+            foreach (var item in order.OrderItems)
+            {
+                // Find ledger export entry around the time of the order creation
+                var ledgerEntries = await _context.AccountingLedgerS2s
+                    .Where(l => l.TenantId == tenantId && l.ProductId == item.ProductId && l.Type == ReceiptType.Export)
+                    .Where(l => l.ReceiptId == order.Id || (l.Date >= order.CreatedAt.AddMinutes(-2) && l.Date <= order.CreatedAt.AddMinutes(2)))
+                    .ToListAsync();
+                    
+                var exactMatch = ledgerEntries.FirstOrDefault(l => l.ReceiptId == order.Id);
+                var ledgerEntry = exactMatch ?? ledgerEntries.OrderBy(l => Math.Abs((l.Date - order.CreatedAt).TotalMilliseconds)).FirstOrDefault();
+
+                if (ledgerEntry != null)
+                {
+                    // Approximate cost if exact quantity matches, otherwise use unit cost
+                    if (ledgerEntry.QuantityOut == item.Quantity)
+                    {
+                        orderCost += ledgerEntry.ValueOut;
+                    }
+                    else if (ledgerEntry.QuantityOut > 0)
+                    {
+                        orderCost += (ledgerEntry.ValueOut / ledgerEntry.QuantityOut) * item.Quantity;
+                    }
+                }
+            }
+            order.TotalCostPrice = orderCost;
+        }
+
+        return Ok(orders);
     }
 
     [HttpPost]
