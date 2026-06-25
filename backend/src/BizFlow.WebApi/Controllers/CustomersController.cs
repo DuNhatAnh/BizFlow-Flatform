@@ -43,6 +43,7 @@ public class CustomersController : ApiControllerBase
             Fullname = request.Fullname,
             Phone = request.Phone,
             TotalDebt = 0.00m,
+            DebtLimit = request.DebtLimit <= 0 ? 10000000.00m : request.DebtLimit,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -50,6 +51,51 @@ public class CustomersController : ApiControllerBase
         await _context.SaveChangesAsync(CancellationToken.None);
 
         return Ok(customer);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateCustomer(Guid id, [FromBody] UpdateCustomerRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Fullname))
+        {
+            return BadRequest(new { Message = "Tên khách hàng là bắt buộc" });
+        }
+
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == request.TenantId);
+
+        if (customer == null)
+        {
+            return NotFound(new { Message = "Không tìm thấy khách hàng" });
+        }
+
+        customer.Fullname = request.Fullname;
+        customer.Phone = request.Phone;
+        customer.DebtLimit = request.DebtLimit;
+
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        return Ok(customer);
+    }
+
+    [HttpGet("{id}/debt-history")]
+    public async Task<ActionResult<IEnumerable<DebtTransactionDto>>> GetDebtHistory(Guid id, [FromQuery] Guid tenantId)
+    {
+        var history = await _context.DebtTransactions
+            .Where(dt => dt.CustomerId == id && dt.TenantId == tenantId)
+            .OrderByDescending(dt => dt.CreatedAt)
+            .Select(dt => new DebtTransactionDto
+            {
+                Id = dt.Id,
+                Type = dt.Type,
+                Amount = dt.Amount,
+                CreatedAt = dt.CreatedAt,
+                OrderId = dt.OrderId,
+                OrderCode = dt.OrderId.HasValue ? dt.OrderId.ToString().Substring(0, 8) : null
+            })
+            .ToListAsync();
+
+        return Ok(history);
     }
 
     [HttpPost("debt-pay")]
@@ -119,6 +165,15 @@ public class CreateCustomerRequest
     public Guid TenantId { get; set; }
     public string Fullname { get; set; } = string.Empty;
     public string? Phone { get; set; }
+    public decimal DebtLimit { get; set; } = 10000000.00m;
+}
+
+public class UpdateCustomerRequest
+{
+    public Guid TenantId { get; set; }
+    public string Fullname { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public decimal DebtLimit { get; set; } = 10000000.00m;
 }
 
 public class CollectDebtRequest
@@ -127,4 +182,14 @@ public class CollectDebtRequest
     public Guid CustomerId { get; set; }
     public decimal Amount { get; set; }
     public string PaymentMethod { get; set; } = "Cash"; // Cash or Transfer
+}
+
+public class DebtTransactionDto
+{
+    public Guid Id { get; set; }
+    public DebtTransactionType Type { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public Guid? OrderId { get; set; }
+    public string? OrderCode { get; set; }
 }

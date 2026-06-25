@@ -16,6 +16,7 @@ import AdminOverview from "@/components/AdminOverview";
 import AIDrafts from "@/components/AIDrafts";
 import POS from "@/components/POS";
 import ToastNotification from "@/components/ToastNotification";
+import DebtManagement from "@/components/DebtManagement";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -730,6 +731,18 @@ export default function Home() {
         );
       }
 
+      if (activeTab === "debts") {
+        return (
+          <DebtManagement
+            isReadOnly={true}
+            user={user}
+            onDebtChange={() => {
+              fetchCustomers(user);
+            }}
+          />
+        );
+      }
+
       return (
         <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
           <h2 className="text-xl font-bold text-on-surface">Tra cứu thông tin POS</h2>
@@ -762,6 +775,18 @@ export default function Home() {
 
     if (activeTab === "staff") {
       return <StaffManagement />;
+    }
+
+    if (activeTab === "customers") {
+      return (
+        <DebtManagement
+          isReadOnly={false}
+          user={user}
+          onDebtChange={() => {
+            fetchCustomers(user);
+          }}
+        />
+      );
     }
 
     return (
@@ -806,6 +831,16 @@ export default function Home() {
         return {
           title: "Quản lý Nhân sự",
           subtitle: "Danh sách tài khoản nhân viên thu ngân của cửa hàng"
+        };
+      case "debts":
+        return {
+          title: "Ghi nợ nhanh",
+          subtitle: "Tra cứu công nợ khách hàng và thu nợ nhanh qua VietQR"
+        };
+      case "customers":
+        return {
+          title: "Khách hàng & Công nợ",
+          subtitle: "Quản lý danh sách khách hàng, thiết lập hạn mức nợ và lịch sử thanh toán"
         };
       case "profile":
         return {

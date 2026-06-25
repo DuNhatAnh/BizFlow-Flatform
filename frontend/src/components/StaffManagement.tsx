@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit3
 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 import { FadeIn } from "./ui/FadeIn";
@@ -25,8 +26,18 @@ export default function StaffManagement() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [editStaffData, setEditStaffData] = useState({
+    id: "",
+    username: "",
+    fullname: "",
+    phone: "",
+    identityCard: "",
+    dateOfBirth: "",
+    joinDate: ""
+  });
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +65,16 @@ export default function StaffManagement() {
     }
     return { tenantId: "11111111-1111-1111-1111-111111111111", token: "" };
   };
+
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("bizflow_user");
+    if (stored) {
+      const user = JSON.parse(stored);
+      setIsOwner(user.role === "Owner");
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,6 +151,45 @@ export default function StaffManagement() {
           ? `${errorData.message} (Chi tiết: ${errorData.inner})`
           : (errorData?.message || "Tài khoản đã tồn tại hoặc có lỗi xảy ra.");
         showToast(errMsg, "error");
+      }
+    } catch (e) {
+      showToast("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.", "error");
+    }
+  };
+
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editStaffData.username || !editStaffData.fullname) {
+      showToast("Vui lòng điền đầy đủ tên và email", "error");
+      return;
+    }
+
+    const auth = getAuthInfo();
+    try {
+      const res = await fetch(`http://localhost:5178/api/staff/${editStaffData.id}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          username: editStaffData.username,
+          fullname: editStaffData.fullname,
+          phone: editStaffData.phone || null,
+          identityCard: editStaffData.identityCard || null,
+          dateOfBirth: editStaffData.dateOfBirth ? new Date(editStaffData.dateOfBirth).toISOString() : null,
+          joinDate: editStaffData.joinDate ? new Date(editStaffData.joinDate).toISOString() : null
+        })
+      });
+
+      if (res.ok) {
+        showToast("Cập nhật thông tin thành công!", "success");
+        setShowEditModal(false);
+        queryClient.invalidateQueries({ queryKey: ["staffs"] });
+      } else {
+        const errorData = await res.json().catch(() => null);
+        showToast(errorData?.message || "Cập nhật thất bại.", "error");
       }
     } catch (e) {
       showToast("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.", "error");
@@ -317,6 +377,26 @@ export default function StaffManagement() {
                                 >
                                   <Lock className="w-4 h-4 text-on-surface-variant" /> Đổi mật khẩu
                                 </button>
+                                {isOwner && (
+                                  <button
+                                    onClick={() => {
+                                      setEditStaffData({
+                                        id: staff.id,
+                                        username: staff.username,
+                                        fullname: staff.fullname,
+                                        phone: staff.phone || "",
+                                        identityCard: staff.identityCard || "",
+                                        dateOfBirth: staff.dateOfBirth ? staff.dateOfBirth.split('T')[0] : "",
+                                        joinDate: staff.joinDate ? staff.joinDate.split('T')[0] : ""
+                                      });
+                                      setShowEditModal(true);
+                                      setOpenDropdownId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors border-t border-surface-container-low"
+                                  >
+                                    <Edit3 className="w-4 h-4 text-secondary" /> Sửa thông tin
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => {
                                     viewAuditLogs(staff);
@@ -389,6 +469,78 @@ export default function StaffManagement() {
                 <button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg text-sm">Tạo tài khoản</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-card max-w-2xl w-full overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-surface-container-low flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-lg text-on-surface">Sửa thông tin nhân viên</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-on-surface-variant hover:text-on-surface">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <form id="editStaffForm" onSubmit={handleUpdateStaff} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Họ và Tên</label>
+                    <input 
+                      type="text" required
+                      value={editStaffData.fullname} onChange={e => setEditStaffData({...editStaffData, fullname: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="VD: Trần Thị B"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Tên đăng nhập (Email)</label>
+                    <input 
+                      type="email" required
+                      value={editStaffData.username} onChange={e => setEditStaffData({...editStaffData, username: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="employee@bizflow.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Số điện thoại</label>
+                    <input 
+                      type="text"
+                      value={editStaffData.phone} onChange={e => setEditStaffData({...editStaffData, phone: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="VD: 0987654321"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">CCCD</label>
+                    <input 
+                      type="text"
+                      value={editStaffData.identityCard} onChange={e => setEditStaffData({...editStaffData, identityCard: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Nhập số CCCD"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Ngày sinh</label>
+                    <input 
+                      type="date"
+                      value={editStaffData.dateOfBirth} onChange={e => setEditStaffData({...editStaffData, dateOfBirth: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Ngày vào làm</label>
+                    <input 
+                      type="date"
+                      value={editStaffData.joinDate} onChange={e => setEditStaffData({...editStaffData, joinDate: e.target.value})}
+                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="p-6 border-t border-surface-container-low shrink-0 flex gap-3">
+              <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 py-3 bg-surface-container-low text-on-surface-variant font-bold rounded-lg text-sm hover:bg-surface-container-high transition-colors">Hủy</button>
+              <button type="submit" form="editStaffForm" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg text-sm hover:bg-primary-container transition-colors shadow-sm">Lưu thay đổi</button>
+            </div>
           </div>
         </div>
       )}

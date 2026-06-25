@@ -330,7 +330,7 @@ export default function ProductManagement({
 
   return (
     <>
-      <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header Area Buttons */}
         {!isReadOnly && (
           <div className="flex justify-end gap-2 -mt-2">
@@ -358,8 +358,8 @@ export default function ProductManagement({
           </div>
         )}
 
-        {/* Toolbar */}
-        <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-col md:flex-row gap-4">
+        {/* Toolbar & Search */}
+        <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-col md:flex-row gap-4 animate-in slide-in-from-top-4 fade-in duration-500 delay-100 fill-mode-both">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-on-surface-variant" />
@@ -408,8 +408,8 @@ export default function ProductManagement({
           </button>
         </div>
 
-        {/* Product List container */}
-        <div className="bg-white rounded-xl border border-surface-container-high shadow-card flex flex-col">
+        {/* Main Table Area */}
+        <div className="bg-white rounded-xl border border-surface-container-high shadow-card flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
           {/* Table view for Desktop */}
           <ProductTable
             products={filteredProducts}

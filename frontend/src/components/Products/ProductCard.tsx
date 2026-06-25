@@ -14,6 +14,7 @@ interface ProductCardProps {
   onAddToCart: (mappedProduct: any) => void;
   onSelectCalcProduct: (product: any) => void;
   showToast: (msg: string, type?: "success" | "error") => void;
+  index?: number;
 }
 
 export default function ProductCard({
@@ -24,7 +25,8 @@ export default function ProductCard({
   onDelete,
   onAddToCart,
   onSelectCalcProduct,
-  showToast
+  showToast,
+  index = 0
 }: ProductCardProps) {
   const catName = categories.find((c: any) => c.id === product.categoryId)?.name || "Không xác định";
   const defaultUnit = product.units?.find((u: any) => u.isDefault) || product.units?.[0];
@@ -44,7 +46,10 @@ export default function ProductCard({
   const minStockLimit = minStock !== null ? minStock : 10;
 
   return (
-    <div className="p-4 space-y-3">
+    <div 
+      className="p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      style={{ animationDelay: `${index * 30}ms`, animationFillMode: "both" }}
+    >
       <div className="flex justify-between items-start">
         <div>
           <div 

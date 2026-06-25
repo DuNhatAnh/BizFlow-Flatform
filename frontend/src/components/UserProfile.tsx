@@ -185,7 +185,7 @@ export default function UserProfile() {
                 <p className="text-xs text-on-surface-variant uppercase tracking-wider font-bold">Mã Cửa hàng</p>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg border border-primary/20">
-                    {user.tenantId === "11111111-1111-1111-1111-111111111111" ? "BIZ-A8F9K2" : `BIZ-${user.tenantId.substring(0, 6).toUpperCase()}`}
+                    {user.tenantId === "11111111-1111-1111-1111-111111111111" ? "BIZ-A8F9K2" : `BIZ-${user.tenantId ? user.tenantId.substring(0, 6).toUpperCase() : "UNKNOWN"}`}
                   </p>
                   <span className="text-[10px] text-on-surface-variant italic">(Mã định danh hệ thống)</span>
                 </div>

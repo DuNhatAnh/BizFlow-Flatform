@@ -44,10 +44,11 @@ export default function ProductCardList({
           Không tìm thấy sản phẩm nào phù hợp.
         </div>
       ) : (
-        products.map((product: any) => (
+        products.map((product: any, idx: number) => (
           <ProductCard
             key={product.id}
             product={product}
+            index={idx}
             categories={categories}
             isReadOnly={isReadOnly}
             onEdit={onEdit}
