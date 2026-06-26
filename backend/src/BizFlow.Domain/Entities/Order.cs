@@ -7,6 +7,7 @@ namespace BizFlow.Domain.Entities;
 public class Order
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    public string? Code { get; set; }
     public Guid TenantId { get; set; }
     public Guid? CustomerId { get; set; }
     public Guid? CreatedBy { get; set; }

@@ -60,7 +60,7 @@ class _CartScreenState extends State<CartScreen> {
     buffer.writeln("Cửa Hàng: $tenantName");
     buffer.writeln("Nhân Viên: $employeeName");
     buffer.writeln("Thời Gian: $dateStr");
-    buffer.writeln("Mã Đơn Hàng: #${order.id.isEmpty ? 'MOCK-ORDER' : order.id.substring(0, 8).toUpperCase()}");
+    buffer.writeln("Mã Đơn Hàng: #${order.id.isEmpty ? 'MOCK-ORDER' : (order.code.isNotEmpty ? order.code : order.id.substring(0, 8).toUpperCase())}");
     buffer.writeln("Khách Hàng: $customerName");
     buffer.writeln("--------------------------------------------------");
     buffer.writeln("Sản Phẩm                 SL    ĐVT      Thành Tiền");
@@ -193,7 +193,7 @@ class _CartScreenState extends State<CartScreen> {
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, -3),
                           )
@@ -208,9 +208,9 @@ class _CartScreenState extends State<CartScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFBA1A1A).withOpacity(0.1),
+                                color: const Color(0xFFBA1A1A).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFBA1A1A).withOpacity(0.3)),
+                                border: Border.all(color: const Color(0xFFBA1A1A).withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
@@ -262,9 +262,9 @@ class _CartScreenState extends State<CartScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00685F).withOpacity(0.08),
+                                color: const Color(0xFF00685F).withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF00685F).withOpacity(0.2)),
+                                border: Border.all(color: const Color(0xFF00685F).withValues(alpha: 0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -359,9 +359,9 @@ class _CartScreenState extends State<CartScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFBA1A1A).withOpacity(0.05),
+                                color: const Color(0xFFBA1A1A).withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFBA1A1A).withOpacity(0.15)),
+                                border: Border.all(color: const Color(0xFFBA1A1A).withValues(alpha: 0.15)),
                               ),
                               child: Column(
                                 children: [

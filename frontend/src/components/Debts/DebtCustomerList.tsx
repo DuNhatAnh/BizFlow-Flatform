@@ -55,7 +55,7 @@ export default function DebtCustomerList({
   });
 
   return (
-    <div className="w-[30%] bg-white rounded-xl border border-surface-container-high flex flex-col h-full shadow-sm overflow-hidden">
+    <div className="w-[30%] bg-white rounded-xl border border-surface-container-high flex flex-col h-full shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
       
       {/* Search & Filter Header */}
       <div className="p-4 border-b border-surface-container-high space-y-3 bg-surface-container-lowest">

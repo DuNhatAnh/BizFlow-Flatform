@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, 
@@ -246,9 +247,9 @@ export default function StaffManagement() {
   // Client-side filtering removed since we fetch paginated & searched data from backend
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header Area Buttons */}
-      <div className="flex justify-end -mt-2">
+      <div className="flex justify-end -mt-2 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
         <button 
           onClick={() => setShowAddModal(true)}
           className="px-4 py-2.5 bg-primary hover:bg-primary-container text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all"
@@ -258,7 +259,7 @@ export default function StaffManagement() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-surface-container-high shadow-card overflow-hidden">
+      <div className="bg-white rounded-xl border border-surface-container-high shadow-card overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
         <div className="p-4 border-b border-surface-container-low bg-surface-container-low/30 flex items-center gap-3">
           <Search className="w-5 h-5 text-on-surface-variant" />
           <input 
@@ -301,7 +302,7 @@ export default function StaffManagement() {
                 <tr><td colSpan={6} className="p-8 text-center text-on-surface-variant">Không tìm thấy nhân viên nào.</td></tr>
                   ) : (
                     staffList.map((staff: any, index: number) => (
-                      <tr key={staff.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                      <tr key={staff.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors">
                         <td className="p-4 text-center text-on-surface-variant font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                         <td className="p-4 font-bold text-on-surface">{staff.fullname}</td>
                         <td className="p-4 text-on-surface-variant">{staff.username}</td>
@@ -335,11 +336,11 @@ export default function StaffManagement() {
                           >
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
-                          {openDropdownId === staff.id && (
+                          {openDropdownId === staff.id && typeof document !== 'undefined' && createPortal(
                             <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                              <div className="fixed inset-0 z-[100]" onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}></div>
                               <div 
-                                className="fixed w-56 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+                                className="fixed w-56 bg-white rounded-xl shadow-lg border border-surface-container-high z-[101] overflow-hidden text-left animate-in fade-in zoom-in-95 duration-100"
                                 style={{ top: dropdownPos.top, right: dropdownPos.right }}
                               >
                                 <button
@@ -407,7 +408,8 @@ export default function StaffManagement() {
                                   <History className="w-4 h-4 text-primary" /> Xem lịch sử hoạt động
                                 </button>
                               </div>
-                            </>
+                            </>,
+                            document.body
                           )}
                         </td>
                       </tr>

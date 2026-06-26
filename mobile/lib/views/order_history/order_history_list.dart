@@ -38,7 +38,7 @@ class OrderHistoryList extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Đơn #${order.id.substring(0, 8).toUpperCase()}',
+                  'Đơn #${(order.code.isNotEmpty ? order.code : order.id.substring(0, 8).toUpperCase())}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     decoration: isCancelled ? TextDecoration.lineThrough : null,

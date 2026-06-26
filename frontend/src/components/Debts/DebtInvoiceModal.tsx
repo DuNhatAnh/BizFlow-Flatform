@@ -48,7 +48,7 @@ export default function DebtInvoiceModal({
               <div className="grid grid-cols-2 gap-3 text-xs bg-background p-3 rounded-lg border border-outline-variant/30">
                 <div>
                   <p className="text-on-surface-variant font-medium">Mã đơn hàng:</p>
-                  <p className="font-bold text-on-surface">#{order.id.substring(0, 8).toUpperCase()}</p>
+                  <p className="font-bold text-on-surface">{order.code || ('#' + order.id.substring(0, 8).toUpperCase())}</p>
                 </div>
                 <div>
                   <p className="text-on-surface-variant font-medium">Ngày lập:</p>

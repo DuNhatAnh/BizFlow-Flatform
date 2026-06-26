@@ -329,9 +329,8 @@ export default function DebtManagement({
       setLoadingOrder(false);
     }
   };
-
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)] min-h-[500px]">
+    <div className="flex gap-6 h-[calc(100vh-140px)] min-h-[500px] animate-in fade-in duration-500">
       
       {/* 1. CUSTOMERS LIST COLUMN */}
       <DebtCustomerList
@@ -348,7 +347,7 @@ export default function DebtManagement({
       />
 
       {/* 2. DETAIL PANEL COLUMN */}
-      <div className="w-[70%] h-full flex flex-col">
+      <div className="w-[70%] h-full flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
         {!selectedCustomer ? (
           <div className="flex-1 bg-white rounded-xl border border-surface-container-high flex flex-col items-center justify-center text-center p-8 shadow-sm">
             <div className="p-4 bg-primary-container/25 rounded-full mb-4 text-primary">

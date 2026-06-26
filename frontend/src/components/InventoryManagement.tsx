@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Package,
   ArrowDownToLine,
@@ -17,12 +18,18 @@ import {
   AlertCircle,
   Eye,
   Printer,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit3
 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 import { FadeIn } from "./ui/FadeIn";
 import { Pagination } from "./ui/Pagination";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import StockTab from "./Inventory/InventoryTabs/StockTab";
+import ReceiptHistoryTab from "./Inventory/InventoryTabs/ReceiptHistoryTab";
+import LedgerS2HKDTab from "./Inventory/InventoryTabs/LedgerS2HKDTab";
+import InventorySettingsTab from "./Inventory/InventoryTabs/InventorySettingsTab";
+import CreateReceiptModal from "./Inventory/CreateReceiptModal";
 
 const API_URL = "http://localhost:5178/api";
 
@@ -115,8 +122,6 @@ export default function InventoryManagement() {
   const [viewReceiptDetails, setViewReceiptDetails] = useState<any>(null);
   const [hasAcknowledgedCogs, setHasAcknowledgedCogs] = useState(false);
   const [isInitialReceiptsLoaded, setIsInitialReceiptsLoaded] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   const [receiptForm, setReceiptForm] = useState({
     type: 1, // 1 = Import, 2 = Export
@@ -546,7 +551,7 @@ export default function InventoryManagement() {
       )}
 
       {/* Header and Sub Tabs */}
-      <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-wrap gap-2">
+      <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-wrap gap-2 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
         <button
           onClick={() => setActiveSubTab("stock")}
           className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeSubTab === "stock" ? "bg-primary text-white" : "bg-transparent text-on-surface hover:bg-surface-container-low"}`}
@@ -580,929 +585,93 @@ export default function InventoryManagement() {
       </div>
 
       {/* Content Area */}
-      <div className="bg-white rounded-xl border border-surface-container-high shadow-card p-6">
+      <div key={activeSubTab} className="bg-white rounded-xl border border-surface-container-high shadow-card p-6 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
 
         {/* TỒN KHO */}
         {activeSubTab === "stock" && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-on-surface">Danh sách Hàng hóa & Tồn kho</h3>
-              <div className="flex gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                  <input 
-                    type="text" 
-                    placeholder="Tìm kiếm..." 
-                    value={productSearch}
-                    onChange={(e: any) => {
-                      setProductSearch(e.target.value);
-                      setProductPage(1);
-                    }}
-                    className="pl-9 pr-4 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary" 
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-surface-container-high text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low">
-                    <th className="p-4 rounded-tl-lg w-16 text-center">STT</th>
-                    <th className="p-4">Mã SP</th>
-                    <th className="p-4">Tên Sản Phẩm</th>
-                    <th className="p-4 text-center">ĐVT</th>
-                    <th className="p-4 text-right">Tồn Kho</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-container-low">
-                  {isProductsLoading ? (
-                    Array.from({ length: 5 }).map((_, idx) => (
-                      <tr key={`skeleton-${idx}`}>
-                        <td className="p-4"><Skeleton className="h-5 w-8 mx-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-24" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-48" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-16 mx-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-6 w-16 ml-auto rounded-md" /></td>
-                      </tr>
-                    ))
-                  ) : isProductsError ? (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center bg-red-50">
-                        <div className="flex flex-col items-center justify-center text-red-600 gap-2">
-                          <AlertCircle className="w-8 h-8" />
-                          <p className="font-bold text-lg">Lỗi tải dữ liệu sản phẩm!</p>
-                          <p className="text-sm">Server đang lỗi do Hot Reload. Hãy thử khởi động lại Backend (docker-compose restart backend).</p>
-                          <code className="mt-2 text-xs bg-red-100 px-2 py-1 rounded text-red-800">
-                            {productsError?.message || "Unknown error"}
-                          </code>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : products.length === 0 ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu hàng hóa</td></tr>
-                  ) : products.filter((s: any, i: number) => i < 10).map((s: any, i: number) => (
-                    <tr key={s.id} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
-                      <td className="p-4 text-center text-on-surface-variant font-medium">{(productPage - 1) * 10 + i + 1}</td>
-                      <td className="p-4 font-semibold text-primary">{s.code || "N/A"}</td>
-                      <td className="p-4 font-bold text-on-surface">{s.name}</td>
-                      <td className="p-4 text-center text-on-surface-variant">{s.baseUnit}</td>
-                      <td className="p-4 text-right font-bold">
-                        <span className={`px-2 py-1 rounded-md ${s.stockQuantity <= 0 ? 'bg-error/10 text-error' : 'bg-emerald-50 text-emerald-700'}`}>
-                          {s.stockQuantity}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {(productsData?.totalCount || 0) > 0 && (
-              <Pagination
-                currentPage={productPage}
-                totalPages={productTotalPages}
-                pageSize={10}
-                totalItems={productsData?.totalCount || 0}
-                itemName="hàng hóa"
-                onPageChange={setProductPage}
-              />
-            )}
-          </div>
+          <StockTab 
+            productSearch={productSearch}
+            setProductSearch={setProductSearch}
+            setProductPage={setProductPage}
+            isProductsLoading={isProductsLoading}
+            isProductsError={isProductsError}
+            productsError={productsError}
+            products={products}
+            productsData={productsData}
+            productPage={productPage}
+            productTotalPages={productTotalPages}
+          />
         )}
 
         {/* PHIẾU NHẬP / XUẤT */}
         {(activeSubTab === "receipts_in" || activeSubTab === "receipts_out") && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-bold text-on-surface">
-                  {activeSubTab === "receipts_in" ? "Lịch sử Nhập kho" : "Lịch sử Xuất kho"}
-                </h3>
-                {activeSubTab === "receipts_out" && (
-                  <div className="flex gap-1 bg-surface-container-low p-1 rounded-lg w-max mt-2">
-                    <button onClick={() => setExportFilterTab("all")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "all" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Tất cả</button>
-                    <button onClick={() => setExportFilterTab("export_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "export_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Phiếu xuất kho</button>
-                    <button onClick={() => setExportFilterTab("sales_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "sales_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Xuất từ bán hàng</button>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-3 items-start">
-                {activeSubTab === "receipts_out" && (
-                  <button
-                    onClick={() => handleOpenReceiptModal(2)}
-                    className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-amber-100"
-                  >
-                    <ArrowUpFromLine className="w-4 h-4" /> Lập Phiếu Xuất Kho
-                  </button>
-                )}
-                {activeSubTab === "receipts_in" && (
-                  <button
-                    onClick={() => handleOpenReceiptModal(1)}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary-container"
-                  >
-                    <ArrowDownToLine className="w-4 h-4" /> Lập Phiếu Nhập Kho
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-surface-container-high text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low">
-                    <th className="p-4 w-16 text-center">STT</th>
-                    <th className="p-4">Ngày Lập</th>
-                    <th className="p-4">Loại</th>
-                    <th className="p-4">Mã tham chiếu</th>
-                    {activeSubTab === "receipts_out" && exportFilterTab === "sales_slip" ? (
-                      <>
-                        <th className="p-4">Khách Hàng</th>
-                        <th className="p-4 text-right">Doanh Thu</th>
-                        <th className="p-4 text-right">Tổng Giá Vốn</th>
-                        <th className="p-4 text-right">Lãi Gộp</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="p-4">Ghi Chú</th>
-                        <th className="p-4 text-right">{activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? "Tổng Giá Vốn" : "Tổng Tiền"}</th>
-                      </>
-                    )}
-                    <th className="p-4 text-center">Trạng thái</th>
-                    <th className="p-4 text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-container-low">
-                  {isReceiptsLoading ? (
-                    Array.from({ length: 5 }).map((_, idx) => (
-                      <tr key={`skeleton-${idx}`}>
-                        <td className="p-4"><Skeleton className="h-5 w-8 mx-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-32" /></td>
-                        <td className="p-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-32" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-48" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-24 ml-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></td>
-                        <td className="p-4"><Skeleton className="h-8 w-8 mx-auto rounded-lg" /></td>
-                      </tr>
-                    ))
-                  ) : (isReceiptsError || isOrdersError) ? (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center bg-red-50">
-                        <div className="flex flex-col items-center justify-center text-red-600 gap-2">
-                          <AlertCircle className="w-8 h-8" />
-                          <p className="font-bold text-lg">Lỗi hệ thống hoặc mất kết nối máy chủ!</p>
-                          <p className="text-sm">Đây không phải là dữ liệu trống. Hệ thống đang gặp lỗi (có thể do Hot Reload). Hãy thử khởi động lại Backend.</p>
-                          <code className="mt-2 text-xs bg-red-100 px-2 py-1 rounded text-red-800">
-                            {receiptsError?.message || ordersError?.message || "Unknown error"}
-                          </code>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : displayData.length === 0 ? (
-                    <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-                  ) : displayData.map((r: any, i: number) => {
-                      const isOrder = r.customer !== undefined || r.orderItems !== undefined;
-                      const isExport = isOrder || r.type === 1 || r.type === "Export";
-                      const code = isOrder ? r.code : (r.referenceDocumentNo || r.referenceId || "N/A");
-                      const date = new Date(r.createdAt || r.date).toLocaleString('vi-VN');
-                      const totalAmount = r.totalAmount || 0;
-                      // Lãi gộp and Giá vốn mock for now if not available
-                      const totalCost = r.totalCostPrice || 0;
-                      const profit = isOrder ? (totalAmount - totalCost) : 0;
-                      
-                      return (
-                      <tr key={r.id || i} className="even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
-                        <td className="p-4 text-center text-on-surface-variant font-medium">{(receiptPage - 1) * 10 + i + 1}</td>
-                        <td className="p-4 text-on-surface-variant">{date}</td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                            isOrder ? 'bg-blue-100 text-blue-700' : 
-                            (isExport ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')
-                          }`}>
-                            {isOrder ? 'Bán hàng' : (isExport ? 'Xuất kho' : 'Nhập kho')}
-                          </span>
-                        </td>
-                        <td className="p-4 text-on-surface-variant font-mono">{code}</td>
-                        
-                        {activeSubTab === "receipts_out" && exportFilterTab === "sales_slip" ? (
-                          <>
-                            <td className="p-4 text-on-surface-variant">{r.customer?.name || "Khách lẻ"}</td>
-                            <td className="p-4 text-right font-bold text-primary">{totalAmount.toLocaleString()} đ</td>
-                            <td className="p-4 text-right font-medium text-amber-700">{totalCost.toLocaleString()} đ</td>
-                            <td className="p-4 text-right font-bold text-emerald-600">{profit.toLocaleString()} đ</td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="p-4 text-on-surface-variant max-w-[200px] truncate">{isOrder ? "Bán cho khách" : r.note}</td>
-                            <td className="p-4 text-right font-bold text-primary">{activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? totalCost.toLocaleString() : totalAmount.toLocaleString()} đ</td>
-                          </>
-                        )}
-                      <td className="p-4 text-center">
-                        {r.status === 1 ? (
-                          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700">Đã hủy</span>
-                        ) : (
-                          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">Đã ghi sổ</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-center">
-                        <button 
-                          onClick={(e) => {
-                            if (openDropdownId === r.id) {
-                              setOpenDropdownId(null);
-                            } else {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setDropdownPos({
-                                top: rect.bottom + 4,
-                                right: window.innerWidth - rect.right
-                              });
-                              setOpenDropdownId(r.id);
-                            }
-                          }}
-                          className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </button>
-                        {openDropdownId === r.id && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
-                            <div 
-                              className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
-                              style={{ top: dropdownPos.top, right: dropdownPos.right }}
-                            >
-                                <button
-                                  onClick={() => {
-                                    const isOrder = r.customer !== undefined || r.orderItems !== undefined;
-                                    if (isOrder) {
-                                      setViewReceiptDetails({
-                                        id: r.id,
-                                        type: 1, // Export
-                                        receiptCode: r.code,
-                                        date: r.createdAt,
-                                        status: r.status,
-                                        delivererReceiverName: r.customer?.name || "Khách lẻ",
-                                        referenceDocumentNo: r.code,
-                                        note: `Bán hàng cho ${r.customer?.name || "Khách lẻ"}`,
-                                        totalAmount: r.totalAmount,
-                                        details: r.orderItems?.map((oi:any) => ({
-                                          productId: oi.productId,
-                                          productName: oi.product?.name,
-                                          documentQuantity: oi.quantity,
-                                          quantity: oi.quantity,
-                                          unitPrice: oi.unitPrice,
-                                          totalPrice: oi.totalPrice
-                                        })) || []
-                                      });
-                                    } else {
-                                      setViewReceiptDetails(r);
-                                    }
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
-                                >
-                                <Eye className="w-4 h-4 text-primary" /> Xem chi tiết
-                              </button>
-                              {r.status === 0 && (
-                                <button
-                                  onClick={() => {
-                                    setCancelReceiptId(r.id);
-                                    setCancelModalOpen(true);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" /> Hủy / Xóa phiếu
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {(receiptsData?.totalCount || 0) > 0 && (
-              <Pagination
-                currentPage={receiptPage}
-                totalPages={receiptTotalPages}
-                pageSize={10}
-                totalItems={receiptsData?.totalCount || 0}
-                itemName="phiếu"
-                onPageChange={setReceiptPage}
-              />
-            )}
-          </div>
+          <ReceiptHistoryTab 
+            activeSubTab={activeSubTab}
+            exportFilterTab={exportFilterTab}
+            setExportFilterTab={setExportFilterTab}
+            handleOpenReceiptModal={handleOpenReceiptModal}
+            isReceiptsLoading={isReceiptsLoading}
+            isOrdersLoading={isOrdersLoading}
+            isReceiptsError={isReceiptsError}
+            isOrdersError={isOrdersError}
+            receiptsError={receiptsError}
+            ordersError={ordersError}
+            displayData={displayData}
+            receiptPage={receiptPage}
+            setReceiptPage={setReceiptPage}
+            setViewReceiptDetails={setViewReceiptDetails}
+            setCancelReceiptId={setCancelReceiptId}
+            setCancelModalOpen={setCancelModalOpen}
+            receiptsData={receiptsData}
+            receiptTotalPages={receiptTotalPages}
+          />
         )}
 
         {/* SỔ S2-HKD */}
         {activeSubTab === "ledger" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 print:hidden">
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">Sổ Chi Tiết Vật Liệu, Dụng Cụ, Sản Phẩm, Hàng Hóa</h3>
-                <p className="text-sm text-on-surface-variant mt-1">Mẫu số S2-HKD (Ban hành kèm theo Thông tư số 88/2021/TT-BTC)</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <select
-                  value={selectedLedgerProduct}
-                  onChange={(e: any) => setSelectedLedgerProduct(e.target.value)}
-                  className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary max-w-[200px]"
-                >
-                  {products.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedMonth}
-                  onChange={(e: any) => setSelectedMonth(Number(e.target.value))}
-                  className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary"
-                >
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                    <option key={m} value={m}>Tháng {m}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedYear}
-                  onChange={(e: any) => setSelectedYear(Number(e.target.value))}
-                  className="px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low text-on-surface focus:outline-none focus:border-primary"
-                >
-                  {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
-                    <option key={y} value={y}>Năm {y}</option>
-                  ))}
-                </select>
-
-                <button onClick={() => window.print()} className="px-4 py-2 bg-white border border-outline-variant text-on-surface rounded-lg text-sm font-bold hover:bg-surface-container-low transition-colors flex items-center gap-2">
-                  <Printer className="w-4 h-4" /> In Sổ S2
-                </button>
-                <button onClick={handleExportExcel} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-bold hover:bg-secondary/90 transition-colors">
-                  Xuất Excel
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-surface-container-high overflow-hidden print:hidden">
-              {!ledger ? (
-                <div className="p-8 text-center text-on-surface-variant">Đang tải dữ liệu...</div>
-              ) : (
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-surface-container-lowest text-xs uppercase tracking-wider text-on-surface-variant">
-                      <th className="p-2 border-b border-surface-container-high text-center border-r" colSpan={2}>Chứng từ</th>
-                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Diễn giải</th>
-                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Đơn vị tính</th>
-                      <th className="p-3 border-b border-surface-container-high text-center border-r" rowSpan={2}>Đơn giá</th>
-                      <th className="p-2 border-b border-surface-container-high text-center border-r bg-emerald-50/50" colSpan={2}>Nhập</th>
-                      <th className="p-2 border-b border-surface-container-high text-center border-r bg-amber-50/50" colSpan={2}>Xuất</th>
-                      <th className="p-2 border-b border-surface-container-high text-center bg-blue-50/50" colSpan={2}>Tồn</th>
-                    </tr>
-                    <tr className="bg-surface-container-lowest text-xs uppercase tracking-wider text-on-surface-variant border-b border-surface-container-high">
-                      <th className="p-2 border-r border-surface-container-high w-24">Số hiệu</th>
-                      <th className="p-2 border-r border-surface-container-high w-24">Ngày, tháng</th>
-                      <th className="p-2 border-r border-surface-container-high bg-emerald-50/50">Số lượng</th>
-                      <th className="p-2 border-r border-surface-container-high bg-emerald-50/50">Thành tiền</th>
-                      <th className="p-2 border-r border-surface-container-high bg-amber-50/50">Số lượng</th>
-                      <th className="p-2 border-r border-surface-container-high bg-amber-50/50">Thành tiền</th>
-                      <th className="p-2 border-r border-surface-container-high bg-blue-50/50">Số lượng</th>
-                      <th className="p-2 bg-blue-50/50">Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-container-high">
-                    {isLedgerLoading ? (
-                      Array.from({ length: 5 }).map((s: any, idx: number) => (
-                        <tr key={`skeleton-${idx}`}>
-                          <td colSpan={11} className="p-3"><Skeleton className="h-6 w-full" /></td>
-                        </tr>
-                      ))
-                    ) : (
-                      <>
-                        {/* Số dư đầu kỳ */}
-                        <tr className="bg-surface-container-low/30 font-semibold text-right">
-                          <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">SỐ DƯ ĐẦU KỲ</td>
-                          <td className="p-3 border-r border-surface-container-high">-</td>
-                          <td className="p-3 border-r border-surface-container-high">-</td>
-                          <td className="p-3 border-r border-surface-container-high">-</td>
-                          <td className="p-3 border-r border-surface-container-high">-</td>
-                          <td className="p-3 border-r border-surface-container-high text-primary">{ledger.openingQuantity}</td>
-                          <td className="p-3 text-primary">{ledger.openingValue?.toLocaleString()}</td>
-                        </tr>
-
-                        {ledger.records.items.length === 0 ? (
-                          <tr><td colSpan={11} className="p-8 text-center text-on-surface-variant">Không có phát sinh trong kỳ</td></tr>
-                        ) : ledger.records.items.map((l: any, i: number) => {
-                          const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
-                          const unitPrice = (l.quantityIn > 0 && l.valueIn > 0) ? (l.valueIn / l.quantityIn) : ((l.quantityOut > 0 && l.valueOut > 0) ? (l.valueOut / l.quantityOut) : 0);
-                          const productName = products.find((p: any) => p.id === selectedLedgerProduct)?.name;
-                          const productUnit = products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit || "Cái";
-                          return (
-                            <FadeIn as="tr" delay={i * 50} key={i} className={`even:bg-slate-50 odd:bg-white hover:bg-surface-container-low/80 transition-colors text-right ${isCancel ? 'bg-red-50/50' : ''}`}>
-                              <td className="p-3 text-center border-r border-surface-container-high font-semibold">{l.documentRef || "N/A"}</td>
-                              <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
-                              <td className="p-3 text-left border-r border-surface-container-high text-on-surface-variant">
-                                {l.type === 0
-                                  ? (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu nhập</span> : "Nhập kho")
-                                  : (isCancel ? <span className="text-red-600 font-bold italic">Hủy phiếu xuất</span> : "Xuất kho")}
-                              </td>
-                              <td className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">{productUnit}</td>
-                              <td className="p-3 border-r border-surface-container-high text-on-surface-variant">{unitPrice > 0 ? unitPrice.toLocaleString() : "-"}</td>
-
-                              {/* Nhập */}
-                              <td className="p-3 border-r border-surface-container-high text-emerald-700">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
-                              <td className="p-3 border-r border-surface-container-high text-emerald-700">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
-
-                              {/* Xuất */}
-                              <td className="p-3 border-r border-surface-container-high text-amber-700">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
-                              <td className="p-3 border-r border-surface-container-high text-amber-700">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
-
-                              {/* Tồn */}
-                              <td className="p-3 border-r border-surface-container-high font-bold text-primary">{l.quantityBalance}</td>
-                              <td className="p-3 font-bold text-primary">{l.valueBalance?.toLocaleString() || "0"}</td>
-                            </FadeIn>
-                          );
-                        })}
-                      </>
-                    )}
-                  </tbody>
-                  <tfoot className="bg-surface-container-lowest font-bold text-right border-t-2 border-surface-container-high">
-                    {/* Cộng phát sinh trong kỳ */}
-                    <tr className="border-b border-surface-container-high">
-                      <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">CỘNG PHÁT SINH TRONG KỲ</td>
-                      <td className="p-3 border-r border-surface-container-high text-emerald-700">{ledger.totalQuantityIn}</td>
-                      <td className="p-3 border-r border-surface-container-high text-emerald-700">{ledger.totalValueIn.toLocaleString()}</td>
-                      <td className="p-3 border-r border-surface-container-high text-amber-700">{ledger.totalQuantityOut}</td>
-                      <td className="p-3 border-r border-surface-container-high text-amber-700">{ledger.totalValueOut.toLocaleString()}</td>
-                      <td className="p-3 border-r border-surface-container-high text-on-surface-variant">x</td>
-                      <td className="p-3 text-on-surface-variant">x</td>
-                    </tr>
-                    {/* Số dư cuối kỳ */}
-                    <tr>
-                      <td colSpan={5} className="p-3 text-center border-r border-surface-container-high text-on-surface-variant">SỐ DƯ CUỐI KỲ</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high">-</td>
-                      <td className="p-3 border-r border-surface-container-high text-primary">{ledger.closingQuantity}</td>
-                      <td className="p-3 text-primary">{ledger.closingValue.toLocaleString()}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-            </div>
-
-            {ledger && ledger.records.totalCount > 0 && (
-              <Pagination
-                currentPage={ledgerPage}
-                totalPages={ledger.records.totalPages}
-                pageSize={10}
-                totalItems={ledger.records.totalCount}
-                itemName="giao dịch"
-                onPageChange={setLedgerPage}
-              />
-            )}
-
-            {/* PRINT S2 LAYOUT */}
-            {ledger && (
-              <div id="print-area" className="hidden print:block absolute inset-0 bg-white p-8 text-black text-[13px] leading-relaxed z-[100] min-h-screen">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <div className="font-bold text-sm">HỘ, CÁ NHÂN KINH DOANH: .......................................</div>
-                    <div className="font-bold text-sm">Địa chỉ: ....................................................................</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-sm">Mẫu số S2-HKD</div>
-                    <div className="text-[11px] italic">(Ban hành kèm theo Thông tư số 88/2021/TT-BTC<br />ngày 11 tháng 10 năm 2021 của Bộ trưởng Bộ Tài chính)</div>
-                  </div>
-                </div>
-
-                <div className="text-center mb-6">
-                  <h1 className="text-xl font-bold uppercase mb-1">SỔ CHI TIẾT VẬT LIỆU, DỤNG CỤ, SẢN PHẨM, HÀNG HÓA</h1>
-                  <div className="italic mb-1 text-sm">Năm {selectedYear}</div>
-                </div>
-
-                <div className="mb-4 space-y-1.5 text-[13px]">
-                  <div>Tên vật liệu, dụng cụ, sản phẩm, hàng hóa: <div className="font-bold text-on-surface">{products.find((p: any) => p.id === selectedLedgerProduct)?.name}</div></div>
-                  <div>Đơn vị tính: <span className="font-bold text-secondary text-right">{products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit}</span></div>
-                </div>
-
-                <table className="w-full border-collapse border border-black mb-4 text-center text-[13px]">
-                  <thead>
-                    <tr>
-                      <th className="border border-black p-1.5 align-middle" colSpan={2}>Chứng từ</th>
-                      <th className="border border-black p-1.5 align-middle w-1/4" rowSpan={2}>Diễn giải</th>
-                      <th className="border border-black p-1.5 align-middle" rowSpan={2}>Đơn giá</th>
-                      <th className="border border-black p-1.5 align-middle" colSpan={2}>Nhập</th>
-                      <th className="border border-black p-1.5 align-middle" colSpan={2}>Xuất</th>
-                      <th className="border border-black p-1.5 align-middle" colSpan={2}>Tồn</th>
-                    </tr>
-                    <tr>
-                      <th className="border border-black p-1.5">Số hiệu</th>
-                      <th className="border border-black p-1.5">Ngày, tháng</th>
-                      <th className="border border-black p-1.5">Số lượng</th>
-                      <th className="border border-black p-1.5">Thành tiền</th>
-                      <th className="border border-black p-1.5">Số lượng</th>
-                      <th className="border border-black p-1.5">Thành tiền</th>
-                      <th className="border border-black p-1.5">Số lượng</th>
-                      <th className="border border-black p-1.5">Thành tiền</th>
-                    </tr>
-                    <tr>
-                      <th className="border border-black p-1 font-normal italic">A</th>
-                      <th className="border border-black p-1 font-normal italic">B</th>
-                      <th className="border border-black p-1 font-normal italic">C</th>
-                      <th className="border border-black p-1 font-normal italic">D</th>
-                      <th className="border border-black p-1 font-normal italic">1</th>
-                      <th className="border border-black p-1 font-normal italic">2</th>
-                      <th className="border border-black p-1 font-normal italic">3</th>
-                      <th className="border border-black p-1 font-normal italic">4</th>
-                      <th className="border border-black p-1 font-normal italic">5</th>
-                      <th className="border border-black p-1 font-normal italic">6</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-right">
-                    <tr className="font-semibold">
-                      <td className="border border-black p-1.5" colSpan={2}></td>
-                      <td className="border border-black p-1.5 text-left">Số dư đầu kỳ</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">{ledger.openingQuantity}</td>
-                      <td className="border border-black p-1.5">{ledger.openingValue.toLocaleString()}</td>
-                    </tr>
-                    {ledger.records.items.map((l: any, i: number) => {
-                      const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
-                      const dienGiai = l.type === 0 ? (isCancel ? "Hủy phiếu nhập" : "Nhập kho") : (isCancel ? "Hủy phiếu xuất" : "Xuất kho");
-                      return (
-                        <tr key={i}>
-                          <td className="border border-black p-1.5 text-center">{l.documentRef || "N/A"}</td>
-                          <td className="border border-black p-1.5 text-center">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
-                          <td className="border border-black p-1.5 text-left">{dienGiai}</td>
-                          <td className="border border-black p-1.5">-</td>
-                          <td className="border border-black p-1.5">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
-                          <td className="border border-black p-1.5">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
-                          <td className="border border-black p-1.5">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
-                          <td className="border border-black p-1.5">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
-                          <td className="border border-black p-1.5">{l.quantityBalance}</td>
-                          <td className="border border-black p-1.5">{l.valueBalance?.toLocaleString() || "0"}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="font-semibold">
-                      <td className="border border-black p-1.5" colSpan={2}></td>
-                      <td className="border border-black p-1.5 text-left">Cộng phát sinh trong kỳ</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">{ledger.totalQuantityIn}</td>
-                      <td className="border border-black p-1.5">{ledger.totalValueIn.toLocaleString()}</td>
-                      <td className="border border-black p-1.5">{ledger.totalQuantityOut}</td>
-                      <td className="border border-black p-1.5">{ledger.totalValueOut.toLocaleString()}</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                    </tr>
-                    <tr className="font-semibold">
-                      <td className="border border-black p-1.5" colSpan={2}></td>
-                      <td className="border border-black p-1.5 text-left">Số dư cuối kỳ</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">x</td>
-                      <td className="border border-black p-1.5">{ledger.closingQuantity}</td>
-                      <td className="border border-black p-1.5">{ledger.closingValue.toLocaleString()}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="mt-4 text-[13px] space-y-1">
-                  <div>- Sổ này có ... trang, đánh số từ trang 01 đến trang ...</div>
-                  <div>- Ngày mở sổ: ..............................</div>
-                </div>
-
-                <div className="flex justify-between text-center mt-6 px-16">
-                  <div>
-                    <div className="italic text-xs mb-1 invisible">Ngày ..... tháng ..... năm .....</div>
-                    <div className="font-bold text-[13px]">NGƯỜI LẬP SỔ</div>
-                    <div className="italic text-xs">(Ký, họ tên)</div>
-                  </div>
-                  <div>
-                    <div className="italic text-xs mb-1">Ngày ..... tháng ..... năm .....</div>
-                    <div className="font-bold text-[13px]">NGƯỜI ĐẠI DIỆN HỘ KINH DOANH</div>
-                    <div className="italic text-xs">(Ký, họ tên)</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <LedgerS2HKDTab 
+            selectedLedgerProduct={selectedLedgerProduct}
+            setSelectedLedgerProduct={setSelectedLedgerProduct}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            products={products}
+            handleExportExcel={handleExportExcel}
+            ledger={ledger}
+            isLedgerLoading={isLedgerLoading}
+            ledgerPage={ledgerPage}
+            setLedgerPage={setLedgerPage}
+          />
         )}
 
         {/* CÀI ĐẶT & GIÁ VỐN */}
         {activeSubTab === "settings" && (
-          <div className="max-w-2xl mx-auto">
-            <h3 className="text-lg font-bold text-on-surface mb-6">Cài đặt Phương pháp Tính giá Vốn (COGS)</h3>
-
-            {hasAnyReceipts && (
-              <div className="mb-6 bg-error-container text-on-error-container p-4 rounded-xl border border-error/20 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-error" />
-                <div>
-                  <h4 className="font-bold text-error mb-1">Khóa an toàn dữ liệu (Safe Lock)</h4>
-                  <p className="text-sm">Hệ thống đã ghi nhận các giao dịch xuất/nhập kho. Để đảm bảo tính nhất quán của Sổ S2 theo Chuẩn mực Kế toán, bạn không thể thay đổi phương pháp lúc này. Việc thay đổi chỉ được phép khi kho hàng đã được reset về 0.</p>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${hasAnyReceipts ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    <input
-                      type="radio"
-                      id="wa"
-                      name="cogs"
-                      value="weighted_average"
-                      checked={cogsMethod === "weighted_average"}
-                      onChange={(e) => setCogsMethod(e.target.value)}
-                      disabled={hasAnyReceipts}
-                      className="w-5 h-5 text-primary focus:ring-primary disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="wa" className={`font-bold text-base ${hasAnyReceipts ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Bình quân gia quyền cả kỳ dự trữ (Mặc định)</label>
-                    <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
-                      Phù hợp với hầu hết các hộ kinh doanh bán lẻ. Giá trị mỗi đơn vị hàng hóa xuất kho được tính bằng trung bình cộng của giá trị hàng tồn đầu kỳ và giá trị hàng nhập trong kỳ.
-                    </p>
-                    {cogsMethod === "weighted_average" && (
-                      <div className="mt-3 bg-blue-50 text-blue-800 p-3 rounded-lg text-xs flex items-start gap-2 border border-blue-100">
-                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span><strong>Ví dụ:</strong> Nhập 10 cái giá 10k, nhập thêm 10 cái giá 12k. Giá bình quân khi xuất kho sẽ là 11k/cái. Hệ thống sẽ tự động tự tính lại mức giá này mỗi khi có phiếu nhập kho mới.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant space-y-4 ${hasAnyReceipts ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}>
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    <input
-                      type="radio"
-                      id="fifo"
-                      name="cogs"
-                      value="fifo"
-                      checked={cogsMethod === "fifo"}
-                      onChange={(e) => setCogsMethod(e.target.value)}
-                      disabled={hasAnyReceipts}
-                      className="w-5 h-5 text-primary focus:ring-primary disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="fifo" className={`font-bold text-base ${hasAnyReceipts ? 'text-on-surface-variant cursor-not-allowed' : 'text-on-surface cursor-pointer'}`}>Nhập trước, Xuất trước (FIFO)</label>
-                    <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
-                      Phù hợp với các mặt hàng có hạn sử dụng (Thực phẩm, Dược phẩm). Hệ thống sẽ trừ xuất kho vào những lô hàng được nhập vào kho sớm nhất.
-                    </p>
-                    {cogsMethod === "fifo" && (
-                      <div className="mt-3 bg-amber-50 text-amber-800 p-3 rounded-lg text-xs flex items-start gap-2 border border-amber-100">
-                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span><strong>Lưu ý:</strong> Chuyển sang FIFO đòi hỏi hệ thống phải lưu trữ lịch sử tồn kho theo từng lô (Batch). Có thể sẽ mất thời gian tính toán nếu đổi phương pháp giữa chừng.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-surface-container-high flex justify-end">
-                <button onClick={handleSaveSettings} className="px-6 py-2.5 bg-primary text-white rounded-lg font-bold shadow-sm hover:bg-primary-container transition-colors">
-                  Lưu Cài Đặt
-                </button>
-              </div>
-            </div>
-          </div>
+          <InventorySettingsTab 
+            hasAnyReceipts={hasAnyReceipts}
+            cogsMethod={cogsMethod}
+            setCogsMethod={setCogsMethod}
+            handleSaveSettings={handleSaveSettings}
+          />
         )}
 
       </div>
       </div>
 
       {/* Modal Lập Phiếu */}
-      {isReceiptModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-5 border-b border-surface-container-high">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                {receiptForm.type === 1 ? <ArrowDownToLine className="text-emerald-600" /> : <ArrowUpFromLine className="text-amber-600" />}
-                Lập Phiếu {receiptForm.type === 1 ? "Nhập Kho" : "Xuất Kho Khác"}
-              </h3>
-              <button onClick={() => setIsReceiptModalOpen(false)} className="p-2 hover:bg-surface-container-low rounded-full transition-colors">
-                <X className="w-5 h-5 text-on-surface-variant" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Số phiếu</label>
-                  <input
-                    type="text"
-                    value="Tự động sinh"
-                    disabled
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-highest text-on-surface-variant cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Ngày lập phiếu</label>
-                  <input
-                    type="date"
-                    value={receiptForm.date}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, date: e.target.value })}
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">
-                    {receiptForm.type === 1 ? "Họ tên người giao hàng" : "Họ tên người nhận hàng"}
-                  </label>
-                  <input
-                    type="text"
-                    value={receiptForm.delivererReceiverName}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, delivererReceiverName: e.target.value })}
-                    placeholder={receiptForm.type === 1 ? "Nguyễn Văn A..." : "Trần Văn B..."}
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Theo chứng từ gốc số</label>
-                  <input
-                    type="text"
-                    value={receiptForm.referenceDocumentNo}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, referenceDocumentNo: e.target.value })}
-                    placeholder="VD: HD00123"
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Ngày chứng từ gốc</label>
-                  <input
-                    type="date"
-                    value={receiptForm.referenceDocumentDate}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, referenceDocumentDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Đơn vị ban hành chứng từ</label>
-                  <input
-                    type="text"
-                    value={receiptForm.referenceDocumentIssuer}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, referenceDocumentIssuer: e.target.value })}
-                    placeholder="VD: Công ty TNHH ABC"
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Địa điểm nhập/xuất kho</label>
-                  <input
-                    type="text"
-                    value={receiptForm.warehouseLocation}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, warehouseLocation: e.target.value })}
-                    placeholder="VD: Kho chính"
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-on-surface-variant mb-2">Ghi chú / Lý do {receiptForm.type === 1 ? "nhập" : "xuất"} kho</label>
-                  <input
-                    type="text"
-                    value={receiptForm.note}
-                    onChange={(e) => setReceiptForm({ ...receiptForm, note: e.target.value })}
-                    placeholder="VD: Nhập hàng đợt 1..."
-                    className="w-full px-4 py-2 border border-outline-variant rounded-lg text-sm bg-surface-container-low focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                {receiptForm.type === 2 && (
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-on-surface-variant mb-2">Loại giá xuất (Đơn giá)</label>
-                    <div className="flex gap-6 mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="exportPriceType" value="cogs" checked={receiptForm.exportPriceType === "cogs"} onChange={(e) => handleExportPriceTypeChange(e.target.value)} className="w-4 h-4 text-primary focus:ring-primary" />
-                        <span className="text-sm font-semibold">Giá gốc (Tự động lấy trung bình giá vốn hiện tại)</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="exportPriceType" value="selling" checked={receiptForm.exportPriceType === "selling"} onChange={(e) => handleExportPriceTypeChange(e.target.value)} className="w-4 h-4 text-primary focus:ring-primary" />
-                        <span className="text-sm font-semibold">Giá bán (Nhập thủ công hoặc theo giá bán)</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-xs font-bold text-on-surface-variant uppercase">Danh sách hàng hóa</label>
-                  <button onClick={handleAddReceiptItem} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-                    <Plus className="w-3 h-3" /> Thêm dòng
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {receiptForm.items.map((item, index) => (
-                    <div key={index} className="flex gap-3 items-end bg-surface-container-low/50 p-3 rounded-lg border border-surface-container-high">
-                      <div className="flex-1">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Sản phẩm</label>
-                        <select
-                          value={item.productId}
-                          onChange={(e) => handleItemChange(index, "productId", e.target.value)}
-                          className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
-                        >
-                          <option key="empty" value="">Chọn sản phẩm</option>
-                          {products.map((p: any) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                        </select>
-                      </div>
-                      <div className="w-16">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold text-center">ĐVT</label>
-                        <div className="w-full px-2 py-1.5 border border-outline-variant rounded bg-surface-container-highest text-sm text-center text-on-surface-variant">
-                          {products.find((p: any) => p.id === item.productId)?.baseUnit || "-"}
-                        </div>
-                      </div>
-                      <div className="w-20">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">SL Y/C</label>
-                        <input
-                          type="number" min="1"
-                          value={item.documentQuantity}
-                          onChange={(e) => handleItemChange(index, "documentQuantity", e.target.value)}
-                          className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="w-20">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">SL Thực</label>
-                        <input
-                          type="number" min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
-                          className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="w-28">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Đơn giá</label>
-                        <input
-                          type="number" min="0"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, "unitPrice", e.target.value)}
-                          disabled={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs"}
-                          title={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? "Giá gốc được hệ thống tính tự động từ giá vốn" : ""}
-                          className={`w-full px-3 py-1.5 border border-outline-variant rounded text-sm focus:border-primary focus:outline-none ${receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? 'bg-surface-container-highest cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
-                        />
-                      </div>
-                      <div className="w-28">
-                        <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold text-right">Thành tiền</label>
-                        <div className="w-full px-3 py-1.5 border border-outline-variant rounded text-sm font-semibold text-right bg-surface-container-highest text-primary">
-                          {(item.quantity * item.unitPrice).toLocaleString()}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveReceiptItem(index)}
-                        className="p-1.5 text-error hover:bg-error/10 rounded mb-0.5 transition-colors"
-                        disabled={receiptForm.items.length === 1}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 border-t border-surface-container-high bg-surface-container-low/50 flex justify-between items-center gap-3">
-              <div className="text-sm font-bold text-on-surface">
-                Tổng tiền phiếu:
-                <span className="text-primary text-lg ml-2">
-                  {receiptForm.type === 2 ? "Tự động tính giá vốn" : receiptForm.items.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0).toLocaleString() + " VNĐ"}
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => setIsReceiptModalOpen(false)} className="px-5 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg">
-                  Hủy
-                </button>
-                <button
-                  onClick={handleSubmitReceipt}
-                  disabled={isLoading}
-                  className={`px-5 py-2 text-sm font-bold text-white rounded-lg flex items-center gap-2 ${isLoading ? 'bg-primary/50 cursor-not-allowed' : 'bg-primary hover:bg-primary-container'}`}
-                >
-                  <Save className="w-4 h-4" /> {isLoading ? 'Đang lưu...' : 'Lưu Phiếu'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateReceiptModal
+        isReceiptModalOpen={isReceiptModalOpen}
+        setIsReceiptModalOpen={setIsReceiptModalOpen}
+        receiptForm={receiptForm}
+        setReceiptForm={setReceiptForm}
+        products={products}
+        isLoading={isLoading}
+        handleAddReceiptItem={handleAddReceiptItem}
+        handleItemChange={handleItemChange}
+        handleRemoveReceiptItem={handleRemoveReceiptItem}
+        handleExportPriceTypeChange={handleExportPriceTypeChange}
+        handleSubmitReceipt={handleSubmitReceipt}
+      />
 
       {/* CANCEL MODAL */}
       {cancelModalOpen && (

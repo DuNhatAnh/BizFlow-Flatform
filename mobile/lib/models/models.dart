@@ -238,6 +238,7 @@ class OrderItem {
 
 class Order {
   final String id;
+  final String code;
   final String tenantId;
   final String? customerId;
   final String? customerName;
@@ -251,6 +252,7 @@ class Order {
 
   Order({
     required this.id,
+    this.code = '',
     required this.tenantId,
     this.customerId,
     this.customerName,
@@ -270,6 +272,7 @@ class Order {
         : [];
     return Order(
       id: json['id'] ?? '',
+      code: json['code'] ?? '',
       tenantId: json['tenantId'] ?? '',
       customerId: json['customerId'],
       customerName: json['customer']?['fullname'] ?? json['customerName'],
@@ -287,6 +290,7 @@ class Order {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'code': code,
     'tenantId': tenantId,
     'customerId': customerId,
     'createdBy': createdBy,

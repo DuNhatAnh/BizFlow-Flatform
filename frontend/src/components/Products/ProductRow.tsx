@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Tag, MoreHorizontal, Edit2, Trash2, ShoppingCart, Package } from "lucide-react";
 import StockBadge from "./StockBadge";
 import UnitPricesList from "./UnitPricesList";
@@ -48,16 +49,15 @@ export default function ProductRow({
     if (categoryName.includes("Sơn") || categoryName.includes("Hóa chất")) return "Khu Kệ B";
     return "Kho tổng - Kệ C";
   };
-  
+
   const defaultLocation = getMockLocation(catName);
   const { minStock, location: customLocation } = parseDescriptionMetadata(product.description);
   const displayLocation = customLocation || defaultLocation;
   const minStockLimit = minStock !== null ? minStock : 10;
 
   return (
-    <tr 
-      className="even:bg-slate-50/50 odd:bg-white hover:bg-slate-50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300"
-      style={{ animationDelay: `${index * 30}ms`, animationFillMode: "both" }}
+    <tr
+      className="even:bg-slate-50/50 odd:bg-white hover:bg-slate-50 transition-colors"
     >
       <td className="py-2 px-4 text-center text-on-surface-variant font-medium">
         {(currentPage - 1) * itemsPerPage + index + 1}
@@ -68,8 +68,8 @@ export default function ProductRow({
             <Package className="w-4.5 h-4.5" />
           </div>
           <div>
-            <div 
-              className="font-semibold text-slate-800 hover:text-primary cursor-pointer transition-colors select-none text-[13.5px]" 
+            <div
+              className="font-semibold text-slate-800 hover:text-primary cursor-pointer transition-colors select-none text-[13.5px]"
               onClick={() => onSelectCalcProduct(product)}
               title="Click để tính toán quy đổi giá bán"
             >
@@ -88,12 +88,12 @@ export default function ProductRow({
         </div>
       </td>
       <td className="py-2 px-4">
-        <span 
+        <span
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border flex-shrink-0"
-          style={catColor ? { 
-            backgroundColor: catColor + '1a', 
+          style={catColor ? {
+            backgroundColor: catColor + '1a',
             borderColor: catColor + '33',
-            color: '#334155' 
+            color: '#334155'
           } : {
             backgroundColor: '#f8fafc',
             borderColor: '#e2e8f0',
@@ -108,18 +108,12 @@ export default function ProductRow({
           {catName}
         </span>
       </td>
-      <td className="py-2 px-4 font-medium text-slate-700">
-        <div className="flex flex-col gap-1 items-start">
-          <span>{product.baseUnit}</span>
-          <StockBadge stockQuantity={product.stockQuantity || 0} baseUnit={product.baseUnit} minStockLimit={minStockLimit} />
-        </div>
-      </td>
       <td className="py-2 px-4">
         <UnitPricesList units={product.units} baseUnit={product.baseUnit} />
       </td>
       {!isReadOnly ? (
         <td className="py-2 px-4 text-center relative">
-          <button 
+          <button
             onClick={(e) => {
               if (openDropdownId) {
                 setOpenDropdownId(false);
@@ -136,11 +130,11 @@ export default function ProductRow({
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
-          {openDropdownId && (
+          {openDropdownId && typeof document !== 'undefined' && createPortal(
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(false)}></div>
-              <div 
-                className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-50 overflow-hidden text-left"
+              <div className="fixed inset-0 z-[100]" onClick={(e) => { e.stopPropagation(); setOpenDropdownId(false); }}></div>
+              <div
+                className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-[101] overflow-hidden text-left animate-in fade-in zoom-in-95 duration-100"
                 style={{ top: dropdownPos.top, right: dropdownPos.right }}
               >
                 <button
@@ -162,7 +156,8 @@ export default function ProductRow({
                   <Trash2 className="w-4 h-4" /> Xóa sản phẩm
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </td>
       ) : (
@@ -182,11 +177,10 @@ export default function ProductRow({
               showToast(`Đã thêm 1 ${mappedProduct.unit} ${product.name} vào giỏ POS!`);
             }}
             disabled={product.stockQuantity <= 0}
-            className={`p-2 rounded-lg transition-all flex items-center justify-center mx-auto shadow-sm ${
-              product.stockQuantity <= 0
+            className={`p-2 rounded-lg transition-all flex items-center justify-center mx-auto shadow-sm ${product.stockQuantity <= 0
                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                 : "bg-primary text-white hover:bg-primary-container hover:scale-105 active:scale-95"
-            }`}
+              }`}
             title={product.stockQuantity <= 0 ? "Hết hàng trong kho" : "Thêm nhanh vào giỏ hàng POS"}
           >
             <ShoppingCart className="w-4 h-4" />

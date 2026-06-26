@@ -31,7 +31,7 @@ class CustomerListTile extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: const Color(0xFF00685F).withOpacity(0.1),
+                backgroundColor: const Color(0xFF00685F).withValues(alpha: 0.1),
                 child: Text(
                   customer.fullname.isNotEmpty ? customer.fullname.substring(0, 1).toUpperCase() : 'K',
                   style: const TextStyle(color: Color(0xFF00685F), fontWeight: FontWeight.bold, fontFamily: 'Inter'),

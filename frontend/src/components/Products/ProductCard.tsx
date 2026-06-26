@@ -68,9 +68,6 @@ export default function ProductCard({
             </span>
           </div>
         </div>
-        <div>
-          <StockBadge stockQuantity={product.stockQuantity} baseUnit={product.baseUnit} minStockLimit={minStockLimit} />
-        </div>
       </div>
 
       <div className="bg-surface-container-low p-2.5 rounded-lg border border-surface-container-high text-xs space-y-1.5">

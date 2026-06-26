@@ -3,6 +3,7 @@ using System;
 using BizFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BizFlow.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260626044708_AddOrderCode")]
+    partial class AddOrderCode
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -233,6 +236,36 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("categories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Name = "Vật liệu xây dựng",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Name = "Thiết bị điện",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Name = "Nước giải khát",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Name = "Hàng tạp hóa",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.Customer", b =>
@@ -678,6 +711,64 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("products", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a67eb1b6-3a63-46d4-96db-5a283026eab2"),
+                            BaseUnit = "cây",
+                            CategoryId = 1,
+                            Code = "SAT-P16-01",
+                            CreatedAt = new DateTime(2026, 6, 19, 10, 15, 44, 91, DateTimeKind.Utc).AddTicks(2260),
+                            Description = "",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Sắt thép phi 16",
+                            StockQuantity = 0m,
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = new Guid("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"),
+                            BaseUnit = "viên",
+                            CategoryId = 1,
+                            Code = "GA-T4L",
+                            CreatedAt = new DateTime(2026, 6, 19, 5, 59, 12, 924, DateTimeKind.Utc).AddTicks(2140),
+                            Description = "",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Gạch ống Tuynel Đồng Nai 4 lỗ",
+                            StockQuantity = 0m,
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = new Guid("f1ac0cbc-ef2a-428f-810e-0cc86d5b435f"),
+                            BaseUnit = "khối",
+                            CategoryId = 1,
+                            Code = "CAT-XT",
+                            CreatedAt = new DateTime(2026, 6, 19, 5, 41, 6, 467, DateTimeKind.Utc).AddTicks(3860),
+                            Description = "Cát mịn, sạch không lẫn tạp chất, chuyên dùng để trát tường.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Cát xây tô (Cát đen hạt nhỏ)",
+                            StockQuantity = 0m,
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = new Guid("78f0cad1-8792-40e0-a79c-f55c9e990c66"),
+                            BaseUnit = "Bao",
+                            CategoryId = 1,
+                            Code = "XM-HT1",
+                            CreatedAt = new DateTime(2026, 6, 19, 5, 19, 5, 430, DateTimeKind.Utc).AddTicks(8510),
+                            Description = "Xi măng poóc lăng hỗn hợp, chuyên dùng cho xây tô và đổ bê tông.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Xi măng Hà Tiên 1 Đa Dụng (Bao 50kg)",
+                            StockQuantity = 0m,
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.ProductHistory", b =>
@@ -744,6 +835,62 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("product_units", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 7,
+                            ConversionRate = 1.0000m,
+                            IsDefault = true,
+                            Price = 2450000.00m,
+                            ProductId = new Guid("a67eb1b6-3a63-46d4-96db-5a283026eab2"),
+                            UnitName = "cây"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            ConversionRate = 1.0000m,
+                            IsDefault = true,
+                            Price = 1500.00m,
+                            ProductId = new Guid("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"),
+                            UnitName = "viên"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            ConversionRate = 1000.0000m,
+                            IsDefault = false,
+                            Price = 1450000.00m,
+                            ProductId = new Guid("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"),
+                            UnitName = "thiên"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            ConversionRate = 1.0000m,
+                            IsDefault = true,
+                            Price = 320000.00m,
+                            ProductId = new Guid("f1ac0cbc-ef2a-428f-810e-0cc86d5b435f"),
+                            UnitName = "khối"
+                        },
+                        new
+                        {
+                            Id = 1,
+                            ConversionRate = 1.0000m,
+                            IsDefault = true,
+                            Price = 85000.00m,
+                            ProductId = new Guid("78f0cad1-8792-40e0-a79c-f55c9e990c66"),
+                            UnitName = "bao"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ConversionRate = 20.0000m,
+                            IsDefault = false,
+                            Price = 16500000.00m,
+                            ProductId = new Guid("78f0cad1-8792-40e0-a79c-f55c9e990c66"),
+                            UnitName = "tấn"
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.SubscriptionPlan", b =>

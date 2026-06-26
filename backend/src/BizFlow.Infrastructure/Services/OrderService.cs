@@ -35,6 +35,7 @@ public class OrderService : IOrderService
         {
             order.CreatedAt = DateTime.UtcNow;
             order.Status = OrderStatus.Completed;
+            order.Code = await GenerateOrderCodeAsync(order.TenantId, cancellationToken);
 
             decimal calculatedTotalAmount = 0;
 
@@ -331,6 +332,10 @@ public class OrderService : IOrderService
 
             draftOrder.TotalAmount = calculatedTotalAmount;
             draftOrder.Status = OrderStatus.Completed;
+            if (string.IsNullOrEmpty(draftOrder.Code))
+            {
+                draftOrder.Code = await GenerateOrderCodeAsync(draftOrder.TenantId, cancellationToken);
+            }
 
             // Customer debt processing
             if (draftOrder.PaymentMethod == PaymentMethod.Debt && draftOrder.CustomerId != null)
@@ -540,5 +545,16 @@ public class OrderService : IOrderService
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private async Task<string> GenerateOrderCodeAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        var todayStr = DateTime.UtcNow.ToString("ddMMyy");
+        var todayStart = DateTime.UtcNow.Date;
+        var todayEnd = todayStart.AddDays(1);
+        var count = await _context.Orders
+            .Where(o => o.TenantId == tenantId && o.CreatedAt >= todayStart && o.CreatedAt < todayEnd && !string.IsNullOrEmpty(o.Code))
+            .CountAsync(cancellationToken);
+        return $"HD{todayStr}-{(count + 1):D3}";
     }
 }

@@ -32,7 +32,7 @@ class AIDraftCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -62,7 +62,7 @@ class AIDraftCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '#AI-${draft.id.substring(0, 5).toUpperCase()}',
+                      '#AI-${(draft.code.isNotEmpty ? draft.code : draft.id.substring(0, 5).toUpperCase())}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -241,7 +241,7 @@ class AIDraftCard extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFDC2626),
                       side: const BorderSide(color: Color(0xFFFFDAD6)),
-                      backgroundColor: const Color(0xFFFFDAD6).withOpacity(0.2),
+                      backgroundColor: const Color(0xFFFFDAD6).withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),

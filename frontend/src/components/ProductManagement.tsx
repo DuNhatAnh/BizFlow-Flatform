@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
-import { 
+import {
   Search, Plus, Package, Filter, FolderTree, RefreshCw, AlertCircle
 } from "lucide-react";
 import { Pagination } from "./ui/Pagination";
@@ -55,7 +55,7 @@ export default function ProductManagement({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<number>(0);
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -124,7 +124,7 @@ export default function ProductManagement({
         headers: getHeaders()
       });
       if (!res.ok) throw new Error("Network response was not ok");
-      
+
       const data = await res.json();
       const normalized = (data.items || []).map((p: any) => ({
         ...p,
@@ -334,21 +334,21 @@ export default function ProductManagement({
         {/* Header Area Buttons */}
         {!isReadOnly && (
           <div className="flex justify-end gap-2 -mt-2">
-            <button 
+            <button
               onClick={() => setIsCategoryModalOpen(true)}
               className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
             >
               <FolderTree className="w-4 h-4 text-on-surface-variant" />
               Danh mục
             </button>
-            <button 
+            <button
               onClick={handleViewGlobalHistory}
               className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
             >
               <Package className="w-4 h-4 text-on-surface-variant" />
               Lịch sử
             </button>
-            <button 
+            <button
               onClick={() => handleOpenEditModal()}
               className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
             >
@@ -420,7 +420,7 @@ export default function ProductManagement({
             itemsPerPage={itemsPerPage}
             onEdit={handleOpenEditModal}
             onDelete={handleDeleteProduct}
-            onAddToCart={onAddToCart || (() => {})}
+            onAddToCart={onAddToCart || (() => { })}
             onSelectCalcProduct={setSelectedCalcProduct}
             showToast={showToast}
           />
@@ -433,7 +433,7 @@ export default function ProductManagement({
             isReadOnly={isReadOnly}
             onEdit={handleOpenEditModal}
             onDelete={handleDeleteProduct}
-            onAddToCart={onAddToCart || (() => {})}
+            onAddToCart={onAddToCart || (() => { })}
             onSelectCalcProduct={setSelectedCalcProduct}
             showToast={showToast}
           />
@@ -504,13 +504,13 @@ export default function ProductManagement({
             </div>
             <p className="text-slate-600 mb-6">{confirmDialog.message}</p>
             <div className="flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setConfirmDialog(null)}
                 className="px-4 py-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors font-medium"
               >
                 Hủy bỏ
               </button>
-              <button 
+              <button
                 onClick={confirmDialog.onConfirm}
                 className="px-4 py-2 rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-200 transition-colors font-medium"
               >
@@ -523,14 +523,12 @@ export default function ProductManagement({
 
       {/* Toast notifications */}
       {toast && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-full shadow-lg border animate-in slide-in-from-top-4 fade-in duration-300 flex items-center gap-3 ${
-          toast.type === "success" 
-            ? "bg-teal-50 border-teal-200 text-teal-800" 
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-full shadow-lg border animate-in slide-in-from-top-4 fade-in duration-300 flex items-center gap-3 ${toast.type === "success"
+            ? "bg-teal-50 border-teal-200 text-teal-800"
             : "bg-red-50 border-red-200 text-red-800"
-        }`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-            toast.type === "success" ? "bg-teal-100" : "bg-red-100"
           }`}>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${toast.type === "success" ? "bg-teal-100" : "bg-red-100"
+            }`}>
             {toast.type === "success" ? (
               <Package className="w-4 h-4 text-teal-600" />
             ) : (

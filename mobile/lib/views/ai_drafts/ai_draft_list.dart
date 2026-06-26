@@ -29,11 +29,11 @@ class AIDraftList extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00CED1).withOpacity(0.1),
+                  color: const Color(0xFF00CED1).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00CED1).withOpacity(0.15),
+                      color: const Color(0xFF00CED1).withValues(alpha: 0.15),
                       blurRadius: 24,
                       spreadRadius: 4,
                     )

@@ -7,9 +7,9 @@ import { DollarSign, ShoppingCart, Package, CreditCard } from "lucide-react";
 
 export default function OwnerOverview() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
         <MetricCard
           title="Doanh thu hôm nay"
           value="12.860.000 đ"
@@ -49,7 +49,7 @@ export default function OwnerOverview() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
         <div className="lg:col-span-7 xl:col-span-8">
           <RevenueChart />
         </div>
@@ -59,7 +59,9 @@ export default function OwnerOverview() {
       </div>
 
       {/* Smart AI Insight Box */}
-      <AIInsight />
+      <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-300 fill-mode-both">
+        <AIInsight />
+      </div>
     </div>
   );
 }

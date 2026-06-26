@@ -23,7 +23,7 @@ class OrderHistoryDetailSheet extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Hóa đơn #${order.id.substring(0, 8).toUpperCase()}',
+            'Hóa đơn #${(order.code.isNotEmpty ? order.code : order.id.substring(0, 8).toUpperCase())}',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter'),
           ),
           Container(
@@ -94,7 +94,7 @@ class OrderHistoryDetailSheet extends StatelessWidget {
               buffer.writeln("Cửa Hàng: $tenantName");
               buffer.writeln("Nhân Viên: $employeeName");
               buffer.writeln("Thời Gian: $dateStr");
-              buffer.writeln("Mã Đơn Hàng: #${order.id.isEmpty ? 'MOCK-ORDER' : order.id.substring(0, 8).toUpperCase()}");
+              buffer.writeln("Mã Đơn Hàng: #${order.id.isEmpty ? 'MOCK-ORDER' : (order.code.isNotEmpty ? order.code : order.id.substring(0, 8).toUpperCase())}");
               buffer.writeln("Khách Hàng: $customerName");
               buffer.writeln("--------------------------------------------------");
               buffer.writeln("Sản Phẩm                 SL    ĐVT      Thành Tiền");

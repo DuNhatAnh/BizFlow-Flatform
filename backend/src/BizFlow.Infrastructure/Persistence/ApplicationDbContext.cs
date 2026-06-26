@@ -310,31 +310,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             }
         );
 
-        // Seed Categories
-        modelBuilder.Entity<Category>().HasData(
-            new Category { Id = 1, TenantId = storeTenantId, Name = "Vật liệu xây dựng", CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc) },
-            new Category { Id = 2, TenantId = storeTenantId, Name = "Thiết bị điện", CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc) },
-            new Category { Id = 3, TenantId = storeTenantId, Name = "Nước giải khát", CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc) },
-            new Category { Id = 4, TenantId = storeTenantId, Name = "Hàng tạp hóa", CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc) }
-        );
 
-        // Seed Products
-        modelBuilder.Entity<Product>().HasData(
-            new Product { Id = Guid.Parse("a67eb1b6-3a63-46d4-96db-5a283026eab2"), TenantId = storeTenantId, CategoryId = 1, Code = "SAT-P16-01", Name = "Sắt thép phi 16", Description = "", BaseUnit = "cây", StockQuantity = 0, IsActive = true, IsDeleted = false, CreatedAt = DateTime.Parse("2026-06-19T10:15:44.091226Z").ToUniversalTime() },
-            new Product { Id = Guid.Parse("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"), TenantId = storeTenantId, CategoryId = 1, Code = "GA-T4L", Name = "Gạch ống Tuynel Đồng Nai 4 lỗ", Description = "", BaseUnit = "viên", StockQuantity = 0, IsActive = true, IsDeleted = false, CreatedAt = DateTime.Parse("2026-06-19T05:59:12.924214Z").ToUniversalTime() },
-            new Product { Id = Guid.Parse("f1ac0cbc-ef2a-428f-810e-0cc86d5b435f"), TenantId = storeTenantId, CategoryId = 1, Code = "CAT-XT", Name = "Cát xây tô (Cát đen hạt nhỏ)", Description = "Cát mịn, sạch không lẫn tạp chất, chuyên dùng để trát tường.", BaseUnit = "khối", StockQuantity = 0, IsActive = true, IsDeleted = false, CreatedAt = DateTime.Parse("2026-06-19T05:41:06.467386Z").ToUniversalTime() },
-            new Product { Id = Guid.Parse("78f0cad1-8792-40e0-a79c-f55c9e990c66"), TenantId = storeTenantId, CategoryId = 1, Code = "XM-HT1", Name = "Xi măng Hà Tiên 1 Đa Dụng (Bao 50kg)", Description = "Xi măng poóc lăng hỗn hợp, chuyên dùng cho xây tô và đổ bê tông.", BaseUnit = "Bao", StockQuantity = 0, IsActive = true, IsDeleted = false, CreatedAt = DateTime.Parse("2026-06-19T05:19:05.430851Z").ToUniversalTime() }
-        );
-
-        // Seed Product Units
-        modelBuilder.Entity<ProductUnit>().HasData(
-            new ProductUnit { Id = 7, ProductId = Guid.Parse("a67eb1b6-3a63-46d4-96db-5a283026eab2"), UnitName = "cây", ConversionRate = 1.0000m, Price = 2450000.00m, IsDefault = true },
-            new ProductUnit { Id = 4, ProductId = Guid.Parse("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"), UnitName = "viên", ConversionRate = 1.0000m, Price = 1500.00m, IsDefault = true },
-            new ProductUnit { Id = 5, ProductId = Guid.Parse("6bb75e2c-b549-4434-b843-7d9cb89bb2a3"), UnitName = "thiên", ConversionRate = 1000.0000m, Price = 1450000.00m, IsDefault = false },
-            new ProductUnit { Id = 3, ProductId = Guid.Parse("f1ac0cbc-ef2a-428f-810e-0cc86d5b435f"), UnitName = "khối", ConversionRate = 1.0000m, Price = 320000.00m, IsDefault = true },
-            new ProductUnit { Id = 1, ProductId = Guid.Parse("78f0cad1-8792-40e0-a79c-f55c9e990c66"), UnitName = "bao", ConversionRate = 1.0000m, Price = 85000.00m, IsDefault = true },
-            new ProductUnit { Id = 2, ProductId = Guid.Parse("78f0cad1-8792-40e0-a79c-f55c9e990c66"), UnitName = "tấn", ConversionRate = 20.0000m, Price = 16500000.00m, IsDefault = false }
-        );
     }
 
     public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)

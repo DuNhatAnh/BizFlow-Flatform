@@ -104,7 +104,7 @@ class _AIDraftsScreenState extends State<AIDraftsScreen> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('AI đã duyệt đơn hàng #${draft.id.substring(0, 4).toUpperCase()} thành công!'),
+                Text('AI đã duyệt đơn hàng #${(draft.code.isNotEmpty ? draft.code : draft.id.substring(0, 4).toUpperCase())} thành công!'),
               ],
             ),
             backgroundColor: const Color(0xFF2D6A4F), // Emerald green
@@ -137,7 +137,7 @@ class _AIDraftsScreenState extends State<AIDraftsScreen> {
           ],
         ),
         content: Text(
-          'Bạn có chắc chắn muốn hủy đơn hàng nháp #AI-${draft.id.substring(0, 4).toUpperCase()} này không?',
+          'Bạn có chắc chắn muốn hủy đơn hàng nháp #AI-${(draft.code.isNotEmpty ? draft.code : draft.id.substring(0, 4).toUpperCase())} này không?',
           style: const TextStyle(fontSize: 14),
         ),
         actions: [

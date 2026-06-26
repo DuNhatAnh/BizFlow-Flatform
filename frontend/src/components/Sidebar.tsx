@@ -18,7 +18,8 @@ import {
   Mic,
   PlusCircle,
   Contact,
-  LogOut
+  LogOut,
+  LifeBuoy
 } from "lucide-react";
 
 interface SidebarProps {
@@ -90,17 +91,21 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
     switch (user.role) {
       case "PlatformAdmin":
         return [
+          { type: "header", label: "HỆ THỐNG" },
           { id: "overview", label: "Hệ thống tổng quan", icon: LayoutDashboard },
           { id: "tenants", label: "Quản lý Tenant", icon: Building2 },
           { id: "subscriptions", label: "Gói thuê bao SaaS", icon: Gem },
+          { type: "header", label: "CẤU HÌNH" },
           { id: "tt88-config", label: "Cấu hình sổ sách TT88", icon: FileSpreadsheet },
           { id: "settings", label: "Thiết lập hệ thống", icon: Settings },
         ];
       case "Employee":
         return [
+          { type: "header", label: "NGHIỆP VỤ" },
           { id: "pos", label: "Bán hàng POS", icon: PlusCircle },
           { id: "orders", label: "Đơn hàng của tôi", icon: ShoppingCart },
           { id: "ai-drafts", label: "Đơn nháp AI [F8]", icon: Mic, badge: draftCount > 0 ? draftCount : undefined },
+          { type: "header", label: "TRA CỨU" },
           { id: "products", label: "Tra cứu sản phẩm", icon: Package },
           { id: "debts", label: "Ghi nợ nhanh", icon: CreditCard },
         ];
@@ -108,11 +113,14 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
       case "Manager":
       default:
         return [
+          { type: "header", label: "TỔNG QUAN" },
           { id: "overview", label: "Tổng quan Doanh thu", icon: LayoutDashboard },
+          { type: "header", label: "QUẢN LÝ" },
           { id: "products", label: "Hàng hóa & Đơn vị", icon: Package },
           { id: "inventory", label: "Quản lý Kho hàng", icon: Warehouse },
           { id: "customers", label: "Khách hàng & Công nợ", icon: Users },
           { id: "staff", label: "Quản lý Nhân sự", icon: Contact },
+          { type: "header", label: "BÁO CÁO & CÀI ĐẶT" },
           { id: "reports", label: "Sổ sách Thuế (TT88)", icon: FileText },
           { id: "settings", label: "Cài đặt Cửa hàng", icon: Settings },
         ];
@@ -124,8 +132,8 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
   return (
     <aside className="w-[260px] fixed top-0 left-0 bottom-0 bg-white border-r border-surface-container-high flex flex-col z-30">
       {/* Brand Logo */}
-      <div className="pt-6 pb-2 flex flex-col items-center shrink-0">
-        <div className="relative w-40 flex items-center justify-center">
+      <div className="pt-4 pb-0 flex flex-col items-center shrink-0 overflow-hidden">
+        <div className="relative w-48 flex items-center justify-center transform scale-[1.15]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/logo.png" 
@@ -145,21 +153,31 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
       </div>
 
       {/* Menu Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-        {menuItems.map((item: any) => {
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto hide-scrollbar">
+        {menuItems.map((item: any, index: number) => {
+          if (item.type === "header") {
+            return (
+              <div key={`header-${index}`} className="px-2 pt-4 pb-1">
+                <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                  {item.label}
+                </p>
+              </div>
+            );
+          }
+
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-primary text-white shadow-sm"
+                  ? "bg-primary text-white shadow-md shadow-primary/20"
                   : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
               }`}
             >
-              <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-on-surface-variant"}`} />
+              <Icon className={`w-[18px] h-[18px] ${isActive ? "text-white" : "text-on-surface-variant"}`} />
               <span className="flex-1 text-left">{item.label}</span>
               {item.badge !== undefined && (
                 <span className="w-5 h-5 rounded-full bg-error text-white font-bold text-[10px] flex items-center justify-center animate-pulse">
@@ -170,6 +188,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           );
         })}
       </nav>
+
 
       {/* User Profile Card */}
       <div className="p-4 border-t border-surface-container-low relative">

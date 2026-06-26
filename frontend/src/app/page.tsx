@@ -861,11 +861,7 @@ export default function Home() {
 
       {/* Main dashboard body */}
       <div className="pl-[260px] min-h-screen flex flex-col">
-        <main
-          className={`flex-1 px-8 pb-8 max-w-[1440px] mx-auto w-full ${
-            activeTab === "overview" ? "pt-8" : "pt-4"
-          }`}
-        >
+        <main className="flex-1 p-8 max-w-[1440px] mx-auto w-full">
           {/* Header section */}
           <Header
             showGreeting={activeTab === "overview"}

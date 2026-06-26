@@ -26,7 +26,7 @@ class CartSuccessDialog extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hóa đơn: #${order.id.isEmpty ? "MOCK" : order.id.substring(0, 8).toUpperCase()}',
+            'Hóa đơn: #${order.id.isEmpty ? "MOCK" : (order.code.isNotEmpty ? order.code : order.id.substring(0, 8).toUpperCase())}',
             style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
           const SizedBox(height: 16),

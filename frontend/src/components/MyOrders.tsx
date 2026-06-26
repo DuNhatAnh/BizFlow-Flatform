@@ -33,6 +33,7 @@ interface Customer {
 
 interface Order {
   id: string;
+  code?: string;
   tenantId: string;
   customerId: string | null;
   customer?: Customer;
@@ -138,7 +139,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
   // Date and query client-side filtering logic
   const filteredOrders = orders.filter(order => {
     // 1. Search Query (Short ID, Customer Name, or Customer Phone)
-    const shortId = order.id.substring(0, 8).toLowerCase();
+    const shortId = order.code ? order.code.toLowerCase() : order.id.substring(0, 8).toLowerCase();
     const customerName = order.customer?.fullname.toLowerCase() || "khách lẻ";
     const customerPhone = order.customer?.phone || "";
     const search = searchQuery.toLowerCase();
@@ -431,7 +432,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
         </div>
         
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 8px 0; margin-bottom: 10px; font-size: 11px; line-height: 1.4;">
-          <div><b>Mã hóa đơn:</b> #${order.id.substring(0, 8)}</div>
+          <div><b>Mã hóa đơn:</b> ${order.code || ('#' + order.id.substring(0, 8))}</div>
           <div><b>Ngày bán:</b> ${formattedDate}</div>
           <div><b>Nhân viên:</b> ${cashierName}</div>
           <div><b>Khách hàng:</b> ${customerText}</div>
@@ -639,7 +640,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
                   </tr>
                 ) : (
                   paginatedOrders.map((order, index) => {
-                    const shortId = order.id.substring(0, 8);
+                    const shortId = order.code || order.id.substring(0, 8);
                     const dateObj = new Date(order.createdAt);
                     const pad = (n: number) => String(n).padStart(2, '0');
                     const formattedDate = `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())} ${pad(dateObj.getDate())}-${pad(dateObj.getMonth() + 1)}-${dateObj.getFullYear()}`;
@@ -781,7 +782,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
             <div className="px-6 py-4 border-b border-surface-container-high flex justify-between items-center bg-surface-container-low/50">
               <div>
                 <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                  Chi tiết hóa đơn #{selectedOrder.id.substring(0, 8)}
+                  Chi tiết hóa đơn {selectedOrder.code || ('#' + selectedOrder.id.substring(0, 8))}
                 </h3>
                 <p className="text-xs text-on-surface-variant mt-1">
                   Được bán vào {new Date(selectedOrder.createdAt).toLocaleString("vi-VN")}
@@ -908,7 +909,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
                   <RefreshCw className="w-5 h-5 text-amber-500 animate-spin-slow" /> Yêu cầu Đổi trả hàng nhanh
                 </h3>
                 <p className="text-xs text-on-surface-variant mt-1">
-                  Đơn hàng: #{returnOrderData.id.substring(0, 8)} - Khách hàng: {returnOrderData.customer ? returnOrderData.customer.fullname : "Khách lẻ"}
+                  Đơn hàng: {returnOrderData.code || ('#' + returnOrderData.id.substring(0, 8))} - Khách hàng: {returnOrderData.customer ? returnOrderData.customer.fullname : "Khách lẻ"}
                 </p>
               </div>
               <button

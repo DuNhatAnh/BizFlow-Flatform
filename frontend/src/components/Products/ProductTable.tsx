@@ -33,19 +33,18 @@ export default function ProductTable({
   showToast
 }: ProductTableProps) {
   return (
-    <div className="hidden md:block overflow-auto max-h-[500px]">
-      <table className="w-full text-left text-sm border-collapse relative text-on-surface">
+    <div className="hidden md:block overflow-auto max-h-[600px] custom-scrollbar">
+      <table className="w-full text-left text-sm border-collapse relative text-on-surface min-w-[1050px]">
         <thead className="sticky top-0 z-10 bg-surface-container-low shadow-sm">
           <tr className="text-on-surface-variant border-b border-surface-container-high uppercase tracking-wider text-xs font-bold">
             <th className="py-2.5 px-4 w-16 text-center">STT</th>
-            <th className="py-2.5 px-4">Sản phẩm</th>
-            <th className="py-2.5 px-4">Danh mục</th>
-            <th className="py-2.5 px-4">Tồn kho</th>
-            <th className="py-2.5 px-4 min-w-[240px]">Cấu hình quy đổi & Giá</th>
+            <th className="py-2.5 px-4 min-w-[220px]">Sản phẩm</th>
+            <th className="py-2.5 px-4 min-w-[140px]">Danh mục</th>
+            <th className="py-2.5 px-4 min-w-[320px]">Cấu hình quy đổi & Giá</th>
             {!isReadOnly ? (
-              <th className="py-2.5 px-4 text-right">Thao tác</th>
+              <th className="py-2.5 px-4 text-right min-w-[100px]">Thao tác</th>
             ) : (
-              <th className="py-2.5 px-4 text-center">Bán hàng</th>
+              <th className="py-2.5 px-4 text-center min-w-[100px]">Bán hàng</th>
             )}
           </tr>
         </thead>
@@ -59,7 +58,6 @@ export default function ProductTable({
                   <Skeleton className="h-4 w-20" />
                 </td>
                 <td className="p-4"><Skeleton className="h-6 w-24 rounded-md" /></td>
-                <td className="p-4"><Skeleton className="h-5 w-16" /></td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <Skeleton className="h-14 w-40 rounded-lg" />
@@ -71,7 +69,7 @@ export default function ProductTable({
             ))
           ) : products.length === 0 ? (
             <tr>
-              <td colSpan={6} className="p-8 text-center text-on-surface-variant">
+              <td colSpan={5} className="p-8 text-center text-on-surface-variant">
                 <Package className="w-12 h-12 mx-auto text-on-surface-variant/30 mb-3" />
                 Không tìm thấy sản phẩm nào phù hợp.
               </td>
