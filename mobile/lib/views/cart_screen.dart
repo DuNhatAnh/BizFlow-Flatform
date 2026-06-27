@@ -427,7 +427,7 @@ class _CartScreenState extends State<CartScreen> {
                                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                   )
                                 : const Text(
-                                    'THANH TOÁN & IN HÓA ĐƠN [F9/Enter]',
+                                    'THANH TOÁN & IN HÓA ĐƠN',
                                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, fontFamily: 'Inter'),
                                   ),
                           ),

@@ -90,77 +90,59 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     });
   }
 
+  // Key để gọi stopAndProcess() trên overlay từ bên ngoài
+  final GlobalKey<VoiceRecordingOverlayState> _voiceOverlayKey = GlobalKey();
+
   void _startVoiceRecording() {
-    setState(() {
-      _isRecordingVoice = true;
-    });
-    showGeneralDialog(
+    if (_isRecordingVoice) return;
+    setState(() => _isRecordingVoice = true);
+
+    showGeneralDialog<String?>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (dialogContext, anim1, anim2) {
-        return const VoiceRecordingOverlay();
+        return VoiceRecordingOverlay(key: _voiceOverlayKey);
       },
-    );
-  }
-
-  void _stopVoiceRecording() async {
-    if (!_isRecordingVoice) return;
-    setState(() {
-      _isRecordingVoice = false;
-    });
-    Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Text('Đang xử lý giọng nói AI...'),
-          ],
-        ),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    final provider = Provider.of<PosProvider>(context, listen: false);
-    await provider.simulateAIVoiceOrder("Lấy cho chú Ba 5 thùng Coca-Cola, ghi nợ nghen");
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
+    ).then((error) {
+      // Dialog đã đóng (sau khi xử lý xong)
+      if (!mounted) return;
+      setState(() => _isRecordingVoice = false);
+      if (error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 8),
               Text('AI đã tạo đơn hàng nháp thành công!'),
-            ],
+            ]),
+            backgroundColor: const Color(0xFF2D6A4F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          backgroundColor: const Color(0xFF2D6A4F),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    });
   }
 
-  void _showAITextFallbackSheet() {
+  void _showTextFallbackSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return const AITextFallbackSheet();
-      },
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => const AITextFallbackSheet(),
     );
   }
 
@@ -297,7 +279,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
               });
             },
           ),
-          floatingActionButton: _currentIndex == 0
+          // FAB mic chỉ hiện khi ở tab bán hàng VÀ giỏ hàng trống
+          // Khi có giỏ hàng, nút mic được tích hợp vào mini cart bar
+          floatingActionButton: (_currentIndex == 0 && provider.cartCount == 0)
               ? AnimatedBuilder(
                   animation: _pulseAnimation,
                   builder: (context, child) {
@@ -315,11 +299,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                       child: Transform.scale(
                         scale: _pulseAnimation.value,
                         child: GestureDetector(
-                          onLongPressStart: (_) => _startVoiceRecording(),
-                          onLongPressEnd: (_) => _stopVoiceRecording(),
-                          onTap: _showAITextFallbackSheet,
+                          onLongPress: _showTextFallbackSheet,
                           child: FloatingActionButton(
-                            onPressed: () {}, // Handled by GestureDetector
+                            onPressed: _startVoiceRecording,
                             backgroundColor: const Color(0xFF00685F),
                             child: const Icon(Icons.mic, color: Color(0xFF00F5D4), size: 30),
                           ),
@@ -791,7 +773,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
 
   Widget _buildMiniCartBar(PosProvider provider) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF00685F),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -806,27 +788,61 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
       child: SafeArea(
         top: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.shopping_cart, color: Color(0xFF00F5D4)),
-                const SizedBox(width: 8),
-                Text(
-                  '${provider.cartCount} sản phẩm',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '${provider.cartTotal.toStringAsFixed(0)}đ',
-                  style: const TextStyle(color: Color(0xFF00F5D4), fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ],
+            // Nút mic tích hợp vào mini cart bar
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return GestureDetector(
+                  onTap: _startVoiceRecording,
+                  onLongPress: _showTextFallbackSheet,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00F5D4).withValues(alpha: 0.3 * _pulseAnimation.value),
+                          blurRadius: 10 * _pulseAnimation.value,
+                          spreadRadius: 2 * _pulseAnimation.value,
+                        )
+                      ],
+                    ),
+                    child: const Icon(Icons.mic, color: Color(0xFF00F5D4), size: 22),
+                  ),
+                );
+              },
             ),
+            const SizedBox(width: 12),
+            // Thông tin giỏ hàng
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${provider.cartCount} sản phẩm',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    '${provider.cartTotal.toStringAsFixed(0)}đ',
+                    style: const TextStyle(
+                      color: Color(0xFF00F5D4),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Nút vào giỏ hàng
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00F5D4),
                 foregroundColor: const Color(0xFF00685F),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () async {
@@ -841,13 +857,14 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                 }
               },
               child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Chi tiết [F9]', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Chi tiết', style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(width: 4),
                   Icon(Icons.chevron_right, size: 18),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

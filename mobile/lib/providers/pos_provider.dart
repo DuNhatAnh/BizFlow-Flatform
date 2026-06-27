@@ -364,6 +364,120 @@ class PosProvider extends ChangeNotifier {
     return success;
   }
 
+  // Gửi text lệnh lên AI service thật, nhận về entities rồi tạo draft
+  Future<String?> processTextOrderWithAI(String text) async {
+    if (_tenantId == null || _products.isEmpty) return 'Chưa tải dữ liệu sản phẩm';
+    _setLoading(true);
+    try {
+      final result = await _apiService.processTextOrder(text, _tenantId!);
+      if (result == null) {
+        _setLoading(false);
+        return 'Không kết nối được AI service. Kiểm tra server đang chạy chưa.';
+      }
+      final error = await _mapAIResultToDraft(result);
+      _setLoading(false);
+      return error;
+    } catch (e) {
+      _setLoading(false);
+      return 'Lỗi xử lý: $e';
+    }
+  }
+
+  // Gửi file audio thật lên AI service → tạo draft
+  Future<String?> processVoiceOrderWithAI(String audioFilePath) async {
+    if (_tenantId == null || _products.isEmpty) return 'Chưa tải dữ liệu sản phẩm';
+    _setLoading(true);
+    try {
+      final result = await _apiService.processVoiceOrder(audioFilePath, _tenantId!);
+      if (result == null) {
+        _setLoading(false);
+        return 'Không kết nối được AI service. Kiểm tra server đang chạy chưa.';
+      }
+      // Reuse cùng logic mapping như text order
+      _setLoading(false);
+      return await _mapAIResultToDraft(result);
+    } catch (e) {
+      _setLoading(false);
+      return 'Lỗi xử lý giọng nói: $e';
+    }
+  }
+
+  // Hàm dùng chung để map kết quả AI → tạo draft (dùng cho cả text và voice)
+  Future<String?> _mapAIResultToDraft(Map<String, dynamic> result) async {
+    final customerName = result['customer_name'] as String?;
+    Customer? matchedCustomer;
+    if (customerName != null && customerName != 'Khách Lẻ') {
+      final found = _customers.firstWhere(
+        (c) =>
+            c.fullname.toLowerCase().contains(customerName.toLowerCase()) ||
+            customerName.toLowerCase().contains(c.fullname.toLowerCase()),
+        orElse: () => Customer(id: '', tenantId: _tenantId!, fullname: customerName, totalDebt: 0),
+      );
+      if (found.id.isNotEmpty) matchedCustomer = found;
+    }
+
+    final aiItems = result['items'] as List? ?? [];
+    final List<OrderItem> orderItems = [];
+
+    for (final aiItem in aiItems) {
+      final productName = aiItem['product_name'] as String? ?? '';
+      final quantity = (aiItem['quantity'] as num?)?.toInt() ?? 1;
+      final unitHint = aiItem['unit'] as String?;
+
+      final product = _products.firstWhere(
+        (p) =>
+            p.name.toLowerCase().contains(productName.toLowerCase()) ||
+            productName.toLowerCase().contains(p.name.toLowerCase()),
+        orElse: () => Product(id: '', tenantId: _tenantId!, name: productName, baseUnit: '', productUnits: [], stock: 0),
+      );
+      if (product.id.isEmpty) continue;
+
+      ProductUnit unit;
+      if (unitHint != null && unitHint.isNotEmpty) {
+        unit = product.productUnits.firstWhere(
+          (u) => u.unitName.toLowerCase() == unitHint.toLowerCase(),
+          orElse: () => product.productUnits.firstWhere((u) => u.isDefault,
+              orElse: () => product.productUnits.first),
+        );
+      } else {
+        unit = product.productUnits.firstWhere((u) => u.isDefault,
+            orElse: () => product.productUnits.first);
+      }
+
+      orderItems.add(OrderItem(
+        productId: product.id,
+        productUnitId: unit.id,
+        productName: product.name,
+        unitName: unit.unitName,
+        quantity: quantity,
+        unitPrice: unit.price,
+        totalPrice: unit.price * quantity,
+      ));
+    }
+
+    if (orderItems.isEmpty) return 'AI không nhận diện được sản phẩm nào phù hợp';
+
+    final paymentMethod = result['payment_method'] as String? ?? 'Cash';
+    final totalAmount = orderItems.fold(0.0, (sum, i) => sum + i.totalPrice);
+
+    final draftOrder = Order(
+      id: '',
+      tenantId: _tenantId!,
+      customerId: matchedCustomer?.id.isNotEmpty == true ? matchedCustomer!.id : null,
+      createdBy: _currentUser?.id,
+      totalAmount: totalAmount,
+      paymentMethod: paymentMethod,
+      status: 'Draft',
+      orderSource: 'AI_Voice',
+      createdAt: DateTime.now(),
+      orderItems: orderItems,
+    );
+
+    await _apiService.createDraft(draftOrder);
+    await loadPOSData();
+    return null; // null = thành công
+  }
+
   // Simulated AI voice dispatch (local demo trigger)
   Future<void> simulateAIVoiceOrder(String transcript) async {
     if (_tenantId == null || _products.isEmpty) return;

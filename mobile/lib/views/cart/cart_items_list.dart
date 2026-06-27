@@ -10,8 +10,32 @@ class CartItemsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
-      itemCount: provider.cartItems.length,
+      // +1 cho nút "Thêm hàng" ở cuối danh sách
+      itemCount: provider.cartItems.length + 1,
       itemBuilder: (context, index) {
+        // Nút thêm hàng nằm ở cuối list
+        if (index == provider.cartItems.length) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF00685F),
+                side: const BorderSide(color: Color(0xFF00685F)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text(
+                'Thêm mặt hàng khác',
+                style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+              ),
+            ),
+          );
+        }
+
         final item = provider.cartItems[index];
         return Card(
           elevation: 0,
