@@ -131,18 +131,23 @@ class _ProductDetailSheetState extends State<ProductDetailSheet> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon đại diện
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00685F).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  size: 28,
-                  color: Color(0xFF00685F),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  product.displayImageUrl,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 56,
+                    height: 56,
+                    color: const Color(0xFF00685F).withValues(alpha: 0.08),
+                    child: const Icon(
+                      Icons.inventory_2_outlined,
+                      size: 28,
+                      color: Color(0xFF00685F),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 14),

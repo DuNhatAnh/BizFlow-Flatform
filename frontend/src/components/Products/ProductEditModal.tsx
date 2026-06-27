@@ -56,6 +56,7 @@ export default function ProductEditModal({
   const [descText, setDescText] = useState(parsedMeta.description);
   const [customMinStock, setCustomMinStock] = useState<number | "">(parsedMeta.minStock !== null ? parsedMeta.minStock : 10);
   const [customLocation, setCustomLocation] = useState(parsedMeta.location || getFallbackLocation(initialProduct.categoryId || 0));
+  const [customImageUrl, setCustomImageUrl] = useState(parsedMeta.imageUrl || "");
 
   const handleUnitChange = (index: number, field: keyof ProductUnit, value: any) => {
     const newUnits = [...editingProduct.units];
@@ -99,7 +100,7 @@ export default function ProductEditModal({
     setIsSaving(true);
     try {
       const minStockVal = customMinStock === "" ? null : Number(customMinStock);
-      const mergedDescription = buildDescriptionMetadata(descText, minStockVal, customLocation);
+      const mergedDescription = buildDescriptionMetadata(descText, minStockVal, customLocation, customImageUrl);
       const finalProduct = {
         ...editingProduct,
         description: mergedDescription
@@ -193,6 +194,16 @@ export default function ProductEditModal({
                   onChange={(e) => setCustomLocation(e.target.value)}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
                   placeholder="VD: Kho A - Kệ 2, Bãi 1..."
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Đường dẫn hình ảnh (URL)</label>
+                <input 
+                  type="text" 
+                  value={customImageUrl}
+                  onChange={(e) => setCustomImageUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  placeholder="VD: https://images.unsplash.com/... hoặc /images/product.png"
                 />
               </div>
               <div className="md:col-span-2">

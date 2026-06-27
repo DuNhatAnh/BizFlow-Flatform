@@ -24,6 +24,7 @@ interface POSProps {
     customer?: string;
   };
   handleCheckout: () => void;
+  categories: any[];
 }
 
 export default function POS({
@@ -44,7 +45,8 @@ export default function POS({
   isDebt,
   setIsDebt,
   validationErrors,
-  handleCheckout
+  handleCheckout,
+  categories
 }: POSProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -57,6 +59,7 @@ export default function POS({
           cart={cart}
           addToCart={addToCart}
           updateCartQty={updateCartQty}
+          categories={categories}
         />
       </div>
 

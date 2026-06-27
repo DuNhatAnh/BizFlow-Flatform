@@ -341,7 +341,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
             });
           },
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         POSCategoryList(
           categories: provider.categories,
           selectedCategoryId: _selectedCategoryId,
@@ -351,6 +351,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
             });
           },
         ),
+        const SizedBox(height: 10),
         Expanded(
           child: POSProductGrid(
             filteredProducts: filteredProducts,

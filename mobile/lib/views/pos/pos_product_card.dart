@@ -80,11 +80,20 @@ class _POSProductCardState extends State<POSProductCard> {
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.inventory_2_outlined,
-                      size: 40,
-                      color: const Color(0xFF00685F).withValues(alpha: 0.6),
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        product.displayImageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            size: 40,
+                            color: const Color(0xFF00685F).withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   Positioned(

@@ -80,29 +80,33 @@ class _AIDraftReviewModalState extends State<AIDraftReviewModal> {
               // Payment Method
               const Text('Phương thức thanh toán:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Inter')),
               const SizedBox(height: 4),
-              RadioGroup<String>(
-                groupValue: paymentMethod,
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() => paymentMethod = val);
-                  }
-                },
-                child: const Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: Text('Mặt', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
-                        value: 'Cash',
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Mặt', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
+                      value: 'Cash',
+                      groupValue: paymentMethod,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => paymentMethod = val);
+                        }
+                      },
                     ),
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: Text('Nợ', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
-                        value: 'Debt',
-                      ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Nợ', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
+                      value: 'Debt',
+                      groupValue: paymentMethod,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => paymentMethod = val);
+                        }
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
