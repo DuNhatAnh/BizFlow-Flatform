@@ -64,12 +64,26 @@ def call_llm(prompt: str) -> str:
         for attempt in range(max_retries):
             try:
                 client = genai.Client(api_key=gemini_key)
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt,
-                )
-                if response.text:
-                    return response.text
+                try:
+                    # Try the newer gemini-2.5-flash first
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                    )
+                    if response.text:
+                        return response.text
+                except Exception as e_2_5:
+                    # Fallback to gemini-1.5-flash if 2.5 is rate limited / quota exhausted
+                    if "429" in str(e_2_5) or "RESOURCE_EXHAUSTED" in str(e_2_5) or "quota" in str(e_2_5).lower():
+                        print("Gemini 2.5 Flash quota exhausted, falling back to gemini-flash-latest...", flush=True)
+                        response = client.models.generate_content(
+                            model="gemini-flash-latest",
+                            contents=prompt,
+                        )
+                        if response.text:
+                            return response.text
+                    else:
+                        raise e_2_5
             except Exception as e:
                 print(f"Error calling google-genai SDK (attempt {attempt+1}/{max_retries}): {e}", flush=True)
                 if attempt < max_retries - 1:
@@ -207,16 +221,32 @@ def transcribe_audio_via_gemini(audio_path: str, api_key: str) -> str:
     mime_map = {'.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg'}
     mime_type = mime_map.get(ext, 'audio/mp4')
     from google.genai import types
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[
-            types.Part.from_bytes(
-                data=audio_bytes,
-                mime_type=mime_type,
-            ),
-            "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
-        ]
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(
+                    data=audio_bytes,
+                    mime_type=mime_type,
+                ),
+                "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
+            ]
+        )
+    except Exception as e_2_5:
+        if "429" in str(e_2_5) or "RESOURCE_EXHAUSTED" in str(e_2_5) or "quota" in str(e_2_5).lower():
+            print("Gemini 2.5 Flash quota exhausted for voice transcription, falling back to gemini-flash-latest...", flush=True)
+            response = client.models.generate_content(
+                model="gemini-flash-latest",
+                contents=[
+                    types.Part.from_bytes(
+                        data=audio_bytes,
+                        mime_type=mime_type,
+                    ),
+                    "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
+                ]
+            )
+        else:
+            raise e_2_5
     text_content = response.text or ""
     return text_content.strip()
 

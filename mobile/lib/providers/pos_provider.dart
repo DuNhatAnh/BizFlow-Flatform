@@ -374,7 +374,7 @@ class PosProvider extends ChangeNotifier {
         _setLoading(false);
         return 'Không kết nối được AI service. Kiểm tra server đang chạy chưa.';
       }
-      final error = await _mapAIResultToDraft(result);
+      final error = await _mapAIResultToDraft(result, 'AI_Text');
       _setLoading(false);
       return error;
     } catch (e) {
@@ -395,7 +395,7 @@ class PosProvider extends ChangeNotifier {
       }
       // Reuse cùng logic mapping như text order
       _setLoading(false);
-      return await _mapAIResultToDraft(result);
+      return await _mapAIResultToDraft(result, 'AI_Voice');
     } catch (e) {
       _setLoading(false);
       return 'Lỗi xử lý giọng nói: $e';
@@ -403,7 +403,7 @@ class PosProvider extends ChangeNotifier {
   }
 
   // Hàm dùng chung để map kết quả AI → tạo draft (dùng cho cả text và voice)
-  Future<String?> _mapAIResultToDraft(Map<String, dynamic> result) async {
+  Future<String?> _mapAIResultToDraft(Map<String, dynamic> result, String source) async {
     final customerName = result['customer_name'] as String?;
     Customer? matchedCustomer;
     if (customerName != null && customerName != 'Khách Lẻ') {
@@ -464,16 +464,21 @@ class PosProvider extends ChangeNotifier {
       id: '',
       tenantId: _tenantId!,
       customerId: matchedCustomer?.id.isNotEmpty == true ? matchedCustomer!.id : null,
+      customerName: matchedCustomer != null ? matchedCustomer.fullname : customerName ?? 'Khách Lẻ',
+      rawTranscript: result['raw_transcript'] as String? ?? '',
       createdBy: _currentUser?.id,
       totalAmount: totalAmount,
       paymentMethod: paymentMethod,
       status: 'Draft',
-      orderSource: 'AI_Voice',
+      orderSource: source,
       createdAt: DateTime.now(),
       orderItems: orderItems,
     );
 
-    await _apiService.createDraft(draftOrder);
+    final createdDraft = await _apiService.createDraft(draftOrder);
+    if (createdDraft == null) {
+      return 'Không thể lưu đơn hàng nháp lên máy chủ. Vui lòng kiểm tra lại.';
+    }
     await loadPOSData();
     return null; // null = thành công
   }

@@ -287,7 +287,7 @@ class ApiService {
         return data.map((item) => Order.fromJson(item)).toList();
       }
     } catch (e) {
-      // Error
+      debugPrint('AI fetchDrafts error: $e');
     }
     return [];
   }
@@ -376,12 +376,12 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        debugPrint('AI text-order error: ${response.statusCode} ${response.body}');
+        throw Exception('Server trả về mã lỗi: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('AI service unreachable: $e');
+      rethrow;
     }
-    return null;
   }
 
 
@@ -390,9 +390,15 @@ class ApiService {
     try {
       final uri = Uri.parse('$aiServiceUrl/api/voice-order?tenant_id=$tenantId');
       final request = http.MultipartRequest('POST', uri);
+      
+      String filePath = audioFilePath;
+      if (filePath.startsWith('file://')) {
+        filePath = filePath.replaceFirst('file://', '');
+      }
+
       request.files.add(await http.MultipartFile.fromPath(
         'file',
-        audioFilePath,
+        filePath,
       ));
 
       final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
@@ -401,11 +407,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        debugPrint('AI voice-order error: ${response.statusCode} ${response.body}');
+        throw Exception('Server trả về mã lỗi: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('AI voice service error: $e');
+      rethrow;
     }
-    return null;
   }
 }

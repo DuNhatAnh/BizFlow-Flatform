@@ -287,6 +287,7 @@ class Order {
   final String tenantId;
   final String? customerId;
   final String? customerName;
+  final String? rawTranscript;
   final String? createdBy;
   final double totalAmount;
   final String paymentMethod; // Cash, Transfer, Debt
@@ -301,6 +302,7 @@ class Order {
     required this.tenantId,
     this.customerId,
     this.customerName,
+    this.rawTranscript,
     this.createdBy,
     required this.totalAmount,
     required this.paymentMethod,
@@ -321,6 +323,7 @@ class Order {
       tenantId: json['tenantId'] ?? '',
       customerId: json['customerId'],
       customerName: json['customer']?['fullname'] ?? json['customerName'],
+      rawTranscript: json['rawTranscript'],
       createdBy: json['createdBy'],
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       paymentMethod: json['paymentMethod'] ?? 'Cash',
@@ -334,10 +337,12 @@ class Order {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
+    'id': id.isEmpty ? '00000000-0000-0000-0000-000000000000' : id,
     'code': code,
     'tenantId': tenantId,
     'customerId': customerId,
+    'customerName': customerName,
+    'rawTranscript': rawTranscript,
     'createdBy': createdBy,
     'totalAmount': totalAmount,
     'paymentMethod': paymentMethod,
