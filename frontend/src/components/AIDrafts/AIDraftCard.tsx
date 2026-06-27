@@ -34,7 +34,16 @@ export default function AIDraftCard({
 
   // Set default audio url if missing and source is voice
   const isVoice = draft.rawDraft?.orderSource === "AI_Voice" || draft.audioUrl || draft.confidence === "98%";
-  const audioUrl = draft.audioUrl || (draft.id.includes("2222") ? "/audio/draft_anhnam.wav" : "/audio/draft_chuba.wav");
+  const cachedUrl = typeof window !== "undefined" ? (window as any).localAudioCache?.[draft.id] : null;
+  let audioUrl = draft.audioUrl || cachedUrl;
+  if (!audioUrl && isVoice) {
+    if (draft.id.includes("2222")) {
+      audioUrl = "/audio/draft_anhnam.wav";
+    } else if (draft.id.includes("1111")) {
+      audioUrl = "/audio/draft_chuba.wav";
+    }
+  }
+  const showAudioPlayer = !!audioUrl;
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -122,7 +131,7 @@ export default function AIDraftCard({
           </div>
 
           {/* Render Audio Player if Voice source */}
-          {isVoice && (
+          {showAudioPlayer && (
             <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-outline-variant/40 shadow-sm self-start md:self-auto">
               <audio
                 ref={audioRef}

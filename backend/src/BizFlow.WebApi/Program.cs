@@ -199,6 +199,12 @@ using (var scope = app.Services.CreateScope())
         // Add Customer Debt Limit Field
         SafeSql("ALTER TABLE customers ADD COLUMN IF NOT EXISTS \"DebtLimit\" numeric(15,2) NOT NULL DEFAULT 10000000;");
 
+        // Add RawTranscript column to orders table
+        SafeSql("ALTER TABLE orders ADD COLUMN IF NOT EXISTS \"RawTranscript\" text;");
+
+        // Add CustomerName column to orders table
+        SafeSql("ALTER TABLE orders ADD COLUMN IF NOT EXISTS \"CustomerName\" text;");
+
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
             ""Id"" uuid NOT NULL,

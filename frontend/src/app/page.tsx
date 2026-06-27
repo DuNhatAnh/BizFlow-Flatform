@@ -182,10 +182,12 @@ export default function Home() {
             })),
             payment: d.paymentMethod === "Debt" ? "Ghi nợ (Nợ phải thu)" : "Tiền mặt",
             rawText:
-              d.orderSource === "AI_Voice"
+              d.rawTranscript ||
+              (d.orderSource === "AI_Voice"
                 ? "Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen"
-                : "Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn",
+                : "Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn"),
             confidence: d.orderSource === "AI_Voice" ? "98%" : "95%",
+            audioUrl: (typeof window !== "undefined" && (window as any).localAudioCache?.[d.id]) || d.audioUrl || null,
             rawDraft: d
           };
         });

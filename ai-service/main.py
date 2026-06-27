@@ -15,7 +15,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,7 +39,9 @@ class TextOrderRequest(BaseModel):
 def health_check():
     return {"status": "healthy", "service": "BizFlow AI - Connected"}
 
-def clean_json_text(text: str) -> str:
+def clean_json_text(text: Optional[str]) -> str:
+    if not text:
+        return ""
     text = text.strip()
     if text.startswith("```"):
         # Remove opening ```json or ```
@@ -52,19 +54,29 @@ def clean_json_text(text: str) -> str:
     return text
 
 def call_llm(prompt: str) -> str:
-    # 1. Try Gemini API with new google-genai SDK
+    # 1. Try Gemini API with new google-genai SDK (with retry mechanism)
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
-        try:
-            from google import genai
-            client = genai.Client(api_key=gemini_key)
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            return response.text
-        except Exception as e:
-            print(f"Error calling google-genai SDK: {e}")
+        import time
+        from google import genai
+        max_retries = 3
+        backoff = 1.0
+        for attempt in range(max_retries):
+            try:
+                client = genai.Client(api_key=gemini_key)
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                )
+                if response.text:
+                    return response.text
+            except Exception as e:
+                print(f"Error calling google-genai SDK (attempt {attempt+1}/{max_retries}): {e}", flush=True)
+                if attempt < max_retries - 1:
+                    time.sleep(backoff)
+                    backoff *= 2
+                else:
+                    break
 
     # 2. Try OpenRouter API (using OPENROUTER_API_KEY)
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
@@ -194,14 +206,19 @@ def transcribe_audio_via_gemini(audio_path: str, api_key: str) -> str:
     ext = os.path.splitext(audio_path)[1].lower()
     mime_map = {'.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg'}
     mime_type = mime_map.get(ext, 'audio/mp4')
+    from google.genai import types
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
-            {"inline_data": {"mime_type": mime_type, "data": __import__('base64').b64encode(audio_bytes).decode()}},
+            types.Part.from_bytes(
+                data=audio_bytes,
+                mime_type=mime_type,
+            ),
             "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
         ]
     )
-    return response.text.strip()
+    text_content = response.text or ""
+    return text_content.strip()
 
 @app.post("/api/voice-order", response_model=OrderExtractionResponse)
 async def process_voice_order(tenant_id: str, file: UploadFile = File(...)):
@@ -227,24 +244,26 @@ async def process_voice_order(tenant_id: str, file: UploadFile = File(...)):
 
     transcript = ""
     try:
-        # Try local Whisper first (if ffmpeg is available)
-        try:
-            print("Attempting local Whisper transcribing...", flush=True)
-            model = get_whisper_model()
-            result = model.transcribe(temp_file_path, language="vi")
-            transcript = result.get("text", "").strip()
-            print(f"Local Whisper transcript: {transcript}", flush=True)
-        except Exception as whisper_err:
-            print(f"Local Whisper translation failed: {whisper_err}", flush=True)
-            
-        # If local Whisper returned nothing or failed, try Gemini API fallback
-        if not transcript:
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            print(f"Local Whisper transcript is empty. Checking GEMINI_API_KEY presence: {bool(gemini_key)}", flush=True)
-            if gemini_key:
-                print("Trying Gemini API fallback transcribing...", flush=True)
+        # 1. Try Gemini Cloud API first (high accuracy for Vietnamese)
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                print("Attempting Gemini API cloud transcribing...", flush=True)
                 transcript = transcribe_audio_via_gemini(temp_file_path, gemini_key)
                 print(f"Gemini Cloud transcript: {transcript}", flush=True)
+            except Exception as gemini_err:
+                print(f"Gemini Cloud transcribing failed, will fallback to Whisper: {gemini_err}", flush=True)
+
+        # 2. If Gemini is not configured or failed, fallback to local Whisper (if ffmpeg is available)
+        if not transcript:
+            try:
+                print("Attempting local Whisper transcribing as fallback...", flush=True)
+                model = get_whisper_model()
+                result = model.transcribe(temp_file_path, language="vi")
+                transcript = result.get("text", "").strip()
+                print(f"Local Whisper transcript: {transcript}", flush=True)
+            except Exception as whisper_err:
+                print(f"Local Whisper translation failed: {whisper_err}", flush=True)
     except Exception as e:
         print(f"Transcription error: {e}", flush=True)
         raise HTTPException(
