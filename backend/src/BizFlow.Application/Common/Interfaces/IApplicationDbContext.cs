@@ -8,6 +8,7 @@ public interface IApplicationDbContext
 {
     DbSet<SubscriptionPlan> SubscriptionPlans { get; }
     DbSet<Tenant> Tenants { get; }
+    DbSet<Store> Stores { get; }
     DbSet<User> Users { get; }
     DbSet<Category> Categories { get; }
     DbSet<Product> Products { get; }

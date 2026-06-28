@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowUpFromLine, AlertCircle, MoreHorizontal, Eye, Trash2 } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, AlertCircle, MoreHorizontal, Eye, Trash2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Skeleton } from "../../ui/Skeleton";
 import { Pagination } from "../../ui/Pagination";
@@ -64,6 +64,14 @@ export default function ReceiptHistoryTab({
           )}
         </div>
         <div className="flex gap-3 items-start">
+          {activeSubTab === "receipts_in" && (
+            <button
+              onClick={() => handleOpenReceiptModal(1)}
+              className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors"
+            >
+              <ArrowDownToLine className="w-4 h-4" /> Lập Phiếu Nhập Kho
+            </button>
+          )}
           {activeSubTab === "receipts_out" && (
             <button
               onClick={() => handleOpenReceiptModal(2)}

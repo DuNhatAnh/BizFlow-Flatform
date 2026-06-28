@@ -26,4 +26,5 @@ public class Tenant
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
     public ICollection<DebtTransaction> DebtTransactions { get; set; } = new List<DebtTransaction>();
     public ICollection<AccountingEntry> AccountingEntries { get; set; } = new List<AccountingEntry>();
+    public ICollection<Store> Stores { get; set; } = new List<Store>();
 }

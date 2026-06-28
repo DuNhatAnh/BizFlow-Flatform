@@ -17,6 +17,7 @@ import AIDrafts from "@/components/AIDrafts";
 import POS from "@/components/POS";
 import ToastNotification from "@/components/ToastNotification";
 import DebtManagement from "@/components/DebtManagement";
+import StoreSettings from "@/components/StoreSettings";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -787,6 +788,10 @@ export default function Home() {
           }}
         />
       );
+    }
+
+    if (activeTab === "settings") {
+      return <StoreSettings />;
     }
 
     return (

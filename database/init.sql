@@ -187,31 +187,3 @@ INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES ('20260611_InitialCreate_v2', '8.0.6')
 ON CONFLICT DO NOTHING;
 
--- =============================================================
--- SEED DATA — Tài khoản mặc định
--- =============================================================
-
--- Gói dịch vụ mặc định
-INSERT INTO subscription_plans ("Id", "Name", "Price", "DurationMonths", "Description", "CreatedAt")
-VALUES (1, 'Goi Chuyen Nghiep', 500000.00, 12, 'Day du cac chuc nang quan ly, bao cao thue TT88 va Tro ly AI', '2026-06-11 00:00:00')
-ON CONFLICT DO NOTHING;
-
--- Tenant: System + Demo store
-INSERT INTO tenants ("Id", "Name", "OwnerName", "SubscriptionPlanId", "IsActive", "CreatedAt")
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'BizFlow System Tenant',        'System Admin', NULL, TRUE, '2026-06-11 00:00:00'),
-  ('11111111-1111-1111-1111-111111111111', 'Cua Hang Tap Hoa Binh Minh',   'Nguyen Van A', 1,    TRUE, '2026-06-11 00:00:00')
-ON CONFLICT ("Id") DO NOTHING;
-
--- 3 tài khoản phân quyền mặc định
-INSERT INTO users ("Id", "TenantId", "Username", "PasswordHash", "Fullname", "Role", "IsActive", "CreatedAt")
-VALUES
-  ('aaaabbbb-cccc-dddd-eeee-111122223333', '00000000-0000-0000-0000-000000000001', 'admin@bizflow.com',   'admin123',   'Quan Tri Vien He Thong', 'Admin',   TRUE, '2026-06-11 00:00:00'),
-  ('aaaabbbb-cccc-dddd-eeee-444455556666', '11111111-1111-1111-1111-111111111111', 'owner@bizflow.com',   'owner123',   'Nguyen Van A',           'Owner',   TRUE, '2026-06-11 00:00:00'),
-  ('aaaabbbb-cccc-dddd-eeee-777788889999', '11111111-1111-1111-1111-111111111111', 'employee@bizflow.com', 'employee123', 'Tran Thi B',             'Employee', TRUE, '2026-06-11 00:00:00')
-
-ON CONFLICT ("Id") DO NOTHING;
-
--- =============================================================
---  HOAN THANH! Refresh Database Client de thay 12 bang moi.
--- =============================================================

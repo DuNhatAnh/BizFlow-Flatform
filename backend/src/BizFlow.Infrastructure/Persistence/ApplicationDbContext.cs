@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Store> Stores => Set<Store>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
@@ -55,6 +56,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .WithMany(s => s.Tenants)
                 .HasForeignKey(e => e.SubscriptionPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 2.5. Store configurations
+        modelBuilder.Entity<Store>(entity =>
+        {
+            entity.ToTable("stores");
+            entity.HasOne(e => e.Tenant)
+                  .WithMany(t => t.Stores)
+                  .HasForeignKey(e => e.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // 3. User configurations
@@ -268,6 +279,20 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 Name = "Cửa Hàng Tạp Hóa Bình Minh",
                 OwnerName = "Nguyễn Văn A",
                 SubscriptionPlanId = 1,
+                IsActive = true,
+                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed default store
+        modelBuilder.Entity<Store>().HasData(
+            new Store
+            {
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                TenantId = storeTenantId,
+                Name = "Cửa Hàng Tạp Hóa Bình Minh (CN1)",
+                Address = "123 Đường Số 1, Quận 1, TP.HCM",
+                Phone = "0901234567",
                 IsActive = true,
                 CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
             }

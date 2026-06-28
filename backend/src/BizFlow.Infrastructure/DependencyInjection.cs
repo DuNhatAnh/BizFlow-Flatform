@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<BizFlow.Application.Interfaces.ICategoryService, BizFlow.Infrastructure.Services.CategoryService>();
         services.AddScoped<IInventoryService, BizFlow.Infrastructure.Services.InventoryService>();
         services.AddScoped<IStaffService, BizFlow.Infrastructure.Services.StaffService>();
+        services.AddScoped<IStoreService, BizFlow.Infrastructure.Services.StoreService>();
 
 
         // Register Redis Cache

@@ -455,12 +455,12 @@ export default function InventoryManagement() {
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.openingQuantity}</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.openingValue}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.openingQuantity}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.openingValue}</td>
       </tr>
     `;
 
-    ledger.records.forEach((l: any) => {
+    ledger.records.items.forEach((l: any) => {
       const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
       const dienGiai = l.type === 0 ? (isCancel ? "Hủy phiếu nhập" : "Nhập kho") : (isCancel ? "Hủy phiếu xuất" : "Xuất kho");
       const bg = isCancel ? "background-color: #fef2f2;" : "";
@@ -471,12 +471,12 @@ export default function InventoryManagement() {
           <td style="border: 1px solid #94a3b8; text-align: center; mso-number-format:'\\@';">${new Date(l.date).toLocaleDateString('vi-VN')}</td>
           <td style="border: 1px solid #94a3b8; text-align: center; mso-number-format:'\\@';">${l.documentRef || ""}</td>
           <td style="border: 1px solid #94a3b8; text-align: left; ${textCancel}">${dienGiai}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; color: #000000;">${l.quantityIn > 0 ? l.quantityIn : "-"}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; color: #000000;">${l.valueIn > 0 ? l.valueIn : "-"}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; color: #000000;">${l.quantityOut > 0 ? l.quantityOut : "-"}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; color: #000000;">${l.valueOut > 0 ? l.valueOut : "-"}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; font-weight: bold; color: #000000;">${l.quantityBalance}</td>
-          <td style="border: 1px solid #94a3b8; text-align: right; font-weight: bold; color: #000000;">${l.valueBalance}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; color: #000000;">${l.quantityIn > 0 ? l.quantityIn : "-"}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; color: #000000;">${l.valueIn > 0 ? l.valueIn : "-"}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; color: #000000;">${l.quantityOut > 0 ? l.quantityOut : "-"}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; color: #000000;">${l.valueOut > 0 ? l.valueOut : "-"}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; font-weight: bold; color: #000000;">${l.quantityBalance}</td>
+          <td style="border: 1px solid #94a3b8; text-align: center; font-weight: bold; color: #000000;">${l.valueBalance}</td>
         </tr>
       `;
     });
@@ -484,10 +484,10 @@ export default function InventoryManagement() {
     tableHTML += `
       <tr style="height: 25pt;">
         <td colspan="3" style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; text-align: left;">CỘNG PHÁT SINH TRONG KỲ</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.totalQuantityIn}</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.totalValueIn}</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.totalQuantityOut}</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.totalValueOut}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.totalQuantityIn}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.totalValueIn}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.totalQuantityOut}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.totalValueOut}</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">x</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">x</td>
       </tr>
@@ -497,8 +497,8 @@ export default function InventoryManagement() {
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
         <td style="background-color: #f8fafc; border: 1px solid #94a3b8; text-align: center;">-</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.closingQuantity}</td>
-        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: right;">${ledger.closingValue}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.closingQuantity}</td>
+        <td style="background-color: #f8fafc; border: 1px solid #94a3b8; font-weight: bold; color: #000000; text-align: center;">${ledger.closingValue}</td>
       </tr>
     `;
 
@@ -576,12 +576,6 @@ export default function InventoryManagement() {
         >
           <FileText className="w-4 h-4" /> Sổ S2-HKD (TT88)
         </button>
-        <button
-          onClick={() => setActiveSubTab("settings")}
-          className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeSubTab === "settings" ? "bg-primary text-white" : "bg-transparent text-on-surface hover:bg-surface-container-low"}`}
-        >
-          <Settings className="w-4 h-4" /> Cài đặt & Giá vốn
-        </button>
       </div>
 
       {/* Content Area */}
@@ -644,17 +638,6 @@ export default function InventoryManagement() {
             setLedgerPage={setLedgerPage}
           />
         )}
-
-        {/* CÀI ĐẶT & GIÁ VỐN */}
-        {activeSubTab === "settings" && (
-          <InventorySettingsTab 
-            hasAnyReceipts={hasAnyReceipts}
-            cogsMethod={cogsMethod}
-            setCogsMethod={setCogsMethod}
-            handleSaveSettings={handleSaveSettings}
-          />
-        )}
-
       </div>
       </div>
 
