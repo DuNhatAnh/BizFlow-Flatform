@@ -18,6 +18,7 @@ import POS from "@/components/POS";
 import ToastNotification from "@/components/ToastNotification";
 import DebtManagement from "@/components/DebtManagement";
 import StoreSettings from "@/components/StoreSettings";
+import { parseDescriptionMetadata } from "@/utils/metadata";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -72,6 +73,24 @@ export default function Home() {
   const [aiDrafts, setAiDrafts] = useState<any[]>([]);
   const [posProducts, setPosProducts] = useState<any[]>([]);
   const [rawProducts, setRawProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  const fetchCategories = async (userObj: any) => {
+    try {
+      const res = await fetch("http://localhost:5178/api/categories", {
+        headers: {
+          "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+          Authorization: `Bearer ${userObj.token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch categories", e);
+    }
+  };
 
   const fetchProducts = async (userObj: any) => {
     try {
@@ -91,13 +110,17 @@ export default function Home() {
         const mapped = items.map((p: any) => {
           const defaultUnit =
             p.units?.find((u: any) => u.isDefault) || p.units?.[0];
+          const meta = parseDescriptionMetadata(p.description);
           return {
             id: p.id,
             name: p.name,
+            code: p.code,
             price: defaultUnit ? defaultUnit.price : 0,
             unit: defaultUnit ? defaultUnit.unitName : p.baseUnit,
             unitId: defaultUnit ? defaultUnit.id : null,
-            stock: p.stockQuantity
+            stock: p.stockQuantity,
+            categoryId: p.categoryId,
+            imageUrl: meta.imageUrl
           };
         });
         setPosProducts(mapped);
@@ -160,10 +183,12 @@ export default function Home() {
             })),
             payment: d.paymentMethod === "Debt" ? "Ghi nợ (Nợ phải thu)" : "Tiền mặt",
             rawText:
-              d.orderSource === "AI_Voice"
+              d.rawTranscript ||
+              (d.orderSource === "AI_Voice"
                 ? "Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen"
-                : "Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn",
+                : "Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn"),
             confidence: d.orderSource === "AI_Voice" ? "98%" : "95%",
+            audioUrl: (typeof window !== "undefined" && (window as any).localAudioCache?.[d.id]) || d.audioUrl || null,
             rawDraft: d
           };
         });
@@ -204,6 +229,7 @@ export default function Home() {
         fetchProducts(parsedUser);
         fetchCustomers(parsedUser);
         fetchDrafts(parsedUser);
+        fetchCategories(parsedUser);
       } catch (e) {
         console.error("Error parsing user storage", e);
         localStorage.removeItem("bizflow_user");
@@ -691,6 +717,7 @@ export default function Home() {
             setIsDebt={setIsDebt}
             validationErrors={validationErrors}
             handleCheckout={handleCheckout}
+            categories={categories}
           />
         );
       }

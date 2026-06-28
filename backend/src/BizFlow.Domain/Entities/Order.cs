@@ -15,6 +15,8 @@ public class Order
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
     public OrderSource OrderSource { get; set; } = OrderSource.Manual;
+    public string? RawTranscript { get; set; }
+    public string? CustomerName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]

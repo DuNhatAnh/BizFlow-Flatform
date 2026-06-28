@@ -89,36 +89,39 @@ export default function AIDrafts({
   };
 
   // Helper to compile extracted AI JSON into Backend Order Draft schema
-  const compileDraftOrderPayload = (aiResponse: any) => {
+  const compileDraftOrderPayload = (aiResponse: any, source: "AI_Voice" | "AI_Text") => {
     const stored = localStorage.getItem("bizflow_user");
     if (!stored) return null;
     const userObj = JSON.parse(stored);
 
     // 1. Resolve Customer ID
-    const matchedCust = customers.find((c) =>
-      c.fullname.toLowerCase().includes(aiResponse.customer_name?.toLowerCase() || "")
-    );
+    const searchCustomerName = aiResponse.customer_name?.toLowerCase();
+    const matchedCust = (searchCustomerName && customers)
+      ? customers.find((c) => c.fullname && c.fullname.toLowerCase().includes(searchCustomerName))
+      : undefined;
 
     // 2. Resolve Items
-    const orderItems = aiResponse.items.map((item: any) => {
+    const orderItems = aiResponse.items?.map((item: any) => {
       // Find product
-      const matchedProd = rawProducts.find((p) =>
-        p.name.toLowerCase().includes(item.product_name.toLowerCase())
-      );
+      const searchProdName = item.product_name?.toLowerCase();
+      const matchedProd = (searchProdName && rawProducts)
+        ? rawProducts.find((p) => p.name && p.name.toLowerCase().includes(searchProdName))
+        : undefined;
       
       // Find matching unit or default unit
-      const matchedUnit = matchedProd?.units?.find((u: any) =>
-        u.unitName.toLowerCase().includes(item.unit?.toLowerCase() || "")
-      ) || matchedProd?.units?.[0];
+      const searchUnitName = item.unit?.toLowerCase();
+      const matchedUnit = (searchUnitName && matchedProd?.units)
+        ? matchedProd.units.find((u: any) => u.unitName && u.unitName.toLowerCase().includes(searchUnitName))
+        : matchedProd?.units?.[0];
 
       return {
         productId: matchedProd ? matchedProd.id : "00000000-0000-0000-0000-000000000000",
         productUnitId: matchedUnit ? matchedUnit.id : null,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
         unitPrice: matchedUnit ? matchedUnit.price : 0,
-        totalPrice: (matchedUnit ? matchedUnit.price : 0) * item.quantity,
+        totalPrice: (matchedUnit ? matchedUnit.price : 0) * (item.quantity || 1),
       };
-    });
+    }) || [];
 
     const totalAmount = orderItems.reduce((sum: number, oi: any) => sum + oi.totalPrice, 0);
 
@@ -130,8 +133,9 @@ export default function AIDrafts({
       totalAmount: totalAmount,
       paymentMethod: aiResponse.payment_method === "Debt" ? "Debt" : "Cash",
       status: "Draft",
-      orderSource: aiResponse.raw_transcript.includes("ghi âm") || isRecording ? "AI_Voice" : "AI_Text",
+      orderSource: source,
       orderItems: orderItems,
+      rawTranscript: aiResponse.raw_transcript || "",
     };
   };
 
@@ -141,9 +145,13 @@ export default function AIDrafts({
 
     setIsProcessingAI(true);
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) return;
+    if (!stored) {
+      setIsProcessingAI(false);
+      return;
+    }
     const userObj = JSON.parse(stored);
 
+    let aiResponse;
     try {
       // 1. Call Python FastAPI AI Service
       const res = await fetch("http://localhost:8000/api/text-order", {
@@ -156,10 +164,17 @@ export default function AIDrafts({
       });
 
       if (!res.ok) throw new Error("AI Service error");
-      const aiResponse = await res.json();
+      aiResponse = await res.json();
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi kết nối tới Trợ lý AI Service.");
+      setIsProcessingAI(false);
+      return;
+    }
 
+    try {
       // 2. Post draft to .NET API
-      const draftPayload = compileDraftOrderPayload(aiResponse);
+      const draftPayload = compileDraftOrderPayload(aiResponse, "AI_Text");
       if (draftPayload) {
         const createRes = await fetch("http://localhost:5178/api/orders/draft", {
           method: "POST",
@@ -181,7 +196,7 @@ export default function AIDrafts({
       }
     } catch (e) {
       console.error(e);
-      alert("Lỗi kết nối tới Trợ lý AI Service.");
+      alert("Lỗi khi xử lý dữ liệu hoặc gửi đơn hàng lên máy chủ hệ thống.");
     } finally {
       setIsProcessingAI(false);
     }
@@ -190,9 +205,13 @@ export default function AIDrafts({
   const handleProcessVoiceOrder = async (audioBlob: Blob) => {
     setIsProcessingAI(true);
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) return;
+    if (!stored) {
+      setIsProcessingAI(false);
+      return;
+    }
     const userObj = JSON.parse(stored);
 
+    let aiResponse;
     try {
       // Create form data with audio file
       const formData = new FormData();
@@ -210,10 +229,17 @@ export default function AIDrafts({
       );
 
       if (!res.ok) throw new Error("AI Voice Service error");
-      const aiResponse = await res.json();
+      aiResponse = await res.json();
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi khi gửi tệp ghi âm giọng nói lên Trợ lý AI.");
+      setIsProcessingAI(false);
+      return;
+    }
 
+    try {
       // 2. Post draft to .NET API
-      const draftPayload = compileDraftOrderPayload(aiResponse);
+      const draftPayload = compileDraftOrderPayload(aiResponse, "AI_Voice");
       if (draftPayload) {
         const createRes = await fetch("http://localhost:5178/api/orders/draft", {
           method: "POST",
@@ -225,13 +251,22 @@ export default function AIDrafts({
           body: JSON.stringify(draftPayload),
         });
 
-        if (!createRes.ok) {
+        if (createRes.ok) {
+          const newOrder = await createRes.json();
+          const orderId = newOrder?.id || newOrder?.Id;
+          if (orderId) {
+            if (typeof window !== "undefined") {
+              (window as any).localAudioCache = (window as any).localAudioCache || {};
+              (window as any).localAudioCache[orderId] = URL.createObjectURL(audioBlob);
+            }
+          }
+        } else {
           alert("Lỗi khi đẩy đơn hàng nháp bằng giọng nói lên máy chủ.");
         }
       }
     } catch (e) {
       console.error(e);
-      alert("Lỗi khi gửi tệp ghi âm giọng nói lên Trợ lý AI.");
+      alert("Lỗi khi xử lý dữ liệu hoặc gửi đơn hàng lên máy chủ hệ thống.");
     } finally {
       setIsProcessingAI(false);
     }

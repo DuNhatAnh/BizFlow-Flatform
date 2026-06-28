@@ -287,7 +287,7 @@ class ApiService {
         return data.map((item) => Order.fromJson(item)).toList();
       }
     } catch (e) {
-      // Error
+      debugPrint('AI fetchDrafts error: $e');
     }
     return [];
   }
@@ -360,5 +360,58 @@ class ApiService {
     }
     return null;
   }
-}
 
+  // Gọi AI service để phân tích câu lệnh text thành đơn hàng nháp
+  static String get aiServiceUrl =>
+      kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+
+  Future<Map<String, dynamic>?> processTextOrder(String text, String tenantId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$aiServiceUrl/api/text-order'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': text, 'tenant_id': tenantId}),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Server trả về mã lỗi: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('AI service unreachable: $e');
+      rethrow;
+    }
+  }
+
+
+  // Gửi file audio lên AI service để nhận diện giọng nói → đơn hàng nháp
+  Future<Map<String, dynamic>?> processVoiceOrder(String audioFilePath, String tenantId) async {
+    try {
+      final uri = Uri.parse('$aiServiceUrl/api/voice-order?tenant_id=$tenantId');
+      final request = http.MultipartRequest('POST', uri);
+      
+      String filePath = audioFilePath;
+      if (filePath.startsWith('file://')) {
+        filePath = filePath.replaceFirst('file://', '');
+      }
+
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        filePath,
+      ));
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Server trả về mã lỗi: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('AI voice service error: $e');
+      rethrow;
+    }
+  }
+}

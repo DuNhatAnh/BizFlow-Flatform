@@ -15,7 +15,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,7 +39,9 @@ class TextOrderRequest(BaseModel):
 def health_check():
     return {"status": "healthy", "service": "BizFlow AI - Connected"}
 
-def clean_json_text(text: str) -> str:
+def clean_json_text(text: Optional[str]) -> str:
+    if not text:
+        return ""
     text = text.strip()
     if text.startswith("```"):
         # Remove opening ```json or ```
@@ -52,17 +54,43 @@ def clean_json_text(text: str) -> str:
     return text
 
 def call_llm(prompt: str) -> str:
-    # 1. Try Gemini API directly
+    # 1. Try Gemini API with new google-genai SDK (with retry mechanism)
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            print(f"Error calling direct Gemini API: {e}")
+        import time
+        from google import genai
+        max_retries = 3
+        backoff = 1.0
+        for attempt in range(max_retries):
+            try:
+                client = genai.Client(api_key=gemini_key)
+                try:
+                    # Try the newer gemini-2.5-flash first
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                    )
+                    if response.text:
+                        return response.text
+                except Exception as e_2_5:
+                    # Fallback to gemini-1.5-flash if 2.5 is rate limited / quota exhausted
+                    if "429" in str(e_2_5) or "RESOURCE_EXHAUSTED" in str(e_2_5) or "quota" in str(e_2_5).lower():
+                        print("Gemini 2.5 Flash quota exhausted, falling back to gemini-flash-latest...", flush=True)
+                        response = client.models.generate_content(
+                            model="gemini-flash-latest",
+                            contents=prompt,
+                        )
+                        if response.text:
+                            return response.text
+                    else:
+                        raise e_2_5
+            except Exception as e:
+                print(f"Error calling google-genai SDK (attempt {attempt+1}/{max_retries}): {e}", flush=True)
+                if attempt < max_retries - 1:
+                    time.sleep(backoff)
+                    backoff *= 2
+                else:
+                    break
 
     # 2. Try OpenRouter API (using OPENROUTER_API_KEY)
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
@@ -184,26 +212,56 @@ def get_whisper_model():
     return whisper_model
 
 def transcribe_audio_via_gemini(audio_path: str, api_key: str) -> str:
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    audio_file = genai.upload_file(path=audio_path)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content([
-        audio_file,
-        "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
-    ])
-    genai.delete_file(audio_file.name)
-    return response.text.strip()
+    from google import genai
+    import pathlib
+    client = genai.Client(api_key=api_key)
+    audio_bytes = pathlib.Path(audio_path).read_bytes()
+    # Detect mime type from extension
+    ext = os.path.splitext(audio_path)[1].lower()
+    mime_map = {'.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg'}
+    mime_type = mime_map.get(ext, 'audio/mp4')
+    from google.genai import types
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(
+                    data=audio_bytes,
+                    mime_type=mime_type,
+                ),
+                "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
+            ]
+        )
+    except Exception as e_2_5:
+        if "429" in str(e_2_5) or "RESOURCE_EXHAUSTED" in str(e_2_5) or "quota" in str(e_2_5).lower():
+            print("Gemini 2.5 Flash quota exhausted for voice transcription, falling back to gemini-flash-latest...", flush=True)
+            response = client.models.generate_content(
+                model="gemini-flash-latest",
+                contents=[
+                    types.Part.from_bytes(
+                        data=audio_bytes,
+                        mime_type=mime_type,
+                    ),
+                    "Hãy chuyển đổi ghi âm này thành văn bản tiếng Việt chính xác nhất có thể. Chỉ trả về văn bản tiếng Việt được chuyển ngữ, không thêm bất kỳ câu giải thích nào khác."
+                ]
+            )
+        else:
+            raise e_2_5
+    text_content = response.text or ""
+    return text_content.strip()
 
 @app.post("/api/voice-order", response_model=OrderExtractionResponse)
 async def process_voice_order(tenant_id: str, file: UploadFile = File(...)):
     """
     Receives an audio file, transcribes it, and extracts the order entities.
     """
+    print(f"Received file: {file.filename}, content_type: {file.content_type}", flush=True)
     if not file.filename.endswith(('.wav', '.mp3', '.m4a', '.ogg')):
+        print(f"File filename {file.filename} is not supported extension.", flush=True)
         raise HTTPException(status_code=400, detail="Định dạng âm thanh không được hỗ trợ")
         
     audio_content = await file.read()
+    print(f"Read {len(audio_content)} bytes of audio content.", flush=True)
     
     import tempfile
     suffix = os.path.splitext(file.filename)[1]
@@ -212,25 +270,32 @@ async def process_voice_order(tenant_id: str, file: UploadFile = File(...)):
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
         temp_file.write(audio_content)
         temp_file_path = temp_file.name
+    print(f"Saved audio content to temporary file: {temp_file_path}", flush=True)
 
     transcript = ""
     try:
-        # Try local Whisper first (if ffmpeg is available)
-        try:
-            model = get_whisper_model()
-            result = model.transcribe(temp_file_path, language="vi")
-            transcript = result.get("text", "").strip()
-        except Exception as whisper_err:
-            print(f"Local Whisper translation failed, trying Gemini API fallback: {whisper_err}")
-            
-            # Try cloud Gemini API if GEMINI_API_KEY is available
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            if gemini_key:
+        # 1. Try Gemini Cloud API first (high accuracy for Vietnamese)
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                print("Attempting Gemini API cloud transcribing...", flush=True)
                 transcript = transcribe_audio_via_gemini(temp_file_path, gemini_key)
-            else:
-                raise whisper_err
+                print(f"Gemini Cloud transcript: {transcript}", flush=True)
+            except Exception as gemini_err:
+                print(f"Gemini Cloud transcribing failed, will fallback to Whisper: {gemini_err}", flush=True)
+
+        # 2. If Gemini is not configured or failed, fallback to local Whisper (if ffmpeg is available)
+        if not transcript:
+            try:
+                print("Attempting local Whisper transcribing as fallback...", flush=True)
+                model = get_whisper_model()
+                result = model.transcribe(temp_file_path, language="vi")
+                transcript = result.get("text", "").strip()
+                print(f"Local Whisper transcript: {transcript}", flush=True)
+            except Exception as whisper_err:
+                print(f"Local Whisper translation failed: {whisper_err}", flush=True)
     except Exception as e:
-        print(f"Transcription error: {e}")
+        print(f"Transcription error: {e}", flush=True)
         raise HTTPException(
             status_code=400,
             detail="Không thể chuyển đổi giọng nói thành văn bản. Vui lòng cài đặt ffmpeg để chạy Whisper cục bộ, hoặc cấu hình GEMINI_API_KEY để sử dụng cloud transcription của Google."
@@ -239,10 +304,13 @@ async def process_voice_order(tenant_id: str, file: UploadFile = File(...)):
         # Clean up temp file
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+            print(f"Removed temporary file: {temp_file_path}", flush=True)
 
     if not transcript:
+        print("Transcript is empty.", flush=True)
         raise HTTPException(status_code=400, detail="Không nhận diện được giọng nói trong file ghi âm")
 
+    print(f"Sending transcript to entity extraction: {transcript}", flush=True)
     # Reuse process_text_order logic
     return await process_text_order(TextOrderRequest(text=transcript, tenant_id=tenant_id))
 

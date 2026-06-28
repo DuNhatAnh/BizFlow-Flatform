@@ -27,16 +27,17 @@ class _AITextFallbackSheetState extends State<AITextFallbackSheet> {
       _isLoading = true;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
     final provider = Provider.of<PosProvider>(context, listen: false);
-    await provider.simulateAIVoiceOrder(text);
+    final error = await provider.processTextOrderWithAI(text);
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.pop(context);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+    });
+
+    Navigator.pop(context);
+
+    if (error == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
@@ -47,6 +48,15 @@ class _AITextFallbackSheetState extends State<AITextFallbackSheet> {
             ],
           ),
           backgroundColor: const Color(0xFF2D6A4F),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),

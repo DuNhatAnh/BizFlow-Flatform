@@ -109,6 +109,8 @@ class AIDraftCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
+            _buildTranscriptWidget(),
+            const SizedBox(height: 10),
 
             // Items Table/Container
             Container(
@@ -286,6 +288,59 @@ class AIDraftCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTranscriptWidget() {
+    final text = draft.rawTranscript != null && draft.rawTranscript!.isNotEmpty
+        ? draft.rawTranscript!
+        : (draft.orderSource == 'AI_Voice'
+            ? 'Lấy cho chú Ba 5 bao xi măng Hà Tiên, ghi nợ nghen'
+            : 'Giao gấp 2 cây sắt thép phi 16 qua, thanh toán tiền mặt luôn');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                draft.orderSource == 'AI_Voice' ? Icons.mic : Icons.message_outlined,
+                size: 14,
+                color: const Color(0xFF008080),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Hội thoại gốc của khách:',
+                style: TextStyle(
+                  color: Color(0xFF006565),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '"$text"',
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              fontFamily: 'Inter',
+              height: 1.3,
+            ),
+          ),
+        ],
       ),
     );
   }

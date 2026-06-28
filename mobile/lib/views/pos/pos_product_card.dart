@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../providers/pos_provider.dart';
+import 'product_detail_sheet.dart';
 
 class POSProductCard extends StatefulWidget {
   final Product product;
@@ -31,13 +30,33 @@ class _POSProductCardState extends State<POSProductCard> {
     );
   }
 
+  void _openProductDetail(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        // Tránh bàn phím che nội dung nếu có
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: ProductDetailSheet(
+          product: widget.product,
+          onAddedToCart: widget.onAddToCart,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
     final formattedPrice = "${_selectedUnit.price.toStringAsFixed(0)}đ";
     final stockText = "Tồn: ${product.stock.toStringAsFixed(0)} ${product.baseUnit}";
 
-    return Container(
+    return GestureDetector(
+      onTap: () => _openProductDetail(context),
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -54,47 +73,49 @@ class _POSProductCardState extends State<POSProductCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () {
-                Provider.of<PosProvider>(context, listen: false).addToCart(product, _selectedUnit);
-                widget.onAddToCart();
-              },
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00685F).withValues(alpha: 0.05),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Icon(
-                        Icons.inventory_2_outlined,
-                        size: 40,
-                        color: const Color(0xFF00685F).withValues(alpha: 0.6),
-                      ),
-                    ),
-                    Positioned(
-                      left: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00685F).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          stockText,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF00685F),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF00685F).withValues(alpha: 0.05),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        product.displayImageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            size: 40,
+                            color: const Color(0xFF00685F).withValues(alpha: 0.6),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00685F).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        stockText,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00685F),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -138,29 +159,32 @@ class _POSProductCardState extends State<POSProductCard> {
                     height: 28,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
+                      // Chặn scroll của ListView con không bubble lên card tap
+                      physics: const ClampingScrollPhysics(),
                       itemCount: product.productUnits.length,
                       itemBuilder: (context, idx) {
                         final unit = product.productUnits[idx];
                         final isSelected = unit.id == _selectedUnit.id;
                         return Container(
                           margin: const EdgeInsets.only(right: 4),
-                          child: InkWell(
+                          child: GestureDetector(
+                            // Chỉ đổi unit preview trên card, không mở bottom sheet
                             onTap: () {
                               setState(() {
                                 _selectedUnit = unit;
                               });
                             },
-                            borderRadius: BorderRadius.circular(6),
+                            behavior: HitTestBehavior.opaque,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isSelected 
+                                color: isSelected
                                     ? const Color(0xFF00685F)
                                     : const Color(0xFFF0F2F5),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: isSelected 
-                                      ? Colors.transparent 
+                                  color: isSelected
+                                      ? Colors.transparent
                                       : Colors.grey.shade300,
                                   width: 1,
                                 ),
@@ -187,6 +211,6 @@ class _POSProductCardState extends State<POSProductCard> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

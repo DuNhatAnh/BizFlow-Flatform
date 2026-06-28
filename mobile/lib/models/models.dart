@@ -130,6 +130,51 @@ class Product {
     'productUnits': productUnits.map((u) => u.toJson()).toList(),
     'stock': stock,
   };
+
+  String? get imageUrl {
+    if (description == null) return null;
+    final regex = RegExp(r'\[ImageUrl:\s*([^\]]+)\]');
+    final match = regex.firstMatch(description!);
+    return match?.group(1)?.trim();
+  }
+
+  String get fallbackImageUrl {
+    final lowercaseName = name.toLowerCase();
+    
+    if (lowercaseName.contains("sắt") || lowercaseName.contains("thép")) {
+      return "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.contains("gạch")) {
+      return "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.contains("cát")) {
+      return "https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.contains("xi măng")) {
+      return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=200&auto=format&fit=crop&q=60";
+    }
+
+    switch (categoryId) {
+      case 1:
+        return "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=200&auto=format&fit=crop&q=60";
+      case 2:
+        return "https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=200&auto=format&fit=crop&q=60";
+      case 3:
+        return "https://images.unsplash.com/photo-1527960656-26799343849b?w=200&auto=format&fit=crop&q=60";
+      case 4:
+        return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=60";
+      default:
+        return "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=200&auto=format&fit=crop&q=60";
+    }
+  }
+
+  String get displayImageUrl {
+    final parsedUrl = imageUrl;
+    if (parsedUrl != null && parsedUrl.isNotEmpty) {
+      return parsedUrl;
+    }
+    return fallbackImageUrl;
+  }
 }
 
 class Category {
@@ -242,6 +287,7 @@ class Order {
   final String tenantId;
   final String? customerId;
   final String? customerName;
+  final String? rawTranscript;
   final String? createdBy;
   final double totalAmount;
   final String paymentMethod; // Cash, Transfer, Debt
@@ -256,6 +302,7 @@ class Order {
     required this.tenantId,
     this.customerId,
     this.customerName,
+    this.rawTranscript,
     this.createdBy,
     required this.totalAmount,
     required this.paymentMethod,
@@ -276,6 +323,7 @@ class Order {
       tenantId: json['tenantId'] ?? '',
       customerId: json['customerId'],
       customerName: json['customer']?['fullname'] ?? json['customerName'],
+      rawTranscript: json['rawTranscript'],
       createdBy: json['createdBy'],
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       paymentMethod: json['paymentMethod'] ?? 'Cash',
@@ -289,10 +337,12 @@ class Order {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
+    'id': id.isEmpty ? '00000000-0000-0000-0000-000000000000' : id,
     'code': code,
     'tenantId': tenantId,
     'customerId': customerId,
+    'customerName': customerName,
+    'rawTranscript': rawTranscript,
     'createdBy': createdBy,
     'totalAmount': totalAmount,
     'paymentMethod': paymentMethod,

@@ -51,9 +51,34 @@ export default function ProductRow({
   };
 
   const defaultLocation = getMockLocation(catName);
-  const { minStock, location: customLocation } = parseDescriptionMetadata(product.description);
+  const { minStock, location: customLocation, imageUrl } = parseDescriptionMetadata(product.description);
   const displayLocation = customLocation || defaultLocation;
   const minStockLimit = minStock !== null ? minStock : 10;
+
+  const getFallbackProductImage = (categoryId: number | null | undefined, name: string) => {
+    const lowercaseName = name.toLowerCase();
+    if (lowercaseName.includes("sắt") || lowercaseName.includes("thép")) {
+      return "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("gạch")) {
+      return "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("cát")) {
+      return "https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("xi măng")) {
+      return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=200&auto=format&fit=crop&q=60";
+    }
+    switch (categoryId) {
+      case 1: return "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=200&auto=format&fit=crop&q=60";
+      case 2: return "https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=200&auto=format&fit=crop&q=60";
+      case 3: return "https://images.unsplash.com/photo-1527960656-26799343849b?w=200&auto=format&fit=crop&q=60";
+      case 4: return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=60";
+      default: return "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=200&auto=format&fit=crop&q=60";
+    }
+  };
+
+  const displayImage = imageUrl || getFallbackProductImage(product.categoryId, product.name);
 
   return (
     <tr
@@ -64,8 +89,15 @@ export default function ProductRow({
       </td>
       <td className="py-2 px-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-400 flex-shrink-0">
-            <Package className="w-4.5 h-4.5" />
+          <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-400 flex-shrink-0 overflow-hidden">
+            <img 
+              src={displayImage} 
+              alt={product.name} 
+              className="w-full h-full object-cover" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = getFallbackProductImage(product.categoryId, product.name);
+              }}
+            />
           </div>
           <div>
             <div

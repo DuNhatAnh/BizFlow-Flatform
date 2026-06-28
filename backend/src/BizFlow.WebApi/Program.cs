@@ -199,6 +199,12 @@ using (var scope = app.Services.CreateScope())
         // Add Customer Debt Limit Field
         SafeSql("ALTER TABLE customers ADD COLUMN IF NOT EXISTS \"DebtLimit\" numeric(15,2) NOT NULL DEFAULT 10000000;");
 
+        // Add RawTranscript column to orders table
+        SafeSql("ALTER TABLE orders ADD COLUMN IF NOT EXISTS \"RawTranscript\" text;");
+
+        // Add CustomerName column to orders table
+        SafeSql("ALTER TABLE orders ADD COLUMN IF NOT EXISTS \"CustomerName\" text;");
+
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
             ""Id"" uuid NOT NULL,
@@ -258,6 +264,63 @@ using (var scope = app.Services.CreateScope())
             );
             db.SaveChanges();
         }
+
+        // Seed default product images in database description metadata if not present
+        foreach (var product in db.Products.ToList())
+        {
+            var desc = product.Description ?? string.Empty;
+            if (!desc.Contains("[ImageUrl:"))
+            {
+                if (product.Name.Contains("Sắt") || product.Name.Contains("thép"))
+                {
+                    product.Description = (desc + " [ImageUrl: https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=500]").Trim();
+                }
+                else if (product.Name.Contains("Gạch"))
+                {
+                    product.Description = (desc + " [ImageUrl: https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=500]").Trim();
+                }
+                else if (product.Name.Contains("Cát"))
+                {
+                    product.Description = (desc + " [ImageUrl: https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=500]").Trim();
+                }
+                else if (product.Name.Contains("Xi măng"))
+                {
+                    product.Description = (desc + " [ImageUrl: https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500]").Trim();
+                }
+                else if (product.Name.Contains("Đá"))
+                {
+                    product.Description = (desc + " [ImageUrl: https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=500]").Trim();
+                }
+            }
+        }
+        db.SaveChanges();
+
+        // Force reset seeded user passwords to default plain text (AuthService will auto-hash on login)
+        var seededAdmin = db.Users.FirstOrDefault(u => u.Username.ToLower() == "admin@bizflow.com");
+        if (seededAdmin != null)
+        {
+            seededAdmin.PasswordHash = "admin123";
+            seededAdmin.IsActive = true;
+        }
+        var seededOwner = db.Users.FirstOrDefault(u => u.Username.ToLower() == "owner@bizflow.com");
+        if (seededOwner != null)
+        {
+            seededOwner.PasswordHash = "owner123";
+            seededOwner.IsActive = true;
+        }
+        var seededEmployee = db.Users.FirstOrDefault(u => u.Username.ToLower() == "employee@bizflow.com");
+        if (seededEmployee != null)
+        {
+            seededEmployee.PasswordHash = "employee123";
+            seededEmployee.IsActive = true;
+        }
+        var seededCashier = db.Users.FirstOrDefault(u => u.Username.ToLower() == "cashier@bizflow.com");
+        if (seededCashier != null)
+        {
+            seededCashier.PasswordHash = "cashier123";
+            seededCashier.IsActive = true;
+        }
+        db.SaveChanges();
 
 
     }

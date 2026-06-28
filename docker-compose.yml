@@ -90,6 +90,7 @@ services:
       - "8000:8000"
     environment:
       - WATCHFILES_FORCE_POLLING=true
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ./ai-service:/app
 

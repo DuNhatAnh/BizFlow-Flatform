@@ -40,20 +40,64 @@ export default function ProductCard({
     return "Kho tổng - Kệ C";
   };
   
+  const getFallbackProductImage = (categoryId: number | null | undefined, name: string) => {
+    const lowercaseName = name.toLowerCase();
+    
+    if (lowercaseName.includes("sắt") || lowercaseName.includes("thép")) {
+      return "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("gạch")) {
+      return "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("cát")) {
+      return "https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=200&auto=format&fit=crop&q=60";
+    }
+    if (lowercaseName.includes("xi măng")) {
+      return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=200&auto=format&fit=crop&q=60";
+    }
+
+    switch (categoryId) {
+      case 1:
+        return "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=200&auto=format&fit=crop&q=60";
+      case 2:
+        return "https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=200&auto=format&fit=crop&q=60";
+      case 3:
+        return "https://images.unsplash.com/photo-1527960656-26799343849b?w=200&auto=format&fit=crop&q=60";
+      case 4:
+        return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=60";
+      default:
+        return "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=200&auto=format&fit=crop&q=60";
+    }
+  };
+
   const defaultLocation = getMockLocation(catName);
-  const { minStock, location: customLocation } = parseDescriptionMetadata(product.description);
+  const { minStock, location: customLocation, imageUrl } = parseDescriptionMetadata(product.description);
   const displayLocation = customLocation || defaultLocation;
   const minStockLimit = minStock !== null ? minStock : 10;
+  const displayImage = imageUrl || getFallbackProductImage(product.categoryId, product.name);
 
   return (
     <div 
       className="p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
       style={{ animationDelay: `${index * 30}ms`, animationFillMode: "both" }}
     >
-      <div className="flex justify-between items-start">
-        <div>
+      <div className="flex gap-3 items-start">
+        {/* Product Image */}
+        <div className="w-16 h-16 rounded-xl border border-surface-container-high overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center text-slate-400">
+          <img 
+            src={displayImage} 
+            alt={product.name} 
+            className="w-full h-full object-cover" 
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = getFallbackProductImage(product.categoryId, product.name);
+            }}
+          />
+        </div>
+
+        {/* Product Info */}
+        <div className="flex-1 min-w-0">
           <div 
-            className="font-bold text-on-surface text-base hover:text-primary cursor-pointer select-none"
+            className="font-bold text-on-surface text-sm sm:text-base hover:text-primary cursor-pointer select-none truncate"
             onClick={() => onSelectCalcProduct(product)}
             title="Click để tính quy đổi"
           >
@@ -63,7 +107,7 @@ export default function ProductCard({
             <span className="text-[10px] text-on-surface-variant font-mono bg-surface-container-high px-1.5 py-0.5 rounded">
               {product.code || "N/A"}
             </span>
-            <span className="text-[10px] text-primary bg-primary/5 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-primary bg-primary/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">
               📍 {displayLocation}
             </span>
           </div>

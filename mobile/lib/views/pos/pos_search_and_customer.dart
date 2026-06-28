@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../providers/pos_provider.dart';
-import '../barcode_scanner_screen.dart';
 import '../customer/customer_selection_bottom_sheet.dart';
 
 class POSSearchAndCustomer extends StatelessWidget {
@@ -59,7 +58,7 @@ class POSSearchAndCustomer extends StatelessWidget {
                     controller: searchController,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Tìm nhanh mặt hàng [F2]...',
+                      hintText: 'Tìm nhanh mặt hàng...',
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       suffixIcon: searchQuery.isNotEmpty
                           ? IconButton(
@@ -72,16 +71,6 @@ class POSSearchAndCustomer extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.qr_code_scanner, color: Color(0xFF00685F), size: 28),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-                  );
-                },
               ),
             ],
           ),
@@ -107,8 +96,8 @@ class POSSearchAndCustomer extends StatelessWidget {
                   Expanded(
                     child: Text(
                       provider.selectedCustomer != null
-                          ? 'Khách hàng: ${provider.selectedCustomer!.fullname} (${provider.selectedCustomer!.phone ?? "Không có SĐT"}) [F4]'
-                          : 'Khách hàng: Khách lẻ [F4] (Chạm để thay đổi)',
+                          ? 'Khách hàng: ${provider.selectedCustomer!.fullname} (${provider.selectedCustomer!.phone ?? "Không có SĐT"})'
+                          : 'Khách hàng: Khách lẻ (Chạm để thay đổi)',
                       style: const TextStyle(
                         color: Color(0xFF00685F),
                         fontWeight: FontWeight.w600,
