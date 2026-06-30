@@ -43,6 +43,8 @@ export default function Home() {
       quantity: number;
       unit: string;
       unitId: number | null;
+      vatRate?: string;
+      priceIncludesVat?: boolean;
     }[]
   >([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -120,7 +122,9 @@ export default function Home() {
             unitId: defaultUnit ? defaultUnit.id : null,
             stock: p.stockQuantity,
             categoryId: p.categoryId,
-            imageUrl: meta.imageUrl
+            imageUrl: meta.imageUrl,
+            vatRate: p.vatRate || "10",
+            priceIncludesVat: p.priceIncludesVat !== false
           };
         });
         setPosProducts(mapped);
@@ -251,10 +255,10 @@ export default function Home() {
         console.log("Connected to SignalR Hub");
         if (user.tenantId) {
           connection.invoke("JoinTenantGroup", user.tenantId)
-            .catch(err => console.error("Failed to join tenant group:", err));
+            .catch((err: any) => console.error("Failed to join tenant group:", err));
         }
       })
-      .catch(err => console.error("SignalR Connection failed: ", err));
+      .catch((err: any) => console.error("SignalR Connection failed: ", err));
 
     connection.on("ReceiveNotification", (message: string) => {
       console.log("SignalR notification: ", message);
@@ -316,7 +320,9 @@ export default function Home() {
           price: product.price,
           quantity: 1,
           unit: product.unit,
-          unitId: product.unitId
+          unitId: product.unitId,
+          vatRate: product.vatRate,
+          priceIncludesVat: product.priceIncludesVat
         }
       ]);
     }
@@ -443,21 +449,53 @@ export default function Home() {
     if (!stored) return;
     const userObj = JSON.parse(stored);
 
-    const orderBody = {
-      tenantId: userObj.tenantId || "11111111-1111-1111-1111-111111111111",
-      customerId: selectedCustomer?.id || null,
-      createdBy: userObj.id || "aaaabbbb-cccc-dddd-eeee-777788889999",
-      totalAmount: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      paymentMethod: isDebt ? "Debt" : "Cash",
-      status: "Completed",
-      orderSource: "Manual",
-      orderItems: cart.map((item) => ({
+    let subtotalAmount = 0;
+    let totalVatAmount = 0;
+    let totalAmount = 0;
+
+    const orderItemsPayload = cart.map((item) => {
+      const qty = item.quantity;
+      const price = item.price;
+      const rateStr = item.vatRate || "10";
+      const rate = rateStr === "KCT" ? 0 : (parseFloat(rateStr) || 0);
+      const includesVat = item.priceIncludesVat !== false;
+
+      let lineTotal, lineSubtotal, lineVat;
+      if (includesVat) {
+        lineTotal = price * qty;
+        lineSubtotal = lineTotal / (1 + rate / 100);
+        lineVat = lineTotal - lineSubtotal;
+      } else {
+        lineSubtotal = price * qty;
+        lineVat = lineSubtotal * (rate / 100);
+        lineTotal = lineSubtotal + lineVat;
+      }
+
+      subtotalAmount += lineSubtotal;
+      totalVatAmount += lineVat;
+      totalAmount += lineTotal;
+
+      return {
         productId: item.id,
         productUnitId: item.unitId,
         quantity: item.quantity,
         unitPrice: item.price,
-        totalPrice: item.price * item.quantity
-      }))
+        totalPrice: lineTotal,
+        vatRate: rateStr,
+        vatAmount: lineVat
+      };
+    });
+
+    const orderBody = {
+      tenantId: userObj.tenantId || "11111111-1111-1111-1111-111111111111",
+      customerId: selectedCustomer?.id || null,
+      createdBy: userObj.id || "aaaabbbb-cccc-dddd-eeee-777788889999",
+      totalAmount: totalAmount,
+      totalVatAmount: totalVatAmount,
+      paymentMethod: isDebt ? "Debt" : "Cash",
+      status: "Completed",
+      orderSource: "Manual",
+      orderItems: orderItemsPayload
     };
 
     // Save states for potential rollback

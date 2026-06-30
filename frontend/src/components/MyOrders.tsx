@@ -39,6 +39,7 @@ interface Order {
   customer?: Customer;
   createdBy: string;
   totalAmount: number;
+  totalVatAmount?: number;
   paymentMethod: "Cash" | "Debt";
   status: "Draft" | "Completed" | "Cancelled";
   orderSource: "Manual" | "AI_Voice" | "AI_Text";
@@ -454,7 +455,15 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
         </table>
 
         <div style="border-top: 1px dashed #000; padding-top: 8px; font-size: 12px; line-height: 1.5;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold;">
+          <div style="display: flex; justify-content: space-between; font-weight: normal; font-size: 11px;">
+            <span>Tiền hàng (chưa VAT):</span>
+            <span>${(order.totalAmount - (order.totalVatAmount || 0)).toLocaleString()} đ</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: normal; font-size: 11px; margin-bottom: 4px;">
+            <span>Thuế VAT:</span>
+            <span>${(order.totalVatAmount || 0).toLocaleString()} đ</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px dashed #ddd; padding-top: 4px;">
             <span>Tổng cộng thanh toán:</span>
             <span>${order.totalAmount.toLocaleString()} đ</span>
           </div>

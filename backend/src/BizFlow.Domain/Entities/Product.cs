@@ -17,6 +17,10 @@ public class Product
     public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // VAT Settings
+    public string VatRate { get; set; } = "10";
+    public bool PriceIncludesVat { get; set; } = true;
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Category? Category { get; set; }

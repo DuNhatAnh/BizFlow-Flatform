@@ -87,6 +87,8 @@ public class ProductService : IProductService
             CategoryId = request.CategoryId,
             BaseUnit = request.BaseUnit,
             Description = request.Description,
+            VatRate = request.VatRate ?? "10",
+            PriceIncludesVat = request.PriceIncludesVat ?? true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -153,12 +155,16 @@ public class ProductService : IProductService
             if (product.Name != request.Name) changes.Add($"Tên: '{product.Name}' -> '{request.Name}'");
             if (product.CategoryId != request.CategoryId) changes.Add("Danh mục bị thay đổi");
             if (product.BaseUnit != request.BaseUnit) changes.Add($"Đơn vị: '{product.BaseUnit}' -> '{request.BaseUnit}'");
+            if (product.VatRate != request.VatRate) changes.Add($"VAT: '{product.VatRate}' -> '{request.VatRate}'");
+            if (product.PriceIncludesVat != request.PriceIncludesVat) changes.Add($"Bao gồm VAT: '{product.PriceIncludesVat}' -> '{request.PriceIncludesVat}'");
             
             product.Code = request.Code;
             product.Name = request.Name;
             product.CategoryId = request.CategoryId;
             product.BaseUnit = request.BaseUnit;
             product.Description = request.Description;
+            product.VatRate = request.VatRate ?? "10";
+            product.PriceIncludesVat = request.PriceIncludesVat ?? true;
 
             // Handle units update
             var existingUnits = product.ProductUnits.ToList();
@@ -265,6 +271,8 @@ public class ProductService : IProductService
             Description = product.Description,
             StockQuantity = product.StockQuantity,
             CreatedAt = product.CreatedAt,
+            VatRate = product.VatRate,
+            PriceIncludesVat = product.PriceIncludesVat,
             Units = product.ProductUnits.Select(u => new ProductUnitDto
             {
                 Id = u.Id,

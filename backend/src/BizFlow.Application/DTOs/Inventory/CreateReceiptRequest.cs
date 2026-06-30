@@ -32,4 +32,6 @@ public class CreateReceiptItemRequest
     public decimal? DocumentQuantity { get; set; } // Tùy chọn, nếu null sẽ lấy bằng Quantity
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
+    public string? VatRate { get; set; } // Thuế suất VAT (VD: "8", "10", "KCT")
+    public bool? PriceIncludesVat { get; set; } // Giá đã bao gồm thuế hay chưa
 }

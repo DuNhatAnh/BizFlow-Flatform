@@ -14,5 +14,8 @@ public class ProductDto
     public decimal StockQuantity { get; set; }
     public DateTime CreatedAt { get; set; }
     
+    public string VatRate { get; set; } = "10";
+    public bool PriceIncludesVat { get; set; } = true;
+    
     public List<ProductUnitDto> Units { get; set; } = new();
 }

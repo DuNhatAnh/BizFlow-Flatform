@@ -12,6 +12,7 @@ public class Order
     public Guid? CustomerId { get; set; }
     public Guid? CreatedBy { get; set; }
     public decimal TotalAmount { get; set; } = 0.00m;
+    public decimal TotalVatAmount { get; set; } = 0.00m;
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
     public OrderSource OrderSource { get; set; } = OrderSource.Manual;

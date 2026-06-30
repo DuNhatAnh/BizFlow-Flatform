@@ -156,10 +156,10 @@ export default function CreateReceiptModal({
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-x-auto pb-2">
               {receiptForm.items.map((item: any, index: number) => (
-                <div key={index} className="flex gap-3 items-end bg-surface-container-low/50 p-3 rounded-lg border border-surface-container-high">
-                  <div className="flex-1">
+                <div key={index} className="flex gap-3 items-end bg-surface-container-low/50 p-3 rounded-lg border border-surface-container-high min-w-max">
+                  <div className="w-[250px] shrink-0">
                     <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Sản phẩm</label>
                     <select
                       value={item.productId}
@@ -167,7 +167,16 @@ export default function CreateReceiptModal({
                       className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
                     >
                       <option key="empty" value="">Chọn sản phẩm</option>
-                      {products.map((p: any) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                      {products.map((p: any) => {
+                        const isOutOfStock = !p.stockQuantity || p.stockQuantity <= 0;
+                        const isExport = receiptForm.type !== 1;
+                        const disabled = isExport && isOutOfStock;
+                        return (
+                          <option key={p.id} value={p.id} disabled={disabled}>
+                            {p.name} ({p.stockQuantity || 0})
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div className="w-16">
@@ -194,7 +203,7 @@ export default function CreateReceiptModal({
                       className="w-full px-3 py-1.5 border border-outline-variant rounded bg-white text-sm focus:border-primary focus:outline-none"
                     />
                   </div>
-                  <div className="w-28">
+                  <div className="w-24">
                     <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Đơn giá</label>
                     <input
                       type="number" min="0"
@@ -202,10 +211,40 @@ export default function CreateReceiptModal({
                       onChange={(e) => handleItemChange(index, "unitPrice", e.target.value)}
                       disabled={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs"}
                       title={receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? "Giá gốc được hệ thống tính tự động từ giá vốn" : ""}
-                      className={`w-full px-3 py-1.5 border border-outline-variant rounded text-sm focus:border-primary focus:outline-none ${receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? 'bg-surface-container-highest cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
+                      className={`w-full px-2 py-1.5 border border-outline-variant rounded text-sm focus:border-primary focus:outline-none ${receiptForm.type === 2 && receiptForm.exportPriceType === "cogs" ? 'bg-surface-container-highest cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
                     />
                   </div>
-                  <div className="w-28">
+                  {receiptForm.type === 1 && (
+                    <div className="w-20">
+                      <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold">Thuế VAT</label>
+                      <select
+                        value={item.vatRate || ""}
+                        onChange={(e) => handleItemChange(index, "vatRate", e.target.value)}
+                        className="w-full px-1 py-1.5 border border-outline-variant rounded bg-white text-[11px] focus:border-primary focus:outline-none"
+                      >
+                        <option value="">
+                          Theo SP {products.find((p: any) => p.id === item.productId)?.vatRate ? `(${products.find((p: any) => p.id === item.productId)?.vatRate === 'KCT' ? 'KCT' : products.find((p: any) => p.id === item.productId)?.vatRate + '%'})` : ''}
+                        </option>
+                        <option value="KCT">KCT</option>
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="8">8%</option>
+                        <option value="10">10%</option>
+                      </select>
+                    </div>
+                  )}
+                  {receiptForm.type === 1 && (
+                    <div className="w-16 flex flex-col items-center">
+                      <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold whitespace-nowrap">Đã gồm VAT</label>
+                      <input
+                        type="checkbox"
+                        checked={item.priceIncludesVat !== false}
+                        onChange={(e) => handleItemChange(index, "priceIncludesVat", e.target.checked)}
+                        className="mt-2 text-primary"
+                      />
+                    </div>
+                  )}
+                  <div className="w-24">
                     <label className="block text-[10px] text-on-surface-variant mb-1 font-semibold text-right">Thành tiền</label>
                     <div className="w-full px-3 py-1.5 border border-outline-variant rounded text-sm font-semibold text-right bg-surface-container-highest text-primary">
                       {(item.quantity * item.unitPrice).toLocaleString()}
@@ -225,11 +264,32 @@ export default function CreateReceiptModal({
         </div>
 
         <div className="p-5 border-t border-surface-container-high bg-surface-container-low/50 flex justify-between items-center gap-3">
-          <div className="text-sm font-bold text-on-surface">
-            Tổng tiền phiếu:
-            <span className="text-primary text-lg ml-2">
-              {receiptForm.type === 2 ? "Tự động tính giá vốn" : receiptForm.items.reduce((sum: number, i: any) => sum + (i.quantity * i.unitPrice), 0).toLocaleString() + " VNĐ"}
-            </span>
+          <div className="text-sm font-bold text-on-surface flex flex-col">
+            <div>
+              Tổng cộng:
+              <span className="text-primary text-lg ml-2">
+                {receiptForm.type === 2 ? "Tự động tính giá vốn" : receiptForm.items.reduce((sum: number, i: any) => sum + (i.quantity * i.unitPrice), 0).toLocaleString() + " VNĐ"}
+              </span>
+            </div>
+            {receiptForm.type === 1 && (
+              <div className="text-xs text-on-surface-variant font-normal mt-1">
+                (Bao gồm Tổng thuế: <span className="font-semibold text-amber-600">
+                  {receiptForm.items.reduce((sum: number, i: any) => {
+                    const p = products.find((p: any) => p.id === i.productId);
+                    const rateStr = i.vatRate || p?.vatRate || "0";
+                    const rate = rateStr === "KCT" ? 0 : parseFloat(rateStr) || 0;
+                    const includesVat = i.priceIncludesVat !== undefined ? i.priceIncludesVat : (p?.priceIncludesVat !== false);
+                    const lineTotal = i.quantity * i.unitPrice;
+                    if (includesVat) {
+                      const lineSubtotal = lineTotal / (1 + rate / 100);
+                      return sum + (lineTotal - lineSubtotal);
+                    } else {
+                      return sum + (lineTotal * (rate / 100));
+                    }
+                  }, 0).toLocaleString(undefined, {maximumFractionDigits: 0})} VNĐ
+                </span>)
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <button onClick={() => setIsReceiptModalOpen(false)} className="px-5 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg">

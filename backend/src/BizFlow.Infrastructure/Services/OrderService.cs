@@ -38,6 +38,7 @@ public class OrderService : IOrderService
             order.Code = await GenerateOrderCodeAsync(order.TenantId, cancellationToken);
 
             decimal calculatedTotalAmount = 0;
+            decimal calculatedTotalVat = 0;
 
             // Process order items
             foreach (var item in order.OrderItems)
@@ -51,15 +52,34 @@ public class OrderService : IOrderService
                     throw new InvalidOperationException($"Không tìm thấy đơn vị tính ID {item.ProductUnitId} cho sản phẩm {item.ProductId}");
                 }
 
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId && p.TenantId == order.TenantId, cancellationToken);
+                if (product == null) throw new InvalidOperationException($"Không tìm thấy sản phẩm ID {item.ProductId}");
+
                 item.UnitPrice = unit.Price;
-                item.TotalPrice = unit.Price * item.Quantity;
+                var qty = item.Quantity;
+                var rateStr = product.VatRate;
+                var rate = rateStr == "KCT" ? 0 : (decimal.TryParse(rateStr, out var r) ? r : 0);
+                var includesVat = product.PriceIncludesVat;
+
+                item.VatRate = rateStr;
+
+                if (includesVat) {
+                    var lineTotal = unit.Price * qty;
+                    var lineSubtotal = lineTotal / (1 + rate / 100m);
+                    item.VatAmount = lineTotal - lineSubtotal;
+                    item.TotalPrice = lineTotal;
+                } else {
+                    var lineSubtotal = unit.Price * qty;
+                    item.VatAmount = lineSubtotal * (rate / 100m);
+                    item.TotalPrice = lineSubtotal + item.VatAmount;
+                }
+                
                 calculatedTotalAmount += item.TotalPrice;
+                calculatedTotalVat += item.VatAmount;
 
                 var baseQty = item.Quantity * unit.ConversionRate;
 
                 // Validate and deduct stock
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId && p.TenantId == order.TenantId, cancellationToken);
-                if (product == null) throw new InvalidOperationException($"Không tìm thấy sản phẩm ID {item.ProductId}");
                 if (product.StockQuantity < baseQty)
                 {
                     throw new InvalidOperationException($"Sản phẩm '{product.Name}' đã hết hàng hoặc không đủ số lượng (Tồn kho: {product.StockQuantity}, Yêu cầu: {baseQty}). Vui lòng cập nhật phiếu nhập kho.");
@@ -84,6 +104,7 @@ public class OrderService : IOrderService
             }
 
             order.TotalAmount = calculatedTotalAmount;
+            order.TotalVatAmount = calculatedTotalVat;
 
             // 3. Customer debt processing
             if (order.PaymentMethod == PaymentMethod.Debt && order.CustomerId != null)

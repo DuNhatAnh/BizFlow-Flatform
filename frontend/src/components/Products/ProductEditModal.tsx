@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Package, X, AlertCircle, Save, Plus } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Package, X, AlertCircle, Save, Plus, Upload, Loader2 } from "lucide-react";
 import UnitConfigRow from "./UnitConfigRow";
 import { parseDescriptionMetadata, buildDescriptionMetadata } from "../../utils/metadata";
+import imageCompression from 'browser-image-compression';
+import { supabase } from '../../utils/supabase';
 
 interface ProductUnit {
   id: number | null;
@@ -20,6 +22,8 @@ interface Product {
   categoryId: number;
   baseUnit: string;
   description: string;
+  vatRate?: string;
+  priceIncludesVat?: boolean;
   units: ProductUnit[];
 }
 
@@ -40,6 +44,8 @@ export default function ProductEditModal({
 }: ProductEditModalProps) {
   const [editingProduct, setEditingProduct] = useState<Product>(JSON.parse(JSON.stringify(initialProduct)));
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse metadata from description
   const parsedMeta = parseDescriptionMetadata(initialProduct.description);
@@ -56,7 +62,100 @@ export default function ProductEditModal({
   const [descText, setDescText] = useState(parsedMeta.description);
   const [customMinStock, setCustomMinStock] = useState<number | "">(parsedMeta.minStock !== null ? parsedMeta.minStock : 10);
   const [customLocation, setCustomLocation] = useState(parsedMeta.location || getFallbackLocation(initialProduct.categoryId || 0));
-  const [customImageUrl, setCustomImageUrl] = useState(parsedMeta.imageUrl || "");
+  const initialUrls = (parsedMeta.imageUrl || "").split(",").map(s => s.trim()).filter(Boolean);
+  const [imageUrls, setImageUrls] = useState<string[]>(initialUrls);
+
+  const [availableVatRates, setAvailableVatRates] = useState<string[]>(["0", "5", "8", "10", "KCT"]);
+  const [defaultVatRate, setDefaultVatRate] = useState<string>("10");
+  
+  React.useEffect(() => {
+    const fetchStore = async () => {
+      try {
+        const auth = JSON.parse(localStorage.getItem("auth_info") || "{}");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5178/api'}/stores`, {
+          headers: { "Authorization": `Bearer ${auth.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const store = data[0];
+            if (store.availableVatRates) {
+              setAvailableVatRates(store.availableVatRates.split(',').map((s:string) => s.trim()));
+            }
+            if (store.defaultVatRate) {
+              setDefaultVatRate(store.defaultVatRate);
+              if (!editingProduct.id && !editingProduct.vatRate) {
+                setEditingProduct(prev => ({ ...prev, vatRate: store.defaultVatRate }));
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    };
+    fetchStore();
+    
+    // Set defaults if new product
+    if (!editingProduct.id) {
+      if (editingProduct.priceIncludesVat === undefined) {
+        setEditingProduct(prev => ({ ...prev, priceIncludesVat: true }));
+      }
+    }
+  }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setIsUploading(true);
+      
+      // Compress image
+      const options = {
+        maxSizeMB: 0.2, // 200KB limit
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+      };
+      
+      showToast(`Đang xử lý ${files.length} ảnh...`);
+      const newUrls: string[] = [];
+
+      for (const file of files) {
+        const compressedFile = await imageCompression(file, options);
+        const fileName = `images/${Date.now()}_${compressedFile.name}`;
+        
+        const { error } = await supabase
+          .storage
+          .from('products')
+          .upload(fileName, compressedFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+        
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('products')
+          .getPublicUrl(fileName);
+          
+        newUrls.push(publicUrlData.publicUrl);
+      }
+        
+      setImageUrls(prev => [...prev, ...newUrls]);
+      showToast("Tải ảnh thành công!", "success");
+      
+    } catch (error: any) {
+      console.error("Lỗi upload ảnh:", error);
+      showToast("Lỗi khi tải ảnh: " + error.message, "error");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImageUrls(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
 
   const handleUnitChange = (index: number, field: keyof ProductUnit, value: any) => {
     const newUnits = [...editingProduct.units];
@@ -100,7 +199,8 @@ export default function ProductEditModal({
     setIsSaving(true);
     try {
       const minStockVal = customMinStock === "" ? null : Number(customMinStock);
-      const mergedDescription = buildDescriptionMetadata(descText, minStockVal, customLocation, customImageUrl);
+      const mergedImageUrl = imageUrls.join(",");
+      const mergedDescription = buildDescriptionMetadata(descText, minStockVal, customLocation, mergedImageUrl);
       const finalProduct = {
         ...editingProduct,
         description: mergedDescription
@@ -196,15 +296,83 @@ export default function ProductEditModal({
                   placeholder="VD: Kho A - Kệ 2, Bãi 1..."
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mức Thuế VAT</label>
+                <select
+                  value={editingProduct.vatRate || defaultVatRate}
+                  onChange={(e) => setEditingProduct({...editingProduct, vatRate: e.target.value})}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface cursor-pointer"
+                >
+                  {availableVatRates.map(rate => (
+                    <option key={rate} value={rate}>{rate === "KCT" ? "Không chịu thuế (KCT)" : `${rate}%`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Giá bán đã bao gồm VAT?</label>
+                <div className="flex items-center gap-3 h-[38px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="priceIncludesVat" 
+                      checked={editingProduct.priceIncludesVat !== false}
+                      onChange={() => setEditingProduct({...editingProduct, priceIncludesVat: true})}
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">Đã bao gồm VAT</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="priceIncludesVat" 
+                      checked={editingProduct.priceIncludesVat === false}
+                      onChange={() => setEditingProduct({...editingProduct, priceIncludesVat: false})}
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">Chưa bao gồm</span>
+                  </label>
+                </div>
+              </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Đường dẫn hình ảnh (URL)</label>
-                <input 
-                  type="text" 
-                  value={customImageUrl}
-                  onChange={(e) => setCustomImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
-                  placeholder="VD: https://images.unsplash.com/... hoặc /images/product.png"
-                />
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Hình ảnh sản phẩm</label>
+                <div className="flex gap-3 items-start flex-col">
+                  <div>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      multiple
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-secondary text-on-secondary rounded-lg font-bold text-sm hover:bg-secondary-container hover:text-on-secondary-container transition-colors disabled:opacity-50 h-[38px] whitespace-nowrap"
+                    >
+                      {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {isUploading ? "Đang xử lý..." : "Chọn ảnh"}
+                    </button>
+                  </div>
+                  
+                  {imageUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-3 mt-2">
+                      {imageUrls.map((url, idx) => (
+                        <div key={idx} className="relative w-24 h-24 rounded-lg border border-outline-variant overflow-hidden bg-surface-container-low flex items-center justify-center group">
+                          <img src={url} alt="Preview" className="max-w-full max-h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=L%E1%BB%97i'; }} />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="absolute top-1 right-1 bg-error text-on-error rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error-container hover:text-on-error-container"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mô tả thêm</label>

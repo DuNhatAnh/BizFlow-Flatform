@@ -19,6 +19,9 @@ public class UpdateProductRequest
     public int? CategoryId { get; set; }
     public string BaseUnit { get; set; } = string.Empty;
     public string? Description { get; set; }
+    
+    public string? VatRate { get; set; }
+    public bool? PriceIncludesVat { get; set; }
 
     public List<UpdateProductUnitRequest> Units { get; set; } = new();
 }

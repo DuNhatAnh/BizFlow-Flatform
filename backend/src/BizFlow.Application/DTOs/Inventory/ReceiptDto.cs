@@ -11,6 +11,7 @@ public class ReceiptDto
     public ReceiptType Type { get; set; }
     public DateTime Date { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal TotalVatAmount { get; set; }
     public decimal TotalCostPrice { get; set; }
     public string? Note { get; set; }
     public string? CreatorName { get; set; }
@@ -35,4 +36,6 @@ public class ReceiptDetailDto
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
+    public string? VatRate { get; set; }
+    public decimal VatAmount { get; set; }
 }

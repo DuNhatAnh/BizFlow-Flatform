@@ -37,10 +37,35 @@ export default function POSCart({
   validationErrors,
   handleCheckout
 }: POSCartProps) {
-  const totalAmount = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  let subtotalAmount = 0;
+  let vatAmount = 0;
+  let totalAmount = 0;
+
+  cart.forEach(item => {
+    const qty = item.quantity;
+    const price = item.price;
+    const rateStr = item.vatRate || "10";
+    const rate = rateStr === "KCT" ? 0 : (parseFloat(rateStr) || 0);
+    const includesVat = item.priceIncludesVat !== false;
+
+    if (includesVat) {
+      const lineTotal = price * qty;
+      const lineSubtotal = lineTotal / (1 + rate / 100);
+      const lineVat = lineTotal - lineSubtotal;
+      
+      subtotalAmount += lineSubtotal;
+      vatAmount += lineVat;
+      totalAmount += lineTotal;
+    } else {
+      const lineSubtotal = price * qty;
+      const lineVat = lineSubtotal * (rate / 100);
+      const lineTotal = lineSubtotal + lineVat;
+
+      subtotalAmount += lineSubtotal;
+      vatAmount += lineVat;
+      totalAmount += lineTotal;
+    }
+  });
 
   const handleRemoveItem = (productId: string, unitId: number | null) => {
     setCart(cart.filter((c) => !(c.id === productId && c.unitId === unitId)));
@@ -102,11 +127,21 @@ export default function POSCart({
           </label>
         </div>
 
-        <div className="flex justify-between items-center text-sm font-bold text-on-surface border-t border-surface-container-low pt-4">
-          <span>Tổng tiền hóa đơn:</span>
-          <span className="text-lg text-primary">
-            {totalAmount.toLocaleString()} đ
-          </span>
+        <div className="space-y-2 border-t border-surface-container-low pt-4">
+          <div className="flex justify-between items-center text-sm text-on-surface-variant">
+            <span>Tạm tính (chưa thuế):</span>
+            <span className="font-bold">{subtotalAmount.toLocaleString(undefined, {maximumFractionDigits: 0})} đ</span>
+          </div>
+          <div className="flex justify-between items-center text-sm text-on-surface-variant">
+            <span>Thuế VAT:</span>
+            <span className="font-bold">{vatAmount.toLocaleString(undefined, {maximumFractionDigits: 0})} đ</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-bold text-on-surface pt-2 border-t border-surface-container-low border-dashed">
+            <span>Tổng cộng:</span>
+            <span className="text-lg text-primary">
+              {totalAmount.toLocaleString(undefined, {maximumFractionDigits: 0})} đ
+            </span>
+          </div>
         </div>
 
         {isDebt && selectedCustomer && (selectedCustomer.totalDebt + totalAmount) > (selectedCustomer.debtLimit !== undefined ? selectedCustomer.debtLimit : 10000000) && (

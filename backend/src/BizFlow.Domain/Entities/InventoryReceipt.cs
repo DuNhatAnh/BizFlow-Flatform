@@ -12,6 +12,7 @@ public class InventoryReceipt
     public ReceiptType Type { get; set; } // 0: Import (03-VT), 1: Export (04-VT)
     public DateTime Date { get; set; } = DateTime.UtcNow; // Ngày chứng từ
     public decimal TotalAmount { get; set; } // Tổng tiền
+    public decimal TotalVatAmount { get; set; } // Tổng VAT
     public string? Note { get; set; }
     
     // Bổ sung các trường chuẩn TT88 Mẫu 03-VT / 04-VT

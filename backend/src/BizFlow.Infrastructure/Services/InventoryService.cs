@@ -51,6 +51,7 @@ public class InventoryService : IInventoryService
             };
 
             decimal totalAmount = 0;
+            decimal totalVatAmount = 0;
 
             foreach (var itemReq in request.Items)
             {
@@ -64,11 +65,30 @@ public class InventoryService : IInventoryService
                     ProductId = itemReq.ProductId,
                     DocumentQuantity = itemReq.DocumentQuantity ?? itemReq.Quantity,
                     Quantity = itemReq.Quantity,
-                    UnitPrice = itemReq.UnitPrice,
-                    TotalPrice = itemReq.Quantity * itemReq.UnitPrice
+                    UnitPrice = itemReq.UnitPrice
                 };
+
+                // VAT calculation
+                var rateStr = itemReq.VatRate ?? product.VatRate;
+                var rate = rateStr == "KCT" ? 0 : (decimal.TryParse(rateStr, out var r) ? r : 0);
+                var includesVat = itemReq.PriceIncludesVat ?? product.PriceIncludesVat;
+
+                detail.VatRate = rateStr;
+
+                if (includesVat) {
+                    var lineTotal = itemReq.Quantity * itemReq.UnitPrice;
+                    var lineSubtotal = lineTotal / (1 + rate / 100m);
+                    detail.VatAmount = lineTotal - lineSubtotal;
+                    detail.TotalPrice = lineTotal;
+                } else {
+                    var lineSubtotal = itemReq.Quantity * itemReq.UnitPrice;
+                    detail.VatAmount = lineSubtotal * (rate / 100m);
+                    detail.TotalPrice = lineSubtotal + detail.VatAmount;
+                }
+
                 receipt.Details.Add(detail);
                 totalAmount += detail.TotalPrice;
+                totalVatAmount += detail.VatAmount;
 
                 // Create Ledger Entry
                 var lastLedger = await _context.AccountingLedgerS2s
@@ -141,6 +161,7 @@ public class InventoryService : IInventoryService
             }
 
             receipt.TotalAmount = totalAmount;
+            receipt.TotalVatAmount = totalVatAmount;
             _context.InventoryReceipts.Add(receipt);
 
             await _context.SaveChangesAsync();
@@ -299,6 +320,16 @@ public class InventoryService : IInventoryService
 
         var ledgers = await query.OrderBy(l => l.Date).ToListAsync();
         
+        var missingReceiptIds = ledgers
+            .Where(l => l.Receipt == null && l.ReceiptId.HasValue)
+            .Select(l => l.ReceiptId.Value)
+            .Distinct()
+            .ToList();
+            
+        var orderCodes = await _context.Orders
+            .Where(o => missingReceiptIds.Contains(o.Id))
+            .ToDictionaryAsync(o => o.Id, o => o.Code);
+
         var records = ledgers.Select(l => new LedgerS2Dto
         {
             Id = l.Id,
@@ -306,7 +337,10 @@ public class InventoryService : IInventoryService
             ProductName = l.Product.Name,
             Date = l.Date,
             Type = l.Type,
-            DocumentRef = l.Receipt?.ReceiptCode ?? "Auto",
+            DocumentRef = l.Receipt?.ReceiptCode ?? 
+                          (l.ReceiptId.HasValue && orderCodes.ContainsKey(l.ReceiptId.Value) 
+                              ? orderCodes[l.ReceiptId.Value] 
+                              : "Auto"),
             QuantityIn = l.QuantityIn,
             ValueIn = l.ValueIn,
             QuantityOut = l.QuantityOut,
@@ -425,6 +459,7 @@ public class InventoryService : IInventoryService
             Type = r.Type,
             Date = r.Date,
             TotalAmount = r.TotalAmount,
+            TotalVatAmount = r.TotalVatAmount,
             TotalCostPrice = r.Type == ReceiptType.Export ? r.TotalAmount : 0,
             Note = r.Note,
             DelivererReceiverName = r.DelivererReceiverName,
@@ -442,7 +477,9 @@ public class InventoryService : IInventoryService
                 DocumentQuantity = d.DocumentQuantity,
                 Quantity = d.Quantity,
                 UnitPrice = d.UnitPrice,
-                TotalPrice = d.TotalPrice
+                TotalPrice = d.TotalPrice,
+                VatRate = d.VatRate,
+                VatAmount = d.VatAmount
             }).ToList()
         };
     }

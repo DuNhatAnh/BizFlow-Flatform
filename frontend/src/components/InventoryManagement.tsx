@@ -780,6 +780,7 @@ export default function InventoryManagement() {
                         <th className="p-3 border-b border-surface-container-high text-right">SL Y/C</th>
                         <th className="p-3 border-b border-surface-container-high text-right">SL Thực</th>
                         <th className="p-3 border-b border-surface-container-high text-right">Đơn giá</th>
+                        <th className="p-3 border-b border-surface-container-high text-right">Thuế VAT</th>
                         <th className="p-3 border-b border-surface-container-high text-right">Thành tiền</th>
                       </tr>
                     </thead>
@@ -794,14 +795,24 @@ export default function InventoryManagement() {
                             <td className="p-3 text-right text-on-surface-variant">{d.documentQuantity}</td>
                             <td className="p-3 text-right font-bold text-emerald-700">{d.quantity}</td>
                             <td className="p-3 text-right text-on-surface-variant">{d.unitPrice.toLocaleString()} đ</td>
+                            <td className="p-3 text-right text-amber-600 font-medium">
+                              <div>{d.vatRate && d.vatRate !== "KCT" ? d.vatRate + "%" : d.vatRate || "-"}</div>
+                              <div className="text-xs">{d.vatAmount > 0 ? (d.vatAmount).toLocaleString() + " đ" : ""}</div>
+                            </td>
                             <td className="p-3 text-right font-bold text-primary">{d.totalPrice.toLocaleString()} đ</td>
                           </tr>
                         );
                       })}
                     </tbody>
                     <tfoot className="bg-surface-container-low">
+                      {viewReceiptDetails.totalVatAmount > 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-4 border-b border-surface-container-high text-right font-medium text-on-surface-variant">Tổng tiền thuế VAT:</td>
+                          <td className="p-4 border-b border-surface-container-high text-right font-bold text-amber-600">{viewReceiptDetails.totalVatAmount?.toLocaleString()} đ</td>
+                        </tr>
+                      )}
                       <tr>
-                        <td colSpan={5} className="p-4 text-right font-bold text-on-surface-variant uppercase">Tổng giá trị phiếu:</td>
+                        <td colSpan={6} className="p-4 text-right font-bold text-on-surface-variant uppercase">Tổng giá trị phiếu:</td>
                         <td className="p-4 text-right font-bold text-primary text-base">{viewReceiptDetails.totalAmount.toLocaleString()} đ</td>
                       </tr>
                     </tfoot>

@@ -11,6 +11,9 @@ public class OrderItem
     public decimal Quantity { get; set; } = 1m;
     public decimal UnitPrice { get; set; } = 0.00m;
     public decimal TotalPrice { get; set; } = 0.00m;
+    
+    public string? VatRate { get; set; }
+    public decimal VatAmount { get; set; } = 0.00m;
 
     // Navigation properties
     public Order? Order { get; set; }

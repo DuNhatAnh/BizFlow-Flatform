@@ -11,6 +11,9 @@ public class InventoryReceiptDetail
     public decimal Quantity { get; set; } // Số lượng thực nhập / thực xuất
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
+    
+    public string? VatRate { get; set; }
+    public decimal VatAmount { get; set; }
 
     // Navigation properties
     public InventoryReceipt Receipt { get; set; } = null!;

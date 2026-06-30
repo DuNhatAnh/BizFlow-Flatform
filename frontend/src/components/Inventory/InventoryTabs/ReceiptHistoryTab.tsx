@@ -47,6 +47,21 @@ export default function ReceiptHistoryTab({
 }: ReceiptHistoryTabProps) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const [sortOption, setSortOption] = useState("oldest");
+
+  const sortedData = [...displayData].sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.date || 0).getTime();
+    const dateB = new Date(b.createdAt || b.date || 0).getTime();
+    
+    const amountA = activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? (a.totalCostPrice || 0) : (a.totalAmount || 0);
+    const amountB = activeSubTab === "receipts_out" && exportFilterTab === "export_slip" ? (b.totalCostPrice || 0) : (b.totalAmount || 0);
+
+    if (sortOption === "newest") return dateB - dateA;
+    if (sortOption === "oldest") return dateA - dateB;
+    if (sortOption === "price_asc") return amountA - amountB;
+    if (sortOption === "price_desc") return amountB - amountA;
+    return 0;
+  });
 
   return (
     <div className="space-y-4">
@@ -64,6 +79,17 @@ export default function ReceiptHistoryTab({
           )}
         </div>
         <div className="flex gap-3 items-start">
+          <select 
+            value={sortOption} 
+            onChange={e => setSortOption(e.target.value)}
+            className="px-3 py-2 border border-surface-container-high rounded-lg text-sm outline-none focus:border-primary text-on-surface-variant bg-white shadow-sm cursor-pointer"
+          >
+            <option value="newest">Mới nhất đến cũ nhất</option>
+            <option value="oldest">Cũ đến mới nhất</option>
+            <option value="price_asc">Giá tiền thấp nhất</option>
+            <option value="price_desc">Giá tiền cao nhất</option>
+          </select>
+
           {activeSubTab === "receipts_in" && (
             <button
               onClick={() => handleOpenReceiptModal(1)}
@@ -135,9 +161,9 @@ export default function ReceiptHistoryTab({
                   </div>
                 </td>
               </tr>
-            ) : displayData.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-            ) : displayData.map((r: any, i: number) => {
+            ) : sortedData.map((r: any, i: number) => {
                 const isOrder = r.customer !== undefined || r.orderItems !== undefined;
                 const isExport = isOrder || r.type === 1 || r.type === "Export";
                 const code = isOrder ? (r.code ? r.code : (r.id ? r.id.substring(0, 8).toUpperCase() : "N/A")) : (r.referenceDocumentNo || r.referenceId || "N/A");

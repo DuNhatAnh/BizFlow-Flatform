@@ -111,6 +111,34 @@ using (var scope = app.Services.CreateScope())
             catch (Exception ex) { Console.WriteLine("SafeSql Error: " + ex.Message); }
         }
 
+        SafeSql(@"ALTER TABLE products ADD COLUMN IF NOT EXISTS ""VatRate"" text;");
+        SafeSql(@"ALTER TABLE products ADD COLUMN IF NOT EXISTS ""PriceIncludesVat"" boolean;");
+        
+        SafeSql(@"ALTER TABLE orders ADD COLUMN IF NOT EXISTS ""TotalVatAmount"" numeric(18,2) DEFAULT 0.0;");
+        SafeSql(@"ALTER TABLE order_items ADD COLUMN IF NOT EXISTS ""VatRate"" text;");
+        SafeSql(@"ALTER TABLE order_items ADD COLUMN IF NOT EXISTS ""VatAmount"" numeric(18,2) DEFAULT 0.0;");
+        
+        SafeSql(@"ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS ""TotalVatAmount"" numeric(18,2) DEFAULT 0.0;");
+        SafeSql(@"ALTER TABLE inventory_receipt_details ADD COLUMN IF NOT EXISTS ""VatRate"" text;");
+        SafeSql(@"ALTER TABLE inventory_receipt_details ADD COLUMN IF NOT EXISTS ""VatAmount"" numeric(18,2) DEFAULT 0.0;");
+
+        SafeSql(@"CREATE TABLE IF NOT EXISTS stores (
+            ""Id"" uuid NOT NULL,
+            ""TenantId"" uuid NOT NULL,
+            ""Name"" text NOT NULL,
+            ""Address"" text,
+            ""Phone"" text,
+            ""TaxCode"" text,
+            ""Email"" text,
+            ""LogoUrl"" text,
+            ""IsActive"" boolean NOT NULL DEFAULT TRUE,
+            ""CreatedAt"" timestamp with time zone NOT NULL,
+            ""EnableVat"" boolean NOT NULL DEFAULT FALSE,
+            ""DefaultVatRate"" text,
+            ""AvailableVatRates"" text,
+            CONSTRAINT ""PK_stores"" PRIMARY KEY (""Id"")
+        );");
+
         SafeSql(@"CREATE TABLE IF NOT EXISTS inventory_receipts (
             ""Id"" uuid NOT NULL,
             ""TenantId"" uuid NOT NULL,
@@ -177,6 +205,8 @@ using (var scope = app.Services.CreateScope())
         SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"IsActive\" boolean NOT NULL DEFAULT TRUE;");
         SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"IsDeleted\" boolean NOT NULL DEFAULT FALSE;");
         SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"StockQuantity\" numeric(18,4) NOT NULL DEFAULT 0;");
+        SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"VatRate\" text NOT NULL DEFAULT '10';");
+        SafeSql("ALTER TABLE products ADD COLUMN IF NOT EXISTS \"PriceIncludesVat\" boolean NOT NULL DEFAULT TRUE;");
         SafeSql("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS \"CogsMethod\" integer NOT NULL DEFAULT 0;");
         SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"Status\" integer NOT NULL DEFAULT 0;");
         SafeSql("ALTER TABLE inventory_receipts ADD COLUMN IF NOT EXISTS \"CancelledAt\" timestamp with time zone;");

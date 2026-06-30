@@ -200,131 +200,144 @@ export default function LedgerS2HKDTab({
 
       {/* PRINT S2 LAYOUT */}
       {ledger && (
-        <div id="print-area" className="hidden print:block absolute inset-0 bg-white p-8 text-black text-[13px] leading-relaxed z-[100] min-h-screen">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <div className="font-bold text-sm">HỘ, CÁ NHÂN KINH DOANH: .......................................</div>
-              <div className="font-bold text-sm">Địa chỉ: ....................................................................</div>
+        <div id="print-area" className="hidden print:block absolute top-0 left-0 bg-white text-black text-[11px] leading-relaxed z-[9999]" style={{ width: '277mm' }}>
+          <style type="text/css" media="print">
+            {`
+              @page { size: landscape; margin: 10mm; }
+              body { -webkit-print-color-adjust: exact; }
+              body * { visibility: hidden; }
+              #print-area, #print-area * { visibility: visible; }
+              #print-area { position: absolute; left: 0; top: 0; width: 277mm !important; margin: 0 auto; }
+              table { width: 100%; table-layout: fixed; page-break-inside: auto; border-collapse: collapse; }
+              tr { page-break-inside: avoid; page-break-after: auto; }
+              th, td { word-wrap: break-word; overflow: hidden; padding: 4px; }
+            `}
+          </style>
+          <div className="w-full mx-auto p-4">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="font-bold text-sm">HỘ, CÁ NHÂN KINH DOANH: .......................................</div>
+                <div className="font-bold text-sm">Địa chỉ: ....................................................................</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-sm">Mẫu số S2-HKD</div>
+                <div className="text-[11px] italic">(Ban hành kèm theo Thông tư số 88/2021/TT-BTC<br />ngày 11 tháng 10 năm 2021 của Bộ trưởng Bộ Tài chính)</div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="font-bold text-sm">Mẫu số S2-HKD</div>
-              <div className="text-[11px] italic">(Ban hành kèm theo Thông tư số 88/2021/TT-BTC<br />ngày 11 tháng 10 năm 2021 của Bộ trưởng Bộ Tài chính)</div>
+
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-bold uppercase mb-1">SỔ CHI TIẾT VẬT LIỆU, DỤNG CỤ, SẢN PHẨM, HÀNG HÓA</h1>
+              <div className="italic mb-1 text-sm">Năm {selectedYear}</div>
             </div>
-          </div>
 
-          <div className="text-center mb-6">
-            <h1 className="text-xl font-bold uppercase mb-1">SỔ CHI TIẾT VẬT LIỆU, DỤNG CỤ, SẢN PHẨM, HÀNG HÓA</h1>
-            <div className="italic mb-1 text-sm">Năm {selectedYear}</div>
-          </div>
-
-          <div className="mb-4 space-y-1.5 text-[13px]">
-            <div>Tên vật liệu, dụng cụ, sản phẩm, hàng hóa: <div className="font-bold text-on-surface">{products.find((p: any) => p.id === selectedLedgerProduct)?.name}</div></div>
-            <div>Đơn vị tính: <span className="font-bold text-secondary text-right">{products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit}</span></div>
-          </div>
-
-          <table className="w-full border-collapse border border-black mb-4 text-center text-[13px]">
-            <thead>
-              <tr>
-                <th className="border border-black p-1.5 align-middle" colSpan={2}>Chứng từ</th>
-                <th className="border border-black p-1.5 align-middle w-1/4" rowSpan={2}>Diễn giải</th>
-                <th className="border border-black p-1.5 align-middle" rowSpan={2}>Đơn giá</th>
-                <th className="border border-black p-1.5 align-middle" colSpan={2}>Nhập</th>
-                <th className="border border-black p-1.5 align-middle" colSpan={2}>Xuất</th>
-                <th className="border border-black p-1.5 align-middle" colSpan={2}>Tồn</th>
-              </tr>
-              <tr>
-                <th className="border border-black p-1.5">Số hiệu</th>
-                <th className="border border-black p-1.5">Ngày, tháng</th>
-                <th className="border border-black p-1.5">Số lượng</th>
-                <th className="border border-black p-1.5">Thành tiền</th>
-                <th className="border border-black p-1.5">Số lượng</th>
-                <th className="border border-black p-1.5">Thành tiền</th>
-                <th className="border border-black p-1.5">Số lượng</th>
-                <th className="border border-black p-1.5">Thành tiền</th>
-              </tr>
-              <tr>
-                <th className="border border-black p-1 font-normal italic">A</th>
-                <th className="border border-black p-1 font-normal italic">B</th>
-                <th className="border border-black p-1 font-normal italic">C</th>
-                <th className="border border-black p-1 font-normal italic">D</th>
-                <th className="border border-black p-1 font-normal italic">1</th>
-                <th className="border border-black p-1 font-normal italic">2</th>
-                <th className="border border-black p-1 font-normal italic">3</th>
-                <th className="border border-black p-1 font-normal italic">4</th>
-                <th className="border border-black p-1 font-normal italic">5</th>
-                <th className="border border-black p-1 font-normal italic">6</th>
-              </tr>
-            </thead>
-            <tbody className="text-right">
-              <tr className="font-semibold">
-                <td className="border border-black p-1.5" colSpan={2}></td>
-                <td className="border border-black p-1.5 text-left">Số dư đầu kỳ</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">{ledger.openingQuantity}</td>
-                <td className="border border-black p-1.5">{ledger.openingValue.toLocaleString()}</td>
-              </tr>
-              {ledger.records.items.map((l: any, i: number) => {
-                const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
-                const dienGiai = l.type === 0 ? (isCancel ? "Hủy phiếu nhập" : "Nhập kho") : (isCancel ? "Hủy phiếu xuất" : "Xuất kho");
-                return (
-                  <tr key={i}>
-                    <td className="border border-black p-1.5 text-center">{l.documentRef || "N/A"}</td>
-                    <td className="border border-black p-1.5 text-center">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
-                    <td className="border border-black p-1.5 text-left">{dienGiai}</td>
-                    <td className="border border-black p-1.5">-</td>
-                    <td className="border border-black p-1.5">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
-                    <td className="border border-black p-1.5">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
-                    <td className="border border-black p-1.5">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
-                    <td className="border border-black p-1.5">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
-                    <td className="border border-black p-1.5">{l.quantityBalance}</td>
-                    <td className="border border-black p-1.5">{l.valueBalance?.toLocaleString() || "0"}</td>
-                  </tr>
-                );
-              })}
-              <tr className="font-semibold">
-                <td className="border border-black p-1.5" colSpan={2}></td>
-                <td className="border border-black p-1.5 text-left">Cộng phát sinh trong kỳ</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">{ledger.totalQuantityIn}</td>
-                <td className="border border-black p-1.5">{ledger.totalValueIn.toLocaleString()}</td>
-                <td className="border border-black p-1.5">{ledger.totalQuantityOut}</td>
-                <td className="border border-black p-1.5">{ledger.totalValueOut.toLocaleString()}</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-              </tr>
-              <tr className="font-semibold">
-                <td className="border border-black p-1.5" colSpan={2}></td>
-                <td className="border border-black p-1.5 text-left">Số dư cuối kỳ</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">x</td>
-                <td className="border border-black p-1.5">{ledger.closingQuantity}</td>
-                <td className="border border-black p-1.5">{ledger.closingValue.toLocaleString()}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="mt-4 text-[13px] space-y-1">
-            <div>- Sổ này có ... trang, đánh số từ trang 01 đến trang ...</div>
-            <div>- Ngày mở sổ: ..............................</div>
-          </div>
-
-          <div className="flex justify-between text-center mt-6 px-16">
-            <div>
-              <div className="italic text-xs mb-1 invisible">Ngày ..... tháng ..... năm .....</div>
-              <div className="font-bold text-[13px]">NGƯỜI LẬP SỔ</div>
-              <div className="italic text-xs">(Ký, họ tên)</div>
+            <div className="mb-4 space-y-1.5 text-[13px]">
+              <div>Tên vật liệu, dụng cụ, sản phẩm, hàng hóa: <div className="font-bold text-on-surface">{products.find((p: any) => p.id === selectedLedgerProduct)?.name}</div></div>
+              <div>Đơn vị tính: <span className="font-bold text-secondary text-right">{products.find((p: any) => p.id === selectedLedgerProduct)?.baseUnit}</span></div>
             </div>
-            <div>
-              <div className="italic text-xs mb-1">Ngày ..... tháng ..... năm .....</div>
-              <div className="font-bold text-[13px]">NGƯỜI ĐẠI DIỆN HỘ KINH DOANH</div>
-              <div className="italic text-xs">(Ký, họ tên)</div>
+
+            <table className="w-full border-collapse border border-black mb-4 text-center text-[10px]">
+              <thead>
+                <tr>
+                  <th className="border border-black p-1 align-middle w-[10%]" colSpan={2}>Chứng từ</th>
+                  <th className="border border-black p-1 align-middle w-[25%]" rowSpan={2}>Diễn giải</th>
+                  <th className="border border-black p-1 align-middle w-[9%]" rowSpan={2}>Đơn giá</th>
+                  <th className="border border-black p-1 align-middle w-[18%]" colSpan={2}>Nhập</th>
+                  <th className="border border-black p-1 align-middle w-[18%]" colSpan={2}>Xuất</th>
+                  <th className="border border-black p-1 align-middle w-[20%]" colSpan={2}>Tồn</th>
+                </tr>
+                <tr>
+                  <th className="border border-black p-1 w-[5%]">Số hiệu</th>
+                  <th className="border border-black p-1 w-[5%]">Ngày</th>
+                  <th className="border border-black p-1 w-[7%]">Số lượng</th>
+                  <th className="border border-black p-1 w-[11%]">Thành tiền</th>
+                  <th className="border border-black p-1 w-[7%]">Số lượng</th>
+                  <th className="border border-black p-1 w-[11%]">Thành tiền</th>
+                  <th className="border border-black p-1 w-[7%]">Số lượng</th>
+                  <th className="border border-black p-1 w-[13%]">Thành tiền</th>
+                </tr>
+                <tr>
+                  <th className="border border-black p-1 font-normal italic">A</th>
+                  <th className="border border-black p-1 font-normal italic">B</th>
+                  <th className="border border-black p-1 font-normal italic">C</th>
+                  <th className="border border-black p-1 font-normal italic">D</th>
+                  <th className="border border-black p-1 font-normal italic">1</th>
+                  <th className="border border-black p-1 font-normal italic">2</th>
+                  <th className="border border-black p-1 font-normal italic">3</th>
+                  <th className="border border-black p-1 font-normal italic">4</th>
+                  <th className="border border-black p-1 font-normal italic">5</th>
+                  <th className="border border-black p-1 font-normal italic">6</th>
+                </tr>
+              </thead>
+              <tbody className="text-right">
+                <tr className="font-semibold">
+                  <td className="border border-black p-1.5" colSpan={2}></td>
+                  <td className="border border-black p-1.5 text-left">Số dư đầu kỳ</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">{ledger.openingQuantity}</td>
+                  <td className="border border-black p-1.5">{ledger.openingValue.toLocaleString()}</td>
+                </tr>
+                {ledger.records.items.map((l: any, i: number) => {
+                  const isCancel = (l.type === 0 && l.quantityOut > 0) || (l.type === 1 && l.quantityIn > 0);
+                  const dienGiai = l.type === 0 ? (isCancel ? "Hủy phiếu nhập" : "Nhập kho") : (isCancel ? "Hủy phiếu xuất" : "Xuất kho");
+                  return (
+                    <tr key={i}>
+                      <td className="border border-black p-1.5 text-center">{l.documentRef || "N/A"}</td>
+                      <td className="border border-black p-1.5 text-center">{new Date(l.date).toLocaleDateString('vi-VN')}</td>
+                      <td className="border border-black p-1.5 text-left">{dienGiai}</td>
+                      <td className="border border-black p-1.5">-</td>
+                      <td className="border border-black p-1.5">{l.quantityIn > 0 ? l.quantityIn : "-"}</td>
+                      <td className="border border-black p-1.5">{l.valueIn > 0 ? l.valueIn.toLocaleString() : "-"}</td>
+                      <td className="border border-black p-1.5">{l.quantityOut > 0 ? l.quantityOut : "-"}</td>
+                      <td className="border border-black p-1.5">{l.valueOut > 0 ? l.valueOut.toLocaleString() : "-"}</td>
+                      <td className="border border-black p-1.5">{l.quantityBalance}</td>
+                      <td className="border border-black p-1.5">{l.valueBalance?.toLocaleString() || "0"}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="font-semibold">
+                  <td className="border border-black p-1.5" colSpan={2}></td>
+                  <td className="border border-black p-1.5 text-left">Cộng phát sinh trong kỳ</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">{ledger.totalQuantityIn}</td>
+                  <td className="border border-black p-1.5">{ledger.totalValueIn.toLocaleString()}</td>
+                  <td className="border border-black p-1.5">{ledger.totalQuantityOut}</td>
+                  <td className="border border-black p-1.5">{ledger.totalValueOut.toLocaleString()}</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                </tr>
+                <tr className="font-semibold">
+                  <td className="border border-black p-1.5" colSpan={2}></td>
+                  <td className="border border-black p-1.5 text-left">Số dư cuối kỳ</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">x</td>
+                  <td className="border border-black p-1.5">{ledger.closingQuantity}</td>
+                  <td className="border border-black p-1.5">{ledger.closingValue.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="mt-4 text-[13px] space-y-1">
+              <div>- Sổ này có ... trang, đánh số từ trang 01 đến trang ...</div>
+              <div>- Ngày mở sổ: ..............................</div>
+            </div>
+
+            <div className="flex justify-between items-end mt-16 text-center">
+              <div className="w-1/3">
+                <div className="font-bold">NGƯỜI GHI SỔ</div>
+                <div className="italic mb-16">(Ký, họ tên)</div>
+              </div>
+              <div className="w-1/3">
+                <div className="italic mb-1">Ngày ..... tháng ..... năm .....</div>
+                <div className="font-bold">ĐẠI DIỆN HỘ KINH DOANH</div>
+                <div className="italic mb-16">(Ký, họ tên)</div>
+              </div>
             </div>
           </div>
         </div>
