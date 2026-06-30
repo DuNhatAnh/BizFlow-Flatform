@@ -50,7 +50,14 @@ public class StaffService : IStaffService
             IdentityCard = u.IdentityCard,
             DateOfBirth = u.DateOfBirth,
             JoinDate = u.JoinDate,
-            CreatedAt = u.CreatedAt
+            CreatedAt = u.CreatedAt,
+            SocialInsuranceNo = u.SocialInsuranceNo,
+            HealthInsuranceNo = u.HealthInsuranceNo,
+            PersonalTaxCode = u.PersonalTaxCode,
+            BasicSalary = u.BasicSalary,
+            BankAccountNumber = u.BankAccountNumber,
+            BankName = u.BankName,
+            NumberOfDependents = u.NumberOfDependents
         }).ToList();
 
         return new PagedResult<StaffDto>
@@ -81,7 +88,18 @@ public class StaffService : IStaffService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = UserRole.Employee,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Phone = request.Phone,
+            IdentityCard = request.IdentityCard,
+            DateOfBirth = request.DateOfBirth?.ToUniversalTime(),
+            JoinDate = request.JoinDate?.ToUniversalTime(),
+            SocialInsuranceNo = request.SocialInsuranceNo,
+            HealthInsuranceNo = request.HealthInsuranceNo,
+            PersonalTaxCode = request.PersonalTaxCode,
+            BasicSalary = request.BasicSalary,
+            BankAccountNumber = request.BankAccountNumber,
+            BankName = request.BankName,
+            NumberOfDependents = request.NumberOfDependents
         };
 
         _context.Users.Add(user);
@@ -122,7 +140,18 @@ public class StaffService : IStaffService
             Fullname = user.Fullname,
             Role = user.Role.ToString(),
             IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt
+            Phone = user.Phone,
+            IdentityCard = user.IdentityCard,
+            DateOfBirth = user.DateOfBirth,
+            JoinDate = user.JoinDate,
+            CreatedAt = user.CreatedAt,
+            SocialInsuranceNo = user.SocialInsuranceNo,
+            HealthInsuranceNo = user.HealthInsuranceNo,
+            PersonalTaxCode = user.PersonalTaxCode,
+            BasicSalary = user.BasicSalary,
+            BankAccountNumber = user.BankAccountNumber,
+            BankName = user.BankName,
+            NumberOfDependents = user.NumberOfDependents
         };
     }
 
@@ -194,6 +223,20 @@ public class StaffService : IStaffService
         user.IdentityCard = request.IdentityCard;
         user.DateOfBirth = request.DateOfBirth?.ToUniversalTime();
         user.JoinDate = request.JoinDate?.ToUniversalTime();
+        user.SocialInsuranceNo = request.SocialInsuranceNo;
+        user.HealthInsuranceNo = request.HealthInsuranceNo;
+        user.PersonalTaxCode = request.PersonalTaxCode;
+        user.BasicSalary = request.BasicSalary;
+        user.BankAccountNumber = request.BankAccountNumber;
+        user.BankName = request.BankName;
+        user.NumberOfDependents = request.NumberOfDependents;
+
+        if (request.AvatarUrl != null) 
+        {
+            user.AvatarUrl = request.AvatarUrl;
+        }
+
+        await _context.SaveChangesAsync();
 
         var log = new AuditLog
         {
@@ -219,7 +262,14 @@ public class StaffService : IStaffService
             IdentityCard = user.IdentityCard,
             DateOfBirth = user.DateOfBirth,
             JoinDate = user.JoinDate,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            SocialInsuranceNo = user.SocialInsuranceNo,
+            HealthInsuranceNo = user.HealthInsuranceNo,
+            PersonalTaxCode = user.PersonalTaxCode,
+            BasicSalary = user.BasicSalary,
+            BankAccountNumber = user.BankAccountNumber,
+            BankName = user.BankName,
+            NumberOfDependents = user.NumberOfDependents
         };
     }
 }

@@ -22,6 +22,10 @@ public class CreateReceiptRequest
     public string? ReferenceDocumentIssuer { get; set; }
     public string? WarehouseLocation { get; set; }
     public bool UseSellingPrice { get; set; } = false;
+    
+    // New fields for Payment Integration
+    public bool IsPaid { get; set; } = false;
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
 
     public List<CreateReceiptItemRequest> Items { get; set; } = new();
 }

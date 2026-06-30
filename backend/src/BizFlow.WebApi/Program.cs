@@ -139,6 +139,8 @@ using (var scope = app.Services.CreateScope())
             CONSTRAINT ""PK_stores"" PRIMARY KEY (""Id"")
         );");
 
+        SafeSql(@"ALTER TABLE users ADD COLUMN IF NOT EXISTS ""AvatarUrl"" text;");
+
         SafeSql(@"CREATE TABLE IF NOT EXISTS inventory_receipts (
             ""Id"" uuid NOT NULL,
             ""TenantId"" uuid NOT NULL,
@@ -219,6 +221,16 @@ using (var scope = app.Services.CreateScope())
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"DateOfBirth\" timestamp with time zone;");
         SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"JoinDate\" timestamp with time zone;");
         
+        // Add Insurance & Payroll fields
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"SocialInsuranceNo\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"HealthInsuranceNo\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"PersonalTaxCode\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"BasicSalary\" numeric(18,2);");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"BankAccountNumber\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"BankName\" text;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"NumberOfDependents\" integer;");
+        SafeSql("ALTER TABLE users ADD COLUMN IF NOT EXISTS \"AvatarUrl\" text;");
+        
         // Migrate Cashier to Employee
         SafeSql("UPDATE users SET \"Role\" = 'Employee' WHERE \"Role\" = 'Cashier';");
 
@@ -235,6 +247,29 @@ using (var scope = app.Services.CreateScope())
         // Add CustomerName column to orders table
         SafeSql("ALTER TABLE orders ADD COLUMN IF NOT EXISTS \"CustomerName\" text;");
 
+        SafeSql(@"CREATE TABLE IF NOT EXISTS cash_transactions (
+            ""Id"" uuid NOT NULL,
+            ""TenantId"" uuid NOT NULL,
+            ""Type"" text NOT NULL,
+            ""PaymentMethod"" text NOT NULL,
+            ""Amount"" numeric(15,2) NOT NULL,
+            ""TransactionDate"" timestamp with time zone NOT NULL,
+            ""Reason"" text,
+            ""ReferenceDocument"" text,
+            ""RelatedUserId"" uuid,
+            ""PayerReceiverName"" text,
+            ""TransactionCode"" text,
+            ""Address"" text,
+            ""AttachedDocuments"" text,
+            ""CreatedAt"" timestamp with time zone NOT NULL,
+            CONSTRAINT ""PK_cash_transactions"" PRIMARY KEY (""Id"")
+        );");
+
+        SafeSql("ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS \"TransactionCode\" text;");
+        SafeSql("ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS \"Address\" text;");
+        SafeSql("ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS \"AttachedDocuments\" text;");
+        SafeSql("ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS \"PaymentMethod\" text NOT NULL DEFAULT 'Cash';");
+
         // Ensure audit_logs table exists
         SafeSql(@"CREATE TABLE IF NOT EXISTS audit_logs (
             ""Id"" uuid NOT NULL,
@@ -244,9 +279,10 @@ using (var scope = app.Services.CreateScope())
             ""EntityName"" text,
             ""EntityId"" text,
             ""Timestamp"" timestamp with time zone NOT NULL,
-            ""Details"" text,
+            ""IpAddress"" text,
+            ""OldValues"" text,
+            ""NewValues"" text,
             CONSTRAINT ""PK_audit_logs"" PRIMARY KEY (""Id"")
-            -- We don't strictly enforce FK here to avoid migration conflicts, but EF will use it
         );");
 
         var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");

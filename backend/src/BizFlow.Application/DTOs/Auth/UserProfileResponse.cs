@@ -16,4 +16,5 @@ public class UserProfileResponse
     public string? IdentityCard { get; set; }
     public DateTime? DateOfBirth { get; set; }
     public DateTime? JoinDate { get; set; }
+    public string? AvatarUrl { get; set; }
 }

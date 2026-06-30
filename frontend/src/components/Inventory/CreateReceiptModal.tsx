@@ -272,6 +272,30 @@ export default function CreateReceiptModal({
               </span>
             </div>
             {receiptForm.type === 1 && (
+              <div className="mt-2 flex items-center gap-4 border-t border-outline-variant pt-2">
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={receiptForm.isPaid || false}
+                    onChange={(e) => setReceiptForm({ ...receiptForm, isPaid: e.target.checked })}
+                    className="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary"
+                  />
+                  Đã thanh toán ngay
+                </label>
+                
+                {receiptForm.isPaid && (
+                  <select
+                    value={receiptForm.paymentMethod || "Cash"}
+                    onChange={(e) => setReceiptForm({ ...receiptForm, paymentMethod: e.target.value })}
+                    className="px-3 py-1.5 border border-outline-variant rounded-lg text-sm bg-white"
+                  >
+                    <option value="Cash">Tiền mặt</option>
+                    <option value="Transfer">Chuyển khoản</option>
+                  </select>
+                )}
+              </div>
+            )}
+            {receiptForm.type === 1 && (
               <div className="text-xs text-on-surface-variant font-normal mt-1">
                 (Bao gồm Tổng thuế: <span className="font-semibold text-amber-600">
                   {receiptForm.items.reduce((sum: number, i: any) => {

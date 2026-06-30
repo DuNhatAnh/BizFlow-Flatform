@@ -147,6 +147,36 @@ public class CustomersController : ApiControllerBase
             };
             _context.AccountingEntries.Add(accountingEntry);
 
+            // 4. Create CashTransaction
+            var prefix = "PT";
+            var dateStr = DateTime.UtcNow.ToString("yyMMdd");
+            var today = DateTime.UtcNow.Date;
+            var countToday = await _context.CashTransactions
+                .Where(c => c.TenantId == request.TenantId && c.Type == CashTransactionType.Receipt && c.CreatedAt >= today)
+                .CountAsync(CancellationToken.None);
+                
+            var seq = (countToday + 1).ToString("D3");
+            var txCode = $"{prefix}-{dateStr}-{seq}";
+            
+            var pm = request.PaymentMethod == "Transfer" ? PaymentMethod.Transfer : PaymentMethod.Cash;
+            
+            var cashTx = new CashTransaction
+            {
+                Id = Guid.NewGuid(),
+                TenantId = request.TenantId,
+                Type = CashTransactionType.Receipt,
+                PaymentMethod = pm,
+                Amount = request.Amount,
+                TransactionDate = DateTime.UtcNow,
+                TransactionCode = txCode,
+                Reason = $"Thu tiền nợ từ khách hàng {customer.Fullname}",
+                ReferenceDocument = null,
+                RelatedUserId = null,
+                PayerReceiverName = customer.Fullname,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.CashTransactions.Add(cashTx);
+
             await _context.SaveChangesAsync(CancellationToken.None);
             await transaction.CommitAsync(CancellationToken.None);
 

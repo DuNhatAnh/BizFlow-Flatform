@@ -19,7 +19,8 @@ import {
   PlusCircle,
   Contact,
   LogOut,
-  LifeBuoy
+  LifeBuoy,
+  Banknote
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,17 +30,24 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraftCount }: SidebarProps) {
-  const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string } | null>(null);
+  const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string; avatarUrl?: string } | null>(null);
   const [imageError, setImageError] = React.useState(false);
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
   const [draftCount, setDraftCount] = React.useState<number>(0);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("bizflow_user");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
+    const loadUser = () => {
+      const stored = localStorage.getItem("bizflow_user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    };
+    
+    loadUser();
+    
+    window.addEventListener("storage", loadUser);
+    return () => window.removeEventListener("storage", loadUser);
   }, []);
 
   React.useEffect(() => {
@@ -120,6 +128,8 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           { id: "inventory", label: "Quản lý Kho hàng", icon: Warehouse },
           { id: "customers", label: "Khách hàng & Công nợ", icon: Users },
           { id: "staff", label: "Quản lý Nhân sự", icon: Contact },
+          { type: "header", label: "TÀI CHÍNH" },
+          { id: "cashbook", label: "Sổ quỹ & Thu chi", icon: Banknote },
           { type: "header", label: "BÁO CÁO & CÀI ĐẶT" },
           { id: "reports", label: "Sổ sách Thuế (TT88)", icon: FileText },
           { id: "settings", label: "Cài đặt Cửa hàng", icon: Settings },
@@ -223,10 +233,14 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors group ${showProfileMenu ? 'bg-surface-container-low' : 'hover:bg-surface-container-low'}`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold group-hover:bg-primary group-hover:text-white transition-colors">
-              {user ? user.fullname.charAt(0).toUpperCase() : "C"}
+            <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold group-hover:bg-primary group-hover:text-white transition-colors overflow-hidden border border-primary/20 shrink-0">
+              {user && user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                user ? user.fullname.charAt(0).toUpperCase() : "C"
+              )}
             </div>
-            <div className="text-left">
+            <div className="text-left overflow-hidden">
               <h4 className="text-sm font-semibold text-on-surface">
                 {user ? user.fullname : "Chủ cửa hàng"}
               </h4>

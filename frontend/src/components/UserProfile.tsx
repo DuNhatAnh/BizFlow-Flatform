@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Mail, Shield, Key, CheckCircle2, AlertCircle, Save, Edit3, X } from "lucide-react";
+import { User, Mail, Shield, Key, CheckCircle2, AlertCircle, Save, Edit3, X, Camera } from "lucide-react";
 
 export default function UserProfile() {
-  const [user, setUser] = useState<{ username: string; fullname: string; roleName: string; role: string; tenantId: string; token: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; fullname: string; roleName: string; role: string; tenantId: string; token: string; avatarUrl?: string } | null>(null);
   
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -45,6 +45,16 @@ export default function UserProfile() {
           dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : "",
           joinDate: data.joinDate ? data.joinDate.split('T')[0] : ""
         });
+        if (data.avatarUrl) {
+          setUser(prev => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
+          const stored = localStorage.getItem("bizflow_user");
+          if (stored) {
+             const pUser = JSON.parse(stored);
+             pUser.avatarUrl = data.avatarUrl;
+             localStorage.setItem("bizflow_user", JSON.stringify(pUser));
+             window.dispatchEvent(new Event("storage")); // Notify Sidebar.tsx
+          }
+        }
       }
     } catch (e) {
       console.error("Failed to fetch profile", e);
@@ -133,12 +143,91 @@ export default function UserProfile() {
     }
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Vui lòng chọn file hình ảnh', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Compress to JPEG with 0.7 quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        updateAvatar(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const updateAvatar = async (base64Image: string) => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch("http://localhost:5178/api/auth/profile", {
+        method: "PUT",
+        headers: { 
+          "Authorization": `Bearer ${user.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          phone: hrData.phone || null,
+          identityCard: hrData.identityCard || null,
+          dateOfBirth: hrData.dateOfBirth ? new Date(hrData.dateOfBirth).toISOString() : null,
+          joinDate: hrData.joinDate ? new Date(hrData.joinDate).toISOString() : null,
+          avatarUrl: base64Image
+        })
+      });
+
+      if (res.ok) {
+        showToast("Cập nhật ảnh đại diện thành công!");
+        fetchProfile(user.token);
+      } else {
+        showToast("Cập nhật ảnh thất bại", "error");
+      }
+    } catch (e) {
+      showToast("Có lỗi xảy ra", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!user) return <div className="p-8 text-center text-on-surface-variant">Đang tải thông tin...</div>;
 
   const isManagerOrOwner = user.role === "Owner" || user.role === "Manager";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
+    <div className="w-full space-y-6 animate-in fade-in duration-300">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] px-6 py-3 rounded-full shadow-lg border animate-in slide-in-from-top-4 flex items-center gap-3 ${
@@ -149,20 +238,33 @@ export default function UserProfile() {
         </div>
       )}
 
-      <div>
-        <h2 className="text-2xl font-bold text-on-surface flex items-center gap-2">
-          <User className="w-7 h-7 text-primary" />
-          Hồ sơ cá nhân
-        </h2>
-        <p className="text-sm text-on-surface-variant mt-1">Quản lý thông tin tài khoản và bảo mật của bạn.</p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Info Card */}
         <div className="md:col-span-1 space-y-6">
           <div className="bg-white rounded-2xl border border-surface-container-high shadow-sm p-6 text-center">
-            <div className="w-24 h-24 mx-auto rounded-full bg-primary-container text-primary flex items-center justify-center text-4xl font-bold mb-4 shadow-inner">
-              {user.fullname.charAt(0).toUpperCase()}
+            <div className="relative w-28 h-28 mx-auto mb-4 group">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full shadow-inner border-2 border-primary/20" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-primary-container text-primary flex items-center justify-center text-4xl font-bold shadow-inner">
+                  {user.fullname.charAt(0).toUpperCase()}
+                </div>
+              )}
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full shadow-md hover:bg-primary-container transition-colors"
+                title="Thay đổi ảnh đại diện"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+              <input 
+                type="file" 
+                accept="image/*" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+                className="hidden" 
+              />
             </div>
             <h3 className="text-xl font-bold text-on-surface">{user.fullname}</h3>
             <p className="text-sm font-medium text-primary mt-1 bg-primary/10 inline-block px-3 py-1 rounded-full">

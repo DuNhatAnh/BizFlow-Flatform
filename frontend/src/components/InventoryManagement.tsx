@@ -123,7 +123,20 @@ export default function InventoryManagement() {
   const [hasAcknowledgedCogs, setHasAcknowledgedCogs] = useState(false);
   const [isInitialReceiptsLoaded, setIsInitialReceiptsLoaded] = useState(false);
 
-  const [receiptForm, setReceiptForm] = useState({
+  const [receiptForm, setReceiptForm] = useState<{
+    type: number;
+    exportPriceType: string;
+    date: string;
+    note: string;
+    delivererReceiverName: string;
+    referenceDocumentNo: string;
+    referenceDocumentDate: string;
+    referenceDocumentIssuer: string;
+    warehouseLocation: string;
+    isPaid?: boolean;
+    paymentMethod?: string;
+    items: { productId: string, documentQuantity: number, quantity: number, unitPrice: number, productName: string, vatRate?: string, priceIncludesVat?: boolean }[];
+  }>({
     type: 1, // 1 = Import, 2 = Export
     exportPriceType: "cogs", // "cogs" or "selling"
     date: new Date().toISOString().split('T')[0],
@@ -133,7 +146,9 @@ export default function InventoryManagement() {
     referenceDocumentDate: "",
     referenceDocumentIssuer: "",
     warehouseLocation: "",
-    items: [] as { productId: string, documentQuantity: number, quantity: number, unitPrice: number, productName: string }[]
+    isPaid: false,
+    paymentMethod: "Cash",
+    items: []
   });
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -147,12 +162,16 @@ export default function InventoryManagement() {
     }
   }, [products, selectedLedgerProduct]);
   const { data: receiptsData, isLoading: isReceiptsLoading, isError: isReceiptsError, error: receiptsError } = useQuery({
-    queryKey: ["inventory_receipts", activeSubTab, receiptPage],
+    queryKey: ["inventory_receipts", activeSubTab, activeSubTab === "receipts_in" ? receiptPage : 1],
     queryFn: async () => {
       if (activeSubTab !== "receipts_in" && activeSubTab !== "receipts_out") return null;
       const auth = getAuthInfo();
       const type = activeSubTab === "receipts_in" ? 0 : 1;
-      const res = await fetch(`${API_URL}/inventory/receipts?type=${type}&page=${receiptPage}&pageSize=10`, {
+      // Fetch 10 per page for receipts_in (backend pagination), but fetch all (1000) for receipts_out to allow client-side merge
+      const pageSize = activeSubTab === "receipts_in" ? 10 : 1000;
+      const pageToFetch = activeSubTab === "receipts_in" ? receiptPage : 1;
+      
+      const res = await fetch(`${API_URL}/inventory/receipts?type=${type}&page=${pageToFetch}&pageSize=${pageSize}`, {
         headers: { 
           "X-Tenant-Id": auth.tenantId,
           "Authorization": `Bearer ${auth.token}`
@@ -191,9 +210,23 @@ export default function InventoryManagement() {
 
   const isSalesTab = activeSubTab === "receipts_out" && exportFilterTab === "sales_slip";
   const isExportTab = activeSubTab === "receipts_out" && exportFilterTab === "export_slip";
-  const displayData = activeSubTab === "receipts_in" ? receipts : 
+  
+  const rawDisplayData = activeSubTab === "receipts_in" ? receipts : 
     (isSalesTab ? orders : 
       (isExportTab ? receipts : [...receipts, ...orders].sort((a:any, b:any) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime())));
+
+  const isClientSidePagination = activeSubTab === "receipts_out";
+  const paginatedData = isClientSidePagination 
+    ? rawDisplayData.slice((receiptPage - 1) * 10, receiptPage * 10)
+    : rawDisplayData;
+    
+  const calculatedReceiptTotalPages = isClientSidePagination 
+    ? Math.ceil(rawDisplayData.length / 10) 
+    : receiptTotalPages;
+    
+  const calculatedTotalItems = isClientSidePagination
+    ? rawDisplayData.length
+    : (receiptsData?.totalCount || 0);
 
 
   // Track if we have any receipts
@@ -362,6 +395,8 @@ export default function InventoryManagement() {
         referenceDocumentIssuer: receiptForm.referenceDocumentIssuer || null,
         warehouseLocation: receiptForm.warehouseLocation || null,
         useSellingPrice: receiptForm.type === 2 && receiptForm.exportPriceType === "selling",
+        isPaid: receiptForm.isPaid || false,
+        paymentMethod: receiptForm.paymentMethod || "Cash",
         items: receiptForm.items.map((i: any) => ({
           productId: i.productId,
           documentQuantity: Number(i.documentQuantity),
@@ -602,7 +637,10 @@ export default function InventoryManagement() {
           <ReceiptHistoryTab 
             activeSubTab={activeSubTab}
             exportFilterTab={exportFilterTab}
-            setExportFilterTab={setExportFilterTab}
+            setExportFilterTab={(val) => {
+              setExportFilterTab(val);
+              setReceiptPage(1); // Reset page on filter change
+            }}
             handleOpenReceiptModal={handleOpenReceiptModal}
             isReceiptsLoading={isReceiptsLoading}
             isOrdersLoading={isOrdersLoading}
@@ -610,14 +648,14 @@ export default function InventoryManagement() {
             isOrdersError={isOrdersError}
             receiptsError={receiptsError}
             ordersError={ordersError}
-            displayData={displayData}
+            displayData={paginatedData}
             receiptPage={receiptPage}
             setReceiptPage={setReceiptPage}
             setViewReceiptDetails={setViewReceiptDetails}
             setCancelReceiptId={setCancelReceiptId}
             setCancelModalOpen={setCancelModalOpen}
-            receiptsData={receiptsData}
-            receiptTotalPages={receiptTotalPages}
+            receiptsData={{...receiptsData, totalCount: calculatedTotalItems}}
+            receiptTotalPages={calculatedReceiptTotalPages}
           />
         )}
 

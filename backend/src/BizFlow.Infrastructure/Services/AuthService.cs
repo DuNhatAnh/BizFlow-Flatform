@@ -72,6 +72,7 @@ public class AuthService : IAuthService
                 Fullname = user.Fullname,
                 Role = user.Role.ToString(),
                 RoleName = GetRoleName(user.Role.ToString()),
+                AvatarUrl = user.AvatarUrl,
                 TenantId = user.TenantId
             }
         };
@@ -124,7 +125,8 @@ public class AuthService : IAuthService
             Phone = user.Phone,
             IdentityCard = user.IdentityCard,
             DateOfBirth = user.DateOfBirth,
-            JoinDate = user.JoinDate ?? user.CreatedAt
+            JoinDate = user.JoinDate ?? user.CreatedAt,
+            AvatarUrl = user.AvatarUrl
         };
     }
 
@@ -135,6 +137,10 @@ public class AuthService : IAuthService
 
         user.Phone = request.Phone;
         user.DateOfBirth = request.DateOfBirth;
+        if (request.AvatarUrl != null) 
+        {
+            user.AvatarUrl = request.AvatarUrl;
+        }
 
         if (currentUserRole == BizFlow.Domain.Enums.UserRole.Owner || currentUserRole == BizFlow.Domain.Enums.UserRole.Manager)
         {

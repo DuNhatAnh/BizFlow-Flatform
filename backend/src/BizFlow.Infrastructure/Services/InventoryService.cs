@@ -164,6 +164,38 @@ public class InventoryService : IInventoryService
             receipt.TotalVatAmount = totalVatAmount;
             _context.InventoryReceipts.Add(receipt);
 
+            // ALWAYS Create CashTransaction for Inventory Receipt
+            var cashPrefix = request.Type == ReceiptType.Import ? "PC" : "PT";
+            var cashTxType = request.Type == ReceiptType.Import ? CashTransactionType.Payment : CashTransactionType.Receipt;
+            
+            var dateStr = DateTime.UtcNow.ToString("yyMMdd");
+            var today = DateTime.UtcNow.Date;
+            var countToday = await _context.CashTransactions
+                .Where(c => c.TenantId == tenantId && c.Type == cashTxType && c.CreatedAt >= today)
+                .CountAsync();
+                
+            var seq = (countToday + 1).ToString("D3");
+            var txCode = $"{cashPrefix}-{dateStr}-{seq}";
+            
+            var cashTx = new CashTransaction
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Type = cashTxType,
+                PaymentMethod = request.PaymentMethod,
+                Amount = receipt.TotalAmount,
+                TransactionDate = DateTime.UtcNow,
+                TransactionCode = txCode,
+                Reason = request.Type == ReceiptType.Import 
+                    ? $"Chi tiền nhập kho - Chứng từ {receipt.ReferenceDocumentNo ?? "Không số"}" 
+                    : $"Thu tiền xuất kho - Chứng từ {receipt.ReferenceDocumentNo ?? "Không số"}",
+                ReferenceDocument = receipt.ReferenceDocumentNo,
+                RelatedUserId = userId,
+                PayerReceiverName = request.DelivererReceiverName ?? "Người giao/nhận",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.CashTransactions.Add(cashTx);
+
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 

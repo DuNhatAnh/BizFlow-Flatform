@@ -18,6 +18,15 @@ public class User
     public DateTime? JoinDate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? SocialInsuranceNo { get; set; }
+    public string? HealthInsuranceNo { get; set; }
+    public string? PersonalTaxCode { get; set; }
+    public decimal? BasicSalary { get; set; }
+    public string? BankAccountNumber { get; set; }
+    public string? BankName { get; set; }
+    public int? NumberOfDependents { get; set; }
+    public string? AvatarUrl { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
 }

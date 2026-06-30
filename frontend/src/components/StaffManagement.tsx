@@ -15,8 +15,25 @@ import {
   XCircle,
   Clock,
   MoreHorizontal,
-  Edit3
+  Edit3,
+  Info,
+  AlertCircle,
+  Printer,
+  Download,
+  FileSpreadsheet,
+  FileText
 } from "lucide-react";
+
+const FormField = ({ label, required, info, error, children }: any) => (
+  <div>
+    <label className="flex items-center gap-1 text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children}
+    {error && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {error}</p>}
+  </div>
+);
+
 import { Skeleton } from "./ui/Skeleton";
 import { FadeIn } from "./ui/FadeIn";
 import { Pagination } from "./ui/Pagination";
@@ -37,7 +54,14 @@ export default function StaffManagement() {
     phone: "",
     identityCard: "",
     dateOfBirth: "",
-    joinDate: ""
+    joinDate: "",
+    socialInsuranceNo: "",
+    healthInsuranceNo: "",
+    personalTaxCode: "",
+    basicSalary: "",
+    bankAccountNumber: "",
+    bankName: "",
+    numberOfDependents: ""
   });
   
   // Pagination State
@@ -53,10 +77,90 @@ export default function StaffManagement() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // Payroll States
+  const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1);
+  const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
+  const [showPayslipModal, setShowPayslipModal] = useState(false);
+  const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
+
+  const { data: payrollData, refetch: refetchPayroll } = useQuery({
+    queryKey: ["payrolls", payrollMonth, payrollYear],
+    queryFn: async () => {
+      const auth = getAuthInfo();
+      const res = await fetch(`http://localhost:5178/api/payroll?year=${payrollYear}&month=${payrollMonth}&page=1&pageSize=100`, {
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+      if (!res.ok) return { items: [] };
+      return res.json();
+    },
+    placeholderData: keepPreviousData,
+  });
+
+  const handleGeneratePayroll = async () => {
+    const auth = getAuthInfo();
+    try {
+      const res = await fetch(`http://localhost:5178/api/payroll/generate?year=${payrollYear}&month=${payrollMonth}`, {
+        method: "POST",
+        headers: { 
+          "X-Tenant-Id": auth.tenantId,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+      if (res.ok) {
+        showToast(`Đã tính lương tháng ${payrollMonth}/${payrollYear} thành công!`, "success");
+        refetchPayroll();
+      } else {
+        const err = await res.json().catch(()=>null);
+        showToast(err?.message || "Lỗi khi tính lương", "error");
+      }
+    } catch {
+      showToast("Lỗi kết nối", "error");
+    }
+  };
+
+  const handleExportExcel = () => {
+    const items = payrollData?.items || [];
+    if (items.length === 0) {
+      showToast("Không có dữ liệu lương để xuất!", "error");
+      return;
+    }
+    
+    // Create CSV content
+    const headers = ["Nhân viên", "Username", "Lương cơ bản", "Phụ cấp", "Khấu trừ", "Thuế TNCN", "Thực lãnh", "STK Ngân hàng", "Ngân hàng"];
+    const rows = items.map((p: any) => [
+      p.fullname,
+      p.username,
+      p.baseSalary,
+      p.allowances,
+      p.deductions,
+      p.personalTax,
+      p.netPay,
+      p.bankAccountNumber || "",
+      p.bankName || ""
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(",")].concat(rows.map((e: any[]) => e.map(cell => `"${cell}"`).join(","))).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Bang_Luong_T${payrollMonth}_${payrollYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   // Form states
   const [newUsername, setNewUsername] = useState("");
   const [newFullname, setNewFullname] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [addFormErrors, setAddFormErrors] = useState<Record<string, string>>({});
 
   const getAuthInfo = () => {
     const stored = localStorage.getItem("bizflow_user");
@@ -112,14 +216,19 @@ export default function StaffManagement() {
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername || !newFullname || !newPassword) {
-      showToast("Vui lòng điền đầy đủ thông tin", "error");
+    
+    const errors: Record<string, string> = {};
+    if (!newFullname.trim()) errors.fullname = "Vui lòng nhập họ và tên";
+    if (!newUsername.trim()) errors.username = "Vui lòng nhập tên đăng nhập (email)";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newUsername)) errors.username = "Email không hợp lệ (VD: ten@gmail.com)";
+    if (!newPassword) errors.password = "Vui lòng nhập mật khẩu";
+    else if (newPassword.length < 6) errors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    
+    if (Object.keys(errors).length > 0) {
+      setAddFormErrors(errors);
       return;
     }
-    if (newPassword.length < 6) {
-      showToast("Mật khẩu quá ngắn, vui lòng nhập ít nhất 6 ký tự.", "error");
-      return;
-    }
+    setAddFormErrors({});
 
     const auth = getAuthInfo();
     try {
@@ -160,10 +269,27 @@ export default function StaffManagement() {
 
   const handleUpdateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editStaffData.username || !editStaffData.fullname) {
-      showToast("Vui lòng điền đầy đủ tên và email", "error");
+    
+    const errors: Record<string, string> = {};
+    if (!editStaffData.fullname.trim()) errors.fullname = "Vui lòng nhập họ và tên";
+    if (!editStaffData.username.trim()) errors.username = "Vui lòng nhập tên đăng nhập (email)";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editStaffData.username)) errors.username = "Email không hợp lệ (VD: ten@gmail.com)";
+    
+    if (editStaffData.phone && !/^(0|\+84)\d{9}$/.test(editStaffData.phone.replace(/\s/g, ''))) {
+      errors.phone = "Số điện thoại phải bao gồm 10 chữ số (VD: 0987654321)";
+    }
+    if (editStaffData.identityCard && !/^\d{12}$/.test(editStaffData.identityCard.trim())) {
+      errors.identityCard = "CCCD phải bao gồm đúng 12 chữ số";
+    }
+    if (editStaffData.personalTaxCode && !/^\d{10}(\d{3})?$/.test(editStaffData.personalTaxCode.trim())) {
+      errors.personalTaxCode = "MST cá nhân phải bao gồm 10 hoặc 13 chữ số";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
 
     const auth = getAuthInfo();
     try {
@@ -180,7 +306,14 @@ export default function StaffManagement() {
           phone: editStaffData.phone || null,
           identityCard: editStaffData.identityCard || null,
           dateOfBirth: editStaffData.dateOfBirth ? new Date(editStaffData.dateOfBirth).toISOString() : null,
-          joinDate: editStaffData.joinDate ? new Date(editStaffData.joinDate).toISOString() : null
+          joinDate: editStaffData.joinDate ? new Date(editStaffData.joinDate).toISOString() : null,
+          socialInsuranceNo: editStaffData.socialInsuranceNo || null,
+          healthInsuranceNo: editStaffData.healthInsuranceNo || null,
+          personalTaxCode: editStaffData.personalTaxCode || null,
+          basicSalary: editStaffData.basicSalary ? Number(editStaffData.basicSalary) : null,
+          bankAccountNumber: editStaffData.bankAccountNumber || null,
+          bankName: editStaffData.bankName || null,
+          numberOfDependents: editStaffData.numberOfDependents ? parseInt(editStaffData.numberOfDependents, 10) : null
         })
       });
 
@@ -249,7 +382,44 @@ export default function StaffManagement() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header Area Buttons */}
-      <div className="flex justify-end -mt-2 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
+      <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center -mt-2 gap-4 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
+        <div className="flex items-center gap-2 bg-surface-container-low p-1.5 rounded-lg border border-surface-container-high shadow-sm">
+          <select 
+            value={payrollMonth} 
+            onChange={(e) => setPayrollMonth(Number(e.target.value))}
+            className="text-sm bg-transparent outline-none text-on-surface font-medium px-2 py-1"
+          >
+            {Array.from({ length: 12 }).map((_, i) => (
+              <option key={i+1} value={i+1}>Tháng {i+1}</option>
+            ))}
+          </select>
+          <span className="text-on-surface-variant">/</span>
+          <select 
+            value={payrollYear} 
+            onChange={(e) => setPayrollYear(Number(e.target.value))}
+            className="text-sm bg-transparent outline-none text-on-surface font-medium px-2 py-1"
+          >
+            {[2024, 2025, 2026, 2027].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <div className="w-px h-6 bg-surface-container-high mx-1"></div>
+          <button 
+            onClick={handleGeneratePayroll}
+            className="px-3 py-1.5 hover:bg-white text-primary text-sm font-bold rounded-md flex items-center gap-1.5 transition-colors"
+          >
+            <FileText className="w-4 h-4" /> 
+            Tính Lương
+          </button>
+          <button 
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 hover:bg-white text-emerald-600 text-sm font-bold rounded-md flex items-center gap-1.5 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> 
+            Xuất Bảng Lương
+          </button>
+        </div>
+        
         <button 
           onClick={() => setShowAddModal(true)}
           className="px-4 py-2.5 bg-primary hover:bg-primary-container text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all"
@@ -378,6 +548,21 @@ export default function StaffManagement() {
                                 >
                                   <Lock className="w-4 h-4 text-on-surface-variant" /> Đổi mật khẩu
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    const payslip = payrollData?.items?.find((p: any) => p.userId === staff.id);
+                                    if (!payslip) {
+                                      showToast(`Chưa có phiếu lương tháng ${payrollMonth}/${payrollYear} cho nhân viên này. Hãy bấm Tính Lương trước!`, "error");
+                                    } else {
+                                      setSelectedPayslip(payslip);
+                                      setShowPayslipModal(true);
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-primary hover:bg-primary/5 flex items-center gap-2 transition-colors border-t border-surface-container-low"
+                                >
+                                  <FileText className="w-4 h-4 text-primary" /> Xem phiếu lương T{payrollMonth}/{payrollYear}
+                                </button>
                                 {isOwner && (
                                   <button
                                     onClick={() => {
@@ -388,7 +573,14 @@ export default function StaffManagement() {
                                         phone: staff.phone || "",
                                         identityCard: staff.identityCard || "",
                                         dateOfBirth: staff.dateOfBirth ? staff.dateOfBirth.split('T')[0] : "",
-                                        joinDate: staff.joinDate ? staff.joinDate.split('T')[0] : ""
+                                        joinDate: staff.joinDate ? staff.joinDate.split('T')[0] : "",
+                                        socialInsuranceNo: staff.socialInsuranceNo || "",
+                                        healthInsuranceNo: staff.healthInsuranceNo || "",
+                                        personalTaxCode: staff.personalTaxCode || "",
+                                        basicSalary: staff.basicSalary || "",
+                                        bankAccountNumber: staff.bankAccountNumber || "",
+                                        bankName: staff.bankName || "",
+                                        numberOfDependents: staff.numberOfDependents || ""
                                       });
                                       setShowEditModal(true);
                                       setOpenDropdownId(null);
@@ -442,30 +634,27 @@ export default function StaffManagement() {
               </button>
             </div>
             <form onSubmit={handleAddStaff} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Họ và Tên</label>
+              <FormField label="Họ và Tên" required info="Tên đầy đủ của nhân viên" error={addFormErrors.fullname}>
                 <input 
-                  type="text" required
-                  value={newFullname} onChange={e => setNewFullname(e.target.value)}
-                  className="w-full p-3 border border-outline-variant rounded-lg text-sm" placeholder="VD: Trần Thị B"
+                  type="text" 
+                  value={newFullname} onChange={e => { setNewFullname(e.target.value); setAddFormErrors({...addFormErrors, fullname: ""}) }}
+                  className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${addFormErrors.fullname ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: Trần Thị B"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Tên đăng nhập (Email)</label>
+              </FormField>
+              <FormField label="Tên đăng nhập (Email)" required info="Dùng để đăng nhập vào hệ thống, phải là email hợp lệ" error={addFormErrors.username}>
                 <input 
-                  type="email" required
-                  value={newUsername} onChange={e => setNewUsername(e.target.value)}
-                  className="w-full p-3 border border-outline-variant rounded-lg text-sm" placeholder="employee@bizflow.com"
+                  type="email" 
+                  value={newUsername} onChange={e => { setNewUsername(e.target.value); setAddFormErrors({...addFormErrors, username: ""}) }}
+                  className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${addFormErrors.username ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="employee@bizflow.com"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Mật khẩu</label>
+              </FormField>
+              <FormField label="Mật khẩu" required info="Mật khẩu tối thiểu 6 ký tự" error={addFormErrors.password}>
                 <input 
-                  type="password" required
-                  value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                  className="w-full p-3 border border-outline-variant rounded-lg text-sm" placeholder="••••••••"
+                  type="password" 
+                  value={newPassword} onChange={e => { setNewPassword(e.target.value); setAddFormErrors({...addFormErrors, password: ""}) }}
+                  className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${addFormErrors.password ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="••••••••"
                 />
-              </div>
+              </FormField>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 bg-surface-container-low text-on-surface-variant font-bold rounded-lg text-sm">Hủy</button>
                 <button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg text-sm">Tạo tài khoản</button>
@@ -488,53 +677,108 @@ export default function StaffManagement() {
             <div className="p-6 overflow-y-auto">
               <form id="editStaffForm" onSubmit={handleUpdateStaff} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Họ và Tên</label>
+                  <FormField label="Họ và Tên" required info="Tên đầy đủ của nhân viên theo CMND/CCCD" error={formErrors.fullname}>
                     <input 
-                      type="text" required
-                      value={editStaffData.fullname} onChange={e => setEditStaffData({...editStaffData, fullname: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="VD: Trần Thị B"
+                      type="text" 
+                      value={editStaffData.fullname} onChange={e => { setEditStaffData({...editStaffData, fullname: e.target.value}); setFormErrors({...formErrors, fullname: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.fullname ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: Trần Thị B"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Tên đăng nhập (Email)</label>
+                  </FormField>
+                  <FormField label="Tên đăng nhập (Email)" required info="Email dùng để đăng nhập vào hệ thống" error={formErrors.username}>
                     <input 
-                      type="email" required
-                      value={editStaffData.username} onChange={e => setEditStaffData({...editStaffData, username: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="employee@bizflow.com"
+                      type="email" 
+                      value={editStaffData.username} onChange={e => { setEditStaffData({...editStaffData, username: e.target.value}); setFormErrors({...formErrors, username: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.username ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="employee@bizflow.com"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Số điện thoại</label>
+                  </FormField>
+                  <FormField label="Số điện thoại" info="Số điện thoại di động (10 chữ số)" error={formErrors.phone}>
                     <input 
                       type="text"
-                      value={editStaffData.phone} onChange={e => setEditStaffData({...editStaffData, phone: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="VD: 0987654321"
+                      value={editStaffData.phone} onChange={e => { setEditStaffData({...editStaffData, phone: e.target.value}); setFormErrors({...formErrors, phone: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.phone ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: 0987654321"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">CCCD</label>
+                  </FormField>
+                  <FormField label="CCCD" info="Căn cước công dân gắn chíp (12 chữ số)" error={formErrors.identityCard}>
                     <input 
                       type="text"
-                      value={editStaffData.identityCard} onChange={e => setEditStaffData({...editStaffData, identityCard: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Nhập số CCCD"
+                      value={editStaffData.identityCard} onChange={e => { setEditStaffData({...editStaffData, identityCard: e.target.value}); setFormErrors({...formErrors, identityCard: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.identityCard ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="Nhập số CCCD"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Ngày sinh</label>
+                  </FormField>
+                  <FormField label="Ngày sinh" info="Ngày tháng năm sinh của nhân viên" error={formErrors.dateOfBirth}>
                     <input 
                       type="date"
-                      value={editStaffData.dateOfBirth} onChange={e => setEditStaffData({...editStaffData, dateOfBirth: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      value={editStaffData.dateOfBirth} onChange={e => { setEditStaffData({...editStaffData, dateOfBirth: e.target.value}); setFormErrors({...formErrors, dateOfBirth: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.dateOfBirth ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Ngày vào làm</label>
+                  </FormField>
+                  <FormField label="Ngày vào làm" info="Ngày chính thức bắt đầu công việc tại công ty" error={formErrors.joinDate}>
                     <input 
                       type="date"
-                      value={editStaffData.joinDate} onChange={e => setEditStaffData({...editStaffData, joinDate: e.target.value})}
-                      className="w-full p-3 border border-outline-variant rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      value={editStaffData.joinDate} onChange={e => { setEditStaffData({...editStaffData, joinDate: e.target.value}); setFormErrors({...formErrors, joinDate: ""}) }}
+                      className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.joinDate ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`}
                     />
+                  </FormField>
+                </div>
+
+                <div className="pt-4 border-t border-surface-container-low">
+                  <h4 className="text-sm font-bold text-on-surface mb-4">Thông tin Hợp đồng & Bảo hiểm</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField label="Mã BHYT" info="Mã thẻ Bảo hiểm Y tế" error={formErrors.healthInsuranceNo}>
+                      <input 
+                        type="text"
+                        value={editStaffData.healthInsuranceNo} onChange={e => { setEditStaffData({...editStaffData, healthInsuranceNo: e.target.value}); setFormErrors({...formErrors, healthInsuranceNo: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.healthInsuranceNo ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="Nhập số BHYT"
+                      />
+                    </FormField>
+                    <FormField label="Mã BHXH" info="Mã sổ Bảo hiểm Xã hội" error={formErrors.socialInsuranceNo}>
+                      <input 
+                        type="text"
+                        value={editStaffData.socialInsuranceNo} onChange={e => { setEditStaffData({...editStaffData, socialInsuranceNo: e.target.value}); setFormErrors({...formErrors, socialInsuranceNo: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.socialInsuranceNo ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="Nhập số BHXH"
+                      />
+                    </FormField>
+                    <FormField label="Mã số thuế TNCN" info="Mã số thuế thu nhập cá nhân (10-13 chữ số)" error={formErrors.personalTaxCode}>
+                      <input 
+                        type="text"
+                        value={editStaffData.personalTaxCode} onChange={e => { setEditStaffData({...editStaffData, personalTaxCode: e.target.value}); setFormErrors({...formErrors, personalTaxCode: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.personalTaxCode ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="Nhập MST cá nhân"
+                      />
+                    </FormField>
+                    <FormField label="Số người phụ thuộc" info="Số lượng người phụ thuộc dùng để tính giảm trừ gia cảnh" error={formErrors.numberOfDependents}>
+                      <input 
+                        type="number" min="0"
+                        value={editStaffData.numberOfDependents} onChange={e => { setEditStaffData({...editStaffData, numberOfDependents: e.target.value}); setFormErrors({...formErrors, numberOfDependents: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.numberOfDependents ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: 2"
+                      />
+                    </FormField>
+                    <FormField label="Lương cơ bản" info="Mức lương cơ bản dùng cho tính toán BHXH và lương tháng" error={formErrors.basicSalary}>
+                      <input 
+                        type="number" min="0"
+                        value={editStaffData.basicSalary} onChange={e => { setEditStaffData({...editStaffData, basicSalary: e.target.value}); setFormErrors({...formErrors, basicSalary: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.basicSalary ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: 5000000"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-surface-container-low">
+                  <h4 className="text-sm font-bold text-on-surface mb-4">Thông tin Ngân hàng</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField label="Số tài khoản" info="Số tài khoản ngân hàng để nhận lương" error={formErrors.bankAccountNumber}>
+                      <input 
+                        type="text"
+                        value={editStaffData.bankAccountNumber} onChange={e => { setEditStaffData({...editStaffData, bankAccountNumber: e.target.value}); setFormErrors({...formErrors, bankAccountNumber: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.bankAccountNumber ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: 1903..."
+                      />
+                    </FormField>
+                    <FormField label="Tên ngân hàng" info="Ngân hàng thụ hưởng (VD: Vietcombank, Techcombank, MBBank...)" error={formErrors.bankName}>
+                      <input 
+                        type="text"
+                        value={editStaffData.bankName} onChange={e => { setEditStaffData({...editStaffData, bankName: e.target.value}); setFormErrors({...formErrors, bankName: ""}) }}
+                        className={`w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${formErrors.bankName ? 'border-red-500 bg-red-50/50' : 'border-outline-variant'}`} placeholder="VD: Techcombank"
+                      />
+                    </FormField>
                   </div>
                 </div>
               </form>
@@ -545,6 +789,128 @@ export default function StaffManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {showPayslipModal && selectedPayslip && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPayslipModal(false)}></div>
+          <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh] relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-surface-container-low shrink-0">
+              <h2 className="text-lg font-bold text-on-surface">Phiếu Lương T{selectedPayslip.month}/{selectedPayslip.year}</h2>
+              <button onClick={() => setShowPayslipModal(false)} className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg transition-colors">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-8 overflow-y-auto print:p-0 print:overflow-visible" id="payslip-content">
+              {/* TT88 Standard-like Payslip Format */}
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h1 className="text-2xl font-black text-primary tracking-tight">BIZFLOW</h1>
+                  <p className="text-xs text-on-surface-variant mt-1">Cửa hàng trực thuộc hệ thống BizFlow Platform</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-bold uppercase tracking-wider text-on-surface">Phiếu Lương</h2>
+                  <p className="text-sm font-medium text-on-surface-variant mt-1">Kỳ lương: Tháng {selectedPayslip.month}/{selectedPayslip.year}</p>
+                </div>
+              </div>
+              
+              <div className="bg-surface-container-low/30 border border-surface-container-high rounded-xl p-4 mb-6 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1">Họ và tên</p>
+                  <p className="text-base font-bold text-on-surface">{selectedPayslip.fullname}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1">Tài khoản</p>
+                  <p className="text-sm font-medium text-on-surface">{selectedPayslip.username}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1">Số TK Ngân hàng</p>
+                  <p className="text-sm font-medium text-on-surface">{selectedPayslip.bankAccountNumber || "Chưa cập nhật"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1">Ngân hàng</p>
+                  <p className="text-sm font-medium text-on-surface">{selectedPayslip.bankName || "Chưa cập nhật"}</p>
+                </div>
+              </div>
+              
+              <table className="w-full text-sm border-collapse mb-8">
+                <thead>
+                  <tr className="border-b-2 border-surface-container-high text-on-surface-variant">
+                    <th className="text-left pb-2 font-bold uppercase tracking-wider text-xs">Khoản mục</th>
+                    <th className="text-right pb-2 font-bold uppercase tracking-wider text-xs w-1/3">Số tiền (VNĐ)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-container-low text-on-surface font-medium">
+                  <tr>
+                    <td className="py-3">1. Lương cơ bản (Gross)</td>
+                    <td className="py-3 text-right">{selectedPayslip.baseSalary.toLocaleString('vi-VN')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 text-emerald-600">2. Các khoản phụ cấp (+)</td>
+                    <td className="py-3 text-right text-emerald-600">{selectedPayslip.allowances.toLocaleString('vi-VN')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3">3. Số người phụ thuộc</td>
+                    <td className="py-3 text-right">{selectedPayslip.numberOfDependents} người</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 text-error">4. Thuế TNCN (-)</td>
+                    <td className="py-3 text-right text-error">{selectedPayslip.personalTax.toLocaleString('vi-VN')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 text-error">5. Các khoản khấu trừ khác (-)</td>
+                    <td className="py-3 text-right text-error">{(selectedPayslip.deductions - selectedPayslip.personalTax).toLocaleString('vi-VN')}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-surface-container-high">
+                    <td className="pt-4 pb-2 font-bold text-lg text-on-surface">THỰC LÃNH (NET)</td>
+                    <td className="pt-4 pb-2 text-right font-black text-xl text-primary">{selectedPayslip.netPay.toLocaleString('vi-VN')} đ</td>
+                  </tr>
+                </tfoot>
+              </table>
+              
+              <div className="grid grid-cols-2 gap-8 text-center pt-8 border-t border-surface-container-low mt-4">
+                <div>
+                  <p className="font-bold text-on-surface">Người lập phiếu</p>
+                  <p className="text-xs text-on-surface-variant mt-1">(Ký, ghi rõ họ tên)</p>
+                  <div className="h-20"></div>
+                </div>
+                <div>
+                  <p className="font-bold text-on-surface">Người nhận</p>
+                  <p className="text-xs text-on-surface-variant mt-1">(Ký, ghi rõ họ tên)</p>
+                  <div className="h-20"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-surface-container-low flex justify-end gap-3 shrink-0 print:hidden">
+              <button 
+                onClick={() => setShowPayslipModal(false)}
+                className="px-4 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface font-bold rounded-lg transition-colors"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={() => {
+                  const printContents = document.getElementById('payslip-content')?.innerHTML;
+                  const originalContents = document.body.innerHTML;
+                  if (printContents) {
+                    document.body.innerHTML = printContents;
+                    window.print();
+                    document.body.innerHTML = originalContents;
+                    window.location.reload(); // Reload to restore React bindings after brutal innerHTML swap
+                  }
+                }}
+                className="px-4 py-2 bg-primary hover:bg-primary-container text-white font-bold rounded-lg flex items-center gap-2 shadow-sm transition-colors"
+              >
+                <Printer className="w-4 h-4" /> In / Lưu PDF
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Audit Logs Modal */}

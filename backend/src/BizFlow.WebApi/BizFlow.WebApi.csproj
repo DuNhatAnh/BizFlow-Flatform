@@ -18,5 +18,5 @@
   <ItemGroup>
     <ProjectReference Include="..\BizFlow.Infrastructure\BizFlow.Infrastructure.csproj" />
   </ItemGroup>
-
+  <!-- Force rebuild for EF Core model update 5 -->
 </Project>

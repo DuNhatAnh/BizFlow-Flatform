@@ -146,6 +146,39 @@ public class OrderService : IOrderService
             };
             _context.AccountingEntries.Add(accountingEntry);
 
+            // 5. If PaymentMethod is Cash or Transfer, create CashTransaction
+            if (order.PaymentMethod == PaymentMethod.Cash || order.PaymentMethod == PaymentMethod.Transfer)
+            {
+                var prefix = "PT";
+                var dateStr = DateTime.UtcNow.ToString("yyMMdd");
+                
+                // Need to count today's transactions for seq (simplified since we're in a transaction)
+                var today = DateTime.UtcNow.Date;
+                var countToday = await _context.CashTransactions
+                    .Where(c => c.TenantId == order.TenantId && c.Type == CashTransactionType.Receipt && c.CreatedAt >= today)
+                    .CountAsync(cancellationToken);
+                    
+                var seq = (countToday + 1).ToString("D3");
+                var txCode = $"{prefix}-{dateStr}-{seq}";
+
+                var cashTx = new CashTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = order.TenantId,
+                    Type = CashTransactionType.Receipt,
+                    PaymentMethod = order.PaymentMethod,
+                    Amount = order.TotalAmount,
+                    TransactionDate = DateTime.UtcNow,
+                    TransactionCode = txCode,
+                    Reason = $"Thu tiền bán hàng - Đơn hàng #{order.Code}",
+                    ReferenceDocument = order.Code,
+                    RelatedUserId = order.CreatedBy,
+                    PayerReceiverName = order.CustomerId.HasValue ? "Khách hàng" : "Khách vãng lai",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.CashTransactions.Add(cashTx);
+            }
+
             _context.Orders.Add(order);
 
             await _context.SaveChangesAsync(cancellationToken);

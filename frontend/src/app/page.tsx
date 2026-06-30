@@ -9,6 +9,7 @@ import InventoryManagement from "@/components/InventoryManagement";
 import StaffManagement from "@/components/StaffManagement";
 import UserProfile from "@/components/UserProfile";
 import MyOrders from "@/components/MyOrders";
+import CashBook from "@/components/CashBook";
 
 // Micro-components
 import OwnerOverview from "@/components/OwnerOverview";
@@ -859,6 +860,10 @@ export default function Home() {
       return <StoreSettings />;
     }
 
+    if (activeTab === "cashbook") {
+      return <CashBook user={user} showToast={showToast} />;
+    }
+
     return (
       <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
         <h2 className="text-xl font-bold text-on-surface">Tính năng đang phát triển</h2>
@@ -911,6 +916,11 @@ export default function Home() {
         return {
           title: "Khách hàng & Công nợ",
           subtitle: "Quản lý danh sách khách hàng, thiết lập hạn mức nợ và lịch sử thanh toán"
+        };
+      case "cashbook":
+        return {
+          title: "Sổ quỹ & Thu chi (TT88)",
+          subtitle: "Quản lý dòng tiền, lập phiếu thu, phiếu chi và báo cáo tồn quỹ"
         };
       case "profile":
         return {
