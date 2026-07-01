@@ -114,6 +114,26 @@ using (var scope = app.Services.CreateScope())
         // Migrate Cashier to Employee
         SafeSql("UPDATE users SET \"Role\" = 'Employee' WHERE \"Role\" = 'Cashier';");
 
+        // Cập nhật cấu trúc bảng subscription_plans trên Supabase (thêm cột nếu chưa có)
+        SafeSql("ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS \"MaxOrdersPerMonth\" integer;");
+        SafeSql("ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS \"Features\" text;");
+
+        // Cập nhật Gói Chuyên Nghiệp (Id = 1)
+        SafeSql("UPDATE subscription_plans SET \"Name\" = 'Gói Chuyên Nghiệp', \"Description\" = 'Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI', \"MaxOrdersPerMonth\" = NULL, \"Features\" = '[\"pos\",\"inventory\",\"reports\",\"ai\",\"tt88\",\"multi_store\"]' WHERE \"Id\" = 1;");
+
+        // Thêm Gói Miễn Phí (Id = 2) nếu chưa có
+        SafeSql("INSERT INTO subscription_plans (\"Id\", \"Name\", \"Price\", \"DurationMonths\", \"Description\", \"MaxOrdersPerMonth\", \"Features\", \"CreatedAt\") " +
+                "SELECT 2, 'Gói Miễn Phí', 0, 0, 'Quản lý bán hàng cơ bản, tối đa 50 đơn/tháng. Không bao gồm báo cáo thuế TT88 và Trợ lý AI.', 50, '[\"pos\",\"inventory\"]', NOW() " +
+                "WHERE NOT EXISTS (SELECT 1 FROM subscription_plans WHERE \"Id\" = 2);");
+
+        // Thêm Gói Cơ Bản (Id = 3) nếu chưa có
+        SafeSql("INSERT INTO subscription_plans (\"Id\", \"Name\", \"Price\", \"DurationMonths\", \"Description\", \"MaxOrdersPerMonth\", \"Features\", \"CreatedAt\") " +
+                "SELECT 3, 'Gói Cơ Bản', 150000.00, 1, 'Quản lý bán hàng nâng cao, tối đa 300 đơn/tháng. Bao gồm báo cáo doanh thu và theo dõi công nợ. Chưa bao gồm Trợ lý AI và báo cáo thuế TT88.', 300, '[\"pos\",\"inventory\",\"reports\",\"debt_tracking\"]', NOW() " +
+                "WHERE NOT EXISTS (SELECT 1 FROM subscription_plans WHERE \"Id\" = 3);");
+
+        // Gán gói Free (Id = 2) cho toàn bộ tenant đang trống gói dịch vụ trên Supabase (ngoại trừ System Tenant)
+        SafeSql("UPDATE tenants SET \"SubscriptionPlanId\" = 2 WHERE \"SubscriptionPlanId\" IS NULL AND \"Name\" != 'BizFlow System Tenant';");
+
 
         // Run Reference Data Seeder unconditionally
         await BizFlow.Infrastructure.Persistence.Seeders.ReferenceDataSeeder.SeedAsync(db);

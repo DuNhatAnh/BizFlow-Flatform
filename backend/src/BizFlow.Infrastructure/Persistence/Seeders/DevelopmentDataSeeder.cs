@@ -18,7 +18,7 @@ namespace BizFlow.Infrastructure.Persistence.Seeders
                 var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
                 var createdAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc);
 
-                // 1. Subscription Plan
+                // 1. Subscription Plans
                 if (!context.SubscriptionPlans.Any(p => p.Id == 1))
                 {
                     context.SubscriptionPlans.Add(new SubscriptionPlan
@@ -28,6 +28,38 @@ namespace BizFlow.Infrastructure.Persistence.Seeders
                         Price = 500000.00m,
                         DurationMonths = 12,
                         Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
+                        MaxOrdersPerMonth = null,
+                        Features = "[\"pos\",\"inventory\",\"reports\",\"ai\",\"tt88\",\"multi_store\"]",
+                        CreatedAt = createdAt
+                    });
+                }
+
+                if (!context.SubscriptionPlans.Any(p => p.Id == 2))
+                {
+                    context.SubscriptionPlans.Add(new SubscriptionPlan
+                    {
+                        Id = 2,
+                        Name = "Gói Miễn Phí",
+                        Price = 0,
+                        DurationMonths = 0,
+                        Description = "Quản lý bán hàng cơ bản, tối đa 50 đơn/tháng. Không bao gồm báo cáo thuế TT88 và Trợ lý AI.",
+                        MaxOrdersPerMonth = 50,
+                        Features = "[\"pos\",\"inventory\"]",
+                        CreatedAt = createdAt
+                    });
+                }
+
+                if (!context.SubscriptionPlans.Any(p => p.Id == 3))
+                {
+                    context.SubscriptionPlans.Add(new SubscriptionPlan
+                    {
+                        Id = 3,
+                        Name = "Gói Cơ Bản",
+                        Price = 150000.00m,
+                        DurationMonths = 1,
+                        Description = "Quản lý bán hàng nâng cao, tối đa 300 đơn/tháng. Bao gồm báo cáo doanh thu và theo dõi công nợ. Chưa bao gồm Trợ lý AI và báo cáo thuế TT88.",
+                        MaxOrdersPerMonth = 300,
+                        Features = "[\"pos\",\"inventory\",\"reports\",\"debt_tracking\"]",
                         CreatedAt = createdAt
                     });
                 }

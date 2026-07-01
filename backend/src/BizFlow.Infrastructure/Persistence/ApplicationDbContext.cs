@@ -39,6 +39,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TaxObligation> TaxObligations => Set<TaxObligation>();
     public DbSet<PayrollRecord> PayrollRecords => Set<PayrollRecord>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
+    public DbSet<AiRequestLog> AiRequestLogs => Set<AiRequestLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,9 +60,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("tenants");
             entity.Property(e => e.CogsMethod).HasDefaultValue(CogsMethod.WeightedAverage);
+            entity.Property(e => e.IsApproved).HasDefaultValue(true);
             entity.HasOne(e => e.SubscriptionPlan)
                 .WithMany(s => s.Tenants)
                 .HasForeignKey(e => e.SubscriptionPlanId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.PendingSubscriptionPlan)
+                .WithMany()
+                .HasForeignKey(e => e.PendingSubscriptionPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -272,7 +279,29 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 21. SystemConfig configurations
+        modelBuilder.Entity<SystemConfig>(entity =>
+        {
+            entity.ToTable("system_configs");
+            entity.HasKey(e => e.Key);
+        });
+
+        // 22. AiRequestLog configurations
+        modelBuilder.Entity<AiRequestLog>(entity =>
+        {
+            entity.ToTable("ai_request_logs");
+            entity.Property(e => e.Cost).HasPrecision(15, 6);
+            entity.HasOne(e => e.Tenant)
+                  .WithMany()
+                  .HasForeignKey(e => e.TenantId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ==========================================
@@ -298,6 +327,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<TaxObligation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AiRequestLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
 
 
 
