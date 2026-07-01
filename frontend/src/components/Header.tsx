@@ -11,8 +11,17 @@ interface HeaderProps {
 
 export default function Header({ showGreeting = true, title, subtitle }: HeaderProps) {
   const [time, setTime] = useState<Date | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("bizflow_user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+      }
+    } catch {}
+
     setTime(new Date());
     const interval = setInterval(() => {
       setTime(new Date());
@@ -38,10 +47,14 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
         {showGreeting ? (
           <>
             <h1 className="text-3xl font-bold text-on-surface tracking-tight flex items-center gap-2">
-              Xin chào, Chủ cửa hàng! <span className="animate-bounce">👋</span>
+              {userRole === "PlatformAdmin" ? "Xin chào, Quản trị viên!" :
+               userRole === "Employee" ? "Xin chào, Nhân viên!" :
+               "Xin chào, Chủ cửa hàng!"}
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Đây là tổng quan hoạt động kinh doanh của cửa hàng hôm nay.
+              {userRole === "PlatformAdmin" ? "Chào mừng quay trở lại trang quản trị hệ thống BizFlow." :
+               userRole === "Employee" ? "Hãy cùng tạo ra một ngày bán hàng tuyệt vời nhé!" :
+               "Đây là tổng quan hoạt động kinh doanh của cửa hàng hôm nay."}
             </p>
           </>
         ) : (
