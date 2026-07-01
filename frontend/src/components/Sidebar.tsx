@@ -132,6 +132,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           { id: "cashbook", label: "Sổ quỹ & Thu chi", icon: Banknote },
           { type: "header", label: "BÁO CÁO & CÀI ĐẶT" },
           { id: "reports", label: "Sổ sách Thuế (TT88)", icon: FileText },
+          { id: "owner-subscription", label: "Gói dịch vụ", icon: Gem },
           { id: "settings", label: "Cài đặt Cửa hàng", icon: Settings },
         ];
     }

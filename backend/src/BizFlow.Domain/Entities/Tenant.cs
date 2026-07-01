@@ -12,12 +12,15 @@ public class Tenant
     public string? Address { get; set; }
     public string? Phone { get; set; }
     public int? SubscriptionPlanId { get; set; }
+    public int? PendingSubscriptionPlanId { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsApproved { get; set; } = true;
     public BizFlow.Domain.Enums.CogsMethod CogsMethod { get; set; } = BizFlow.Domain.Enums.CogsMethod.WeightedAverage;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     public SubscriptionPlan? SubscriptionPlan { get; set; }
+    public SubscriptionPlan? PendingSubscriptionPlan { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<Category> Categories { get; set; } = new List<Category>();
     public ICollection<Product> Products { get; set; } = new List<Product>();

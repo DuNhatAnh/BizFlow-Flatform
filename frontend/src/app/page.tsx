@@ -20,6 +20,13 @@ import ToastNotification from "@/components/ToastNotification";
 import DebtManagement from "@/components/DebtManagement";
 import StoreSettings from "@/components/StoreSettings";
 import { parseDescriptionMetadata } from "@/utils/metadata";
+// Admin components
+import TenantsManagement from "@/components/Admin/TenantsManagement";
+import SubscriptionPlansManagement from "@/components/Admin/SubscriptionPlansManagement";
+import PlatformAnalytics from "@/components/Admin/PlatformAnalytics";
+import SystemConfigManager from "@/components/Admin/SystemConfigManager";
+import AiChatbotWidget from "@/components/AiChatbotWidget";
+import OwnerSubscription from "@/components/OwnerSubscription";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -719,22 +726,17 @@ export default function Home() {
     }
 
     // 1. ADMIN FLOW
-    if (user.username === "admin@bizflow.com") {
-      if (activeTab === "overview") {
-        return <AdminOverview />;
-      }
-      return (
-        <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
-          <h2 className="text-xl font-bold text-on-surface">Cấu hình chức năng hệ thống</h2>
-          <p className="text-sm text-on-surface-variant mt-2">
-            Trang cài đặt các cấu hình phân hệ SaaS Multi-tenant dành cho vai trò Quản trị viên tối cao (Platform Admin).
-          </p>
-        </div>
-      );
+    if (user.role === "PlatformAdmin") {
+      if (activeTab === "overview") return <AdminOverview />;
+      if (activeTab === "tenants") return <TenantsManagement />;
+      if (activeTab === "subscriptions") return <SubscriptionPlansManagement />;
+      if (activeTab === "analytics") return <PlatformAnalytics />;
+      if (activeTab === "tt88-config" || activeTab === "settings") return <SystemConfigManager />;
+      return <AdminOverview />;
     }
 
     // 2. EMPLOYEE FLOW
-    if (user.username === "employee@bizflow.com") {
+    if (user.role === "Employee") {
       if (activeTab === "pos") {
         return (
           <POS
@@ -864,6 +866,10 @@ export default function Home() {
       return <CashBook user={user} showToast={showToast} />;
     }
 
+    if (activeTab === "owner-subscription") {
+      return <OwnerSubscription />;
+    }
+
     return (
       <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
         <h2 className="text-xl font-bold text-on-surface">Tính năng đang phát triển</h2>
@@ -927,6 +933,11 @@ export default function Home() {
           title: "Hồ sơ cá nhân",
           subtitle: "Xem và cập nhật thông tin tài khoản cá nhân"
         };
+      case "owner-subscription":
+        return {
+          title: "Gói dịch vụ cửa hàng",
+          subtitle: "Xem thông tin gói hiện tại, so sánh quyền lợi và gửi yêu cầu nâng cấp gói dịch vụ"
+        };
       default:
         return { title: "", subtitle: "" };
     }
@@ -958,6 +969,9 @@ export default function Home() {
 
       {/* Custom sliding notification toast */}
       {toast && <ToastNotification message={toast.message} type={toast.type} />}
+
+      {/* Floating persistent AI chatbot widget - chỉ hiển thị với Owner */}
+      {user?.role === "Owner" && <AiChatbotWidget />}
     </div>
   );
 }

@@ -165,6 +165,13 @@ export default function LoginPage() {
               "Đăng nhập"
             )}
           </button>
+          
+          <div className="text-center mt-4 pt-1">
+            <span className="text-xs text-on-surface-variant">Chưa có tài khoản? </span>
+            <a href="/register" className="text-xs font-semibold text-primary hover:underline">
+              Đăng ký doanh nghiệp mới
+            </a>
+          </div>
         </form>
 
       </div>

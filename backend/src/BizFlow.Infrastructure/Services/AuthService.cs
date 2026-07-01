@@ -28,11 +28,17 @@ public class AuthService : IAuthService
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users
+            .Include(u => u.Tenant)
             .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
 
         if (user == null || !user.IsActive)
         {
             throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không đúng!");
+        }
+
+        if (user.Role != BizFlow.Domain.Enums.UserRole.Admin && user.Tenant != null && !user.Tenant.IsApproved)
+        {
+            throw new UnauthorizedAccessException("Tài khoản doanh nghiệp của bạn đang chờ quản trị viên phê duyệt.");
         }
 
         bool isPasswordValid = false;
@@ -61,6 +67,7 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateJwtToken(user);
+        var roleStr = user.Role == BizFlow.Domain.Enums.UserRole.Admin ? "PlatformAdmin" : user.Role.ToString();
 
         return new LoginResponse
         {
@@ -70,8 +77,8 @@ public class AuthService : IAuthService
                 Id = user.Id,
                 Username = user.Username,
                 Fullname = user.Fullname,
-                Role = user.Role.ToString(),
-                RoleName = GetRoleName(user.Role.ToString()),
+                Role = roleStr,
+                RoleName = GetRoleName(roleStr),
                 AvatarUrl = user.AvatarUrl,
                 TenantId = user.TenantId
             }
@@ -89,12 +96,13 @@ public class AuthService : IAuthService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var roleStr = user.Role == BizFlow.Domain.Enums.UserRole.Admin ? "PlatformAdmin" : user.Role.ToString();
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Username),
             new Claim("tenant_id", user.TenantId.ToString()),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(ClaimTypes.Role, roleStr),
             new Claim("fullname", user.Fullname)
         };
 
@@ -114,13 +122,14 @@ public class AuthService : IAuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) throw new UnauthorizedAccessException("Không tìm thấy người dùng");
 
+        var roleStr = user.Role == BizFlow.Domain.Enums.UserRole.Admin ? "PlatformAdmin" : user.Role.ToString();
         return new UserProfileResponse
         {
             Id = user.Id,
             Username = user.Username,
             Fullname = user.Fullname,
-            Role = user.Role.ToString(),
-            RoleName = GetRoleName(user.Role.ToString()),
+            Role = roleStr,
+            RoleName = GetRoleName(roleStr),
             TenantId = user.TenantId,
             Phone = user.Phone,
             IdentityCard = user.IdentityCard,
@@ -184,6 +193,7 @@ public class AuthService : IAuthService
         return role switch
         {
             "PlatformAdmin" => "Quản trị viên hệ thống",
+            "Admin" => "Quản trị viên hệ thống",
             "Owner" => "Chủ cửa hàng",
             "Manager" => "Quản lý",
             "Employee" => "Nhân viên",
