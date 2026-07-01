@@ -7,10 +7,15 @@ namespace BizFlow.Infrastructure.Persistence;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    private readonly ICurrentTenantService? _tenantService;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentTenantService? tenantService = null)
         : base(options)
     {
+        _tenantService = tenantService;
     }
+
+    public Guid? CurrentTenantId => _tenantService?.TenantId;
 
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -52,6 +57,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Tenant>(entity =>
         {
             entity.ToTable("tenants");
+            entity.Property(e => e.CogsMethod).HasDefaultValue(CogsMethod.WeightedAverage);
             entity.HasOne(e => e.SubscriptionPlan)
                 .WithMany(s => s.Tenants)
                 .HasForeignKey(e => e.SubscriptionPlanId)
@@ -62,6 +68,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Store>(entity =>
         {
             entity.ToTable("stores");
+            entity.Property(e => e.EnableVat).HasDefaultValue(false);
+            entity.Property(e => e.DefaultVatRate).HasDefaultValue("10");
+            entity.Property(e => e.AvailableVatRates).HasDefaultValue("0,5,8,8.5,10,KCT");
+            entity.HasIndex(e => e.TenantId);
             entity.HasOne(e => e.Tenant)
                   .WithMany(t => t.Stores)
                   .HasForeignKey(e => e.TenantId)
@@ -72,7 +82,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
-            entity.HasIndex(e => new { e.TenantId, e.Username }).IsUnique();
+            entity.HasIndex(e => e.Username).IsUnique();
             entity.Property(e => e.Role).HasConversion<string>();
         });
 
@@ -90,6 +100,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Product>(entity =>
         {
             entity.ToTable("products");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.VatRate).HasDefaultValue("10");
+            entity.Property(e => e.PriceIncludesVat).HasDefaultValue(true);
         });
 
         // 6. ProductUnit configurations
@@ -114,6 +128,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("inventory_transactions");
             entity.Property(e => e.Type).HasConversion<string>();
+            entity.Property(e => e.Quantity).HasPrecision(15, 4);
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 4).HasDefaultValue(0m);
+            entity.Property(e => e.PriceType).HasDefaultValue(InventoryPriceType.CostPrice);
             entity.HasOne(e => e.Creator)
                 .WithMany()
                 .HasForeignKey(e => e.CreatedBy)
@@ -125,6 +142,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("customers");
             entity.Property(e => e.TotalDebt).HasPrecision(15, 2);
+            entity.Property(e => e.DebtLimit).HasPrecision(15, 2).HasDefaultValue(10000000.00m);
         });
 
         // 9. Order configurations
@@ -132,6 +150,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("orders");
             entity.Property(e => e.TotalAmount).HasPrecision(15, 2);
+            entity.Property(e => e.TotalVatAmount).HasPrecision(18, 2).HasDefaultValue(0.00m);
             entity.Property(e => e.PaymentMethod).HasConversion<string>();
             entity.Property(e => e.Status).HasConversion<string>();
             entity.Property(e => e.OrderSource).HasConversion<string>();
@@ -145,8 +164,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<OrderItem>(entity =>
         {
             entity.ToTable("order_items");
+            entity.Property(e => e.Quantity).HasPrecision(15, 4);
             entity.Property(e => e.UnitPrice).HasPrecision(15, 2);
             entity.Property(e => e.TotalPrice).HasPrecision(15, 2);
+            entity.Property(e => e.VatAmount).HasPrecision(18, 2).HasDefaultValue(0.00m);
         });
 
         // 11. DebtTransaction configurations
@@ -170,8 +191,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<InventoryReceipt>(entity =>
         {
             entity.ToTable("inventory_receipts");
+            entity.HasIndex(e => e.TenantId);
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.TotalAmount).HasPrecision(15, 2);
+            entity.Property(e => e.TotalVatAmount).HasPrecision(18, 2).HasDefaultValue(0.00m);
+            entity.Property(e => e.Status).HasDefaultValue(DocumentStatus.Completed);
             
             entity.HasOne(e => e.Creator)
                 .WithMany()
@@ -182,15 +206,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<InventoryReceiptDetail>(entity =>
         {
             entity.ToTable("inventory_receipt_details");
+            entity.Property(e => e.DocumentQuantity).HasPrecision(18, 4).HasDefaultValue(0m);
             entity.Property(e => e.Quantity).HasPrecision(18, 4);
             entity.Property(e => e.UnitPrice).HasPrecision(15, 2);
             entity.Property(e => e.TotalPrice).HasPrecision(15, 2);
+            entity.Property(e => e.VatAmount).HasPrecision(18, 2).HasDefaultValue(0.00m);
         });
 
         // 15. AccountingLedgerS2 configurations
         modelBuilder.Entity<AccountingLedgerS2>(entity =>
         {
             entity.ToTable("accounting_ledger_s2");
+            entity.HasIndex(e => new { e.TenantId, e.ProductId, e.Date }).IsDescending(false, false, true);
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.QuantityIn).HasPrecision(18, 4);
             entity.Property(e => e.ValueIn).HasPrecision(15, 2);
@@ -204,9 +231,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<CashTransaction>(entity =>
         {
             entity.ToTable("cash_transactions");
+            entity.HasIndex(e => e.TenantId);
             entity.Property(e => e.Amount).HasPrecision(15, 2);
             entity.Property(e => e.Type).HasConversion<string>();
-            entity.Property(e => e.PaymentMethod).HasConversion<string>();
+            entity.Property(e => e.PaymentMethod).HasConversion<string>().HasDefaultValue(PaymentMethod.Cash);
         });
 
         // 17. ExpenseRecord configurations
@@ -240,100 +268,39 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<AuditLog>(entity =>
         {
             entity.ToTable("audit_logs");
+            entity.HasIndex(e => e.TenantId);
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Seed default subscription plan
-        modelBuilder.Entity<SubscriptionPlan>().HasData(
-            new SubscriptionPlan
-            {
-                Id = 1,
-                Name = "Gói Chuyên Nghiệp",
-                Price = 500000.00m,
-                DurationMonths = 12,
-                Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            }
-        );
+        // ==========================================
+        // GLOBAL QUERY FILTERS FOR TENANT ISOLATION
+        // ==========================================
+        modelBuilder.Entity<Store>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<User>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Category>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Product>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        // ProductUnit does not have TenantId
+        modelBuilder.Entity<ProductHistory>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Customer>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Order>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        // OrderItem does not have TenantId
+        modelBuilder.Entity<DebtTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AccountingEntry>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<InventoryReceipt>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        // InventoryReceiptDetail does not have TenantId
+        modelBuilder.Entity<AccountingLedgerS2>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<CashTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ExpenseRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TaxObligation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
 
-        // Seed default tenants
-        var systemTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
 
-        modelBuilder.Entity<Tenant>().HasData(
-            new Tenant
-            {
-                Id = systemTenantId,
-                Name = "BizFlow System Tenant",
-                OwnerName = "System Admin",
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            },
-            new Tenant
-            {
-                Id = storeTenantId,
-                Name = "Cửa Hàng Tạp Hóa Bình Minh",
-                OwnerName = "Nguyễn Văn A",
-                SubscriptionPlanId = 1,
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            }
-        );
-
-        // Seed default store
-        modelBuilder.Entity<Store>().HasData(
-            new Store
-            {
-                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                TenantId = storeTenantId,
-                Name = "Cửa Hàng Tạp Hóa Bình Minh (CN1)",
-                Address = "123 Đường Số 1, Quận 1, TP.HCM",
-                Phone = "0901234567",
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            }
-        );
-
-        // Seed default users (Admin, Owner, Employee)
-        modelBuilder.Entity<User>().HasData(
-            new User
-            {
-                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-111122223333"),
-                TenantId = systemTenantId,
-                Username = "admin@bizflow.com",
-                PasswordHash = "admin123", // In a real app, hash this password (e.g. BCrypt)
-                Fullname = "Quản Trị Viên Hệ Thống",
-                Role = UserRole.Admin,
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            },
-            new User
-            {
-                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-444455556666"),
-                TenantId = storeTenantId,
-                Username = "owner@bizflow.com",
-                PasswordHash = "owner123",
-                Fullname = "Nguyễn Văn A",
-                Role = UserRole.Owner,
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            },
-            new User
-            {
-                Id = Guid.Parse("aaaabbbb-cccc-dddd-eeee-777788889999"),
-                TenantId = storeTenantId,
-                Username = "employee@bizflow.com",
-                PasswordHash = "employee123",
-                Fullname = "Trần Thị B",
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, DateTimeKind.Utc)
-            }
-        );
 
 
     }

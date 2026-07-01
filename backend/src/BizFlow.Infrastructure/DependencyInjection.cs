@@ -26,6 +26,8 @@ public static class DependencyInjection
         services.AddScoped<ICashService, BizFlow.Infrastructure.Services.CashService>();
         services.AddScoped<IPayrollService, BizFlow.Infrastructure.Services.PayrollService>();
         services.AddScoped<IStoreService, BizFlow.Infrastructure.Services.StoreService>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentTenantService, BizFlow.Infrastructure.Services.CurrentTenantService>();
 
 
         // Register Redis Cache

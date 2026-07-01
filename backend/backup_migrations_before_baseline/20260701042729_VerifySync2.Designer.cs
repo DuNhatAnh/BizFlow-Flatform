@@ -3,6 +3,7 @@ using System;
 using BizFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BizFlow.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701042729_VerifySync2")]
+    partial class VerifySync2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -881,6 +884,21 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("stores", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Address = "123 Đường Số 1, Quận 1, TP.HCM",
+                            AvailableVatRates = "0,5,8,8.5,10,KCT",
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DefaultVatRate = "10",
+                            EnableVat = false,
+                            IsActive = true,
+                            Name = "Cửa Hàng Tạp Hóa Bình Minh (CN1)",
+                            Phone = "0901234567",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.SubscriptionPlan", b =>
@@ -911,6 +929,17 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("subscription_plans", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
+                            DurationMonths = 12,
+                            Name = "Gói Chuyên Nghiệp",
+                            Price = 500000.00m
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.TaxObligation", b =>
@@ -998,6 +1027,27 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("SubscriptionPlanId");
 
                     b.ToTable("tenants", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            CogsMethod = 0,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "BizFlow System Tenant",
+                            OwnerName = "System Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CogsMethod = 0,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Cửa Hàng Tạp Hóa Bình Minh",
+                            OwnerName = "Nguyễn Văn A",
+                            SubscriptionPlanId = 1
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.User", b =>
@@ -1075,6 +1125,41 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-111122223333"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Quản Trị Viên Hệ Thống",
+                            IsActive = true,
+                            PasswordHash = "admin123",
+                            Role = "Admin",
+                            TenantId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Username = "admin@bizflow.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-444455556666"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Nguyễn Văn A",
+                            IsActive = true,
+                            PasswordHash = "owner123",
+                            Role = "Owner",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Username = "owner@bizflow.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-777788889999"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Trần Thị B",
+                            IsActive = true,
+                            PasswordHash = "employee123",
+                            Role = "Employee",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Username = "employee@bizflow.com"
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.AccountingEntry", b =>

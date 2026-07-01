@@ -28,6 +28,7 @@ public class OrderServiceTests
         public Task<BizFlow.Application.DTOs.Inventory.S2LedgerReportDto> GetS2LedgerAsync(Guid tenantId, Guid productId, DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10) => Task.FromResult(new BizFlow.Application.DTOs.Inventory.S2LedgerReportDto());
         public Task RecordExportForOrderAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task RecordImportForReturnAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<decimal> GetCostPriceAsync(Guid tenantId, Guid productId) => Task.FromResult(0m);
     }
 
     // A subclass of ApplicationDbContext to simulate database failures during SaveChangesAsync

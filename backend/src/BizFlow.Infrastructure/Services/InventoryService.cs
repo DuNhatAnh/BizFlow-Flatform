@@ -406,8 +406,8 @@ public class InventoryService : IInventoryService
 
     public async Task RecordExportForOrderAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default)
     {
-        var tenant = await _context.Tenants.FindAsync(tenantId);
-        var product = await _context.Products.FindAsync(productId);
+        var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId);
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         
         if (tenant == null || product == null) return;
 
@@ -450,8 +450,8 @@ public class InventoryService : IInventoryService
 
     public async Task RecordImportForReturnAsync(Guid tenantId, Guid orderId, Guid productId, decimal quantity, string description, CancellationToken cancellationToken = default)
     {
-        var tenant = await _context.Tenants.FindAsync(tenantId);
-        var product = await _context.Products.FindAsync(productId);
+        var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId);
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         
         if (tenant == null || product == null) return;
 

@@ -3,6 +3,7 @@ using System;
 using BizFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BizFlow.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701025055_AddMissingTenantIndexes")]
+    partial class AddMissingTenantIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -181,9 +184,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("Cash");
+                        .HasColumnType("text");
 
                     b.Property<string>("Reason")
                         .HasColumnType("text");
@@ -258,10 +259,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("DebtLimit")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(15, 2)
-                        .HasColumnType("numeric(15,2)")
-                        .HasDefaultValue(10000000.00m);
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Fullname")
                         .IsRequired()
@@ -401,9 +399,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -413,10 +409,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(15,2)");
 
                     b.Property<decimal>("TotalVatAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0.00m);
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -441,10 +434,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("DocumentQuantity")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasDefaultValue(0m);
+                        .HasColumnType("numeric");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
@@ -465,10 +455,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(15,2)");
 
                     b.Property<decimal>("VatAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0.00m);
+                        .HasColumnType("numeric");
 
                     b.Property<string>("VatRate")
                         .HasColumnType("text");
@@ -498,16 +485,13 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("PriceType")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(15, 4)
-                        .HasColumnType("numeric(15,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -517,10 +501,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<decimal>("UnitPrice")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasDefaultValue(0m);
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
@@ -577,10 +558,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(15,2)");
 
                     b.Property<decimal>("TotalVatAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0.00m);
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
@@ -611,8 +589,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(15, 4)
-                        .HasColumnType("numeric(15,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(15, 2)
@@ -623,10 +600,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(15,2)");
 
                     b.Property<decimal>("VatAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0.00m);
+                        .HasColumnType("numeric");
 
                     b.Property<string>("VatRate")
                         .HasColumnType("text");
@@ -720,23 +694,17 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("PriceIncludesVat")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasColumnType("boolean");
 
                     b.Property<decimal>("StockQuantity")
                         .HasColumnType("numeric");
@@ -746,9 +714,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("VatRate")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("10");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -836,26 +802,20 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("AvailableVatRates")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("0,5,8,8.5,10,KCT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DefaultVatRate")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("10");
+                        .HasColumnType("text");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
 
                     b.Property<bool>("EnableVat")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -881,6 +841,21 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("stores", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Address = "123 Đường Số 1, Quận 1, TP.HCM",
+                            AvailableVatRates = "0,5,8,8.5,10,KCT",
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DefaultVatRate = "10",
+                            EnableVat = false,
+                            IsActive = true,
+                            Name = "Cửa Hàng Tạp Hóa Bình Minh (CN1)",
+                            Phone = "0901234567",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111")
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.SubscriptionPlan", b =>
@@ -911,6 +886,17 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("subscription_plans", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
+                            DurationMonths = 12,
+                            Name = "Gói Chuyên Nghiệp",
+                            Price = 500000.00m
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.TaxObligation", b =>
@@ -966,9 +952,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("CogsMethod")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -998,6 +982,27 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("SubscriptionPlanId");
 
                     b.ToTable("tenants", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            CogsMethod = 0,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "BizFlow System Tenant",
+                            OwnerName = "System Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CogsMethod = 0,
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Cửa Hàng Tạp Hóa Bình Minh",
+                            OwnerName = "Nguyễn Văn A",
+                            SubscriptionPlanId = 1
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.User", b =>
@@ -1075,6 +1080,41 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-111122223333"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Quản Trị Viên Hệ Thống",
+                            IsActive = true,
+                            PasswordHash = "admin123",
+                            Role = "Admin",
+                            TenantId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Username = "admin@bizflow.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-444455556666"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Nguyễn Văn A",
+                            IsActive = true,
+                            PasswordHash = "owner123",
+                            Role = "Owner",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Username = "owner@bizflow.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaabbbb-cccc-dddd-eeee-777788889999"),
+                            CreatedAt = new DateTime(2026, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Fullname = "Trần Thị B",
+                            IsActive = true,
+                            PasswordHash = "employee123",
+                            Role = "Employee",
+                            TenantId = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Username = "employee@bizflow.com"
+                        });
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.AccountingEntry", b =>
