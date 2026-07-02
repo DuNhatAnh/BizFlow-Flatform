@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using BizFlow.Application.DTOs.Staff;
 using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Common.Interfaces;
-using BizFlow.Application.DTOs.Staff;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BizFlow.WebApi.Controllers;
 
@@ -22,8 +22,6 @@ public class StaffController : ControllerBase
         _staffService = staffService;
     }
 
-    // Helper method to get TenantId from request headers or claims.
-    // In a real app, this should be handled by an authorization middleware/filter.
     private Guid GetTenantId()
     {
         if (Request.Headers.TryGetValue("X-Tenant-Id", out var tenantIdStr) && Guid.TryParse(tenantIdStr, out var tenantId))
@@ -33,23 +31,47 @@ public class StaffController : ControllerBase
         throw new UnauthorizedAccessException("Tenant ID is missing.");
     }
 
-    [HttpGet]
-    public async Task<ActionResult<PagedResult<StaffDto>>> GetStaffMembers(
+    [HttpGet("basic")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
+    public async Task<ActionResult<PagedResult<PublicStaffDto>>> GetStaffBasic(
         [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
         var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        try {
-            var staff = await _staffService.GetStaffMembersAsync(id, page, pageSize, search);
-            return Ok(staff);
-        } catch (Exception ex) {
-            return Ok(new { error = ex.Message });
-        }
+        var staff = await _staffService.GetStaffBasicAsync(id, page, pageSize, search);
+        return Ok(staff);
+    }
+
+    [HttpGet("detail")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
+    public async Task<ActionResult<PagedResult<StaffDetailDto>>> GetStaffDetail(
+        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
+    {
+        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var staff = await _staffService.GetStaffDetailAsync(id, page, pageSize, search);
+        return Ok(staff);
+    }
+
+    [HttpGet("payroll")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.PayrollRead)]
+    public async Task<ActionResult<PagedResult<StaffPayrollDto>>> GetStaffPayroll(
+        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
+    {
+        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var staff = await _staffService.GetStaffPayrollAsync(id, page, pageSize, search);
+        return Ok(staff);
     }
 
     [HttpGet("debug-all")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
     public async Task<ActionResult> GetAllUsers([FromServices] BizFlow.Application.Common.Interfaces.IApplicationDbContext dbContext)
     {
         var allUsers = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(dbContext.Users);
@@ -57,13 +79,14 @@ public class StaffController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<StaffDto>> CreateStaff([FromBody] CreateStaffRequest request)
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffManage)]
+    public async Task<ActionResult<StaffPayrollDto>> CreateStaff([FromBody] CreateStaffRequest request)
     {
         try
         {
             var tenantId = GetTenantId();
             var staff = await _staffService.CreateStaffAsync(tenantId, request);
-            return CreatedAtAction(nameof(GetStaffMembers), new { id = staff.Id }, staff);
+            return CreatedAtAction(nameof(GetStaffDetail), new { }, staff);
         }
         catch (Exception ex)
         {
@@ -72,6 +95,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpPut("{id}/toggle-status")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffManage)]
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var tenantId = GetTenantId();
@@ -81,6 +105,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpPut("{id}/reset-password")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffManage)]
     public async Task<IActionResult> ResetPassword(Guid id, [FromBody] string newPassword)
     {
         var tenantId = GetTenantId();
@@ -90,7 +115,8 @@ public class StaffController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<StaffDto>> UpdateStaff(Guid id, [FromBody] UpdateStaffRequest request)
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffManage)]
+    public async Task<ActionResult<StaffPayrollDto>> UpdateStaff(Guid id, [FromBody] UpdateStaffRequest request)
     {
         try
         {
@@ -105,6 +131,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpGet("{id}/audit-logs")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffManage)]
     public async Task<ActionResult<IEnumerable<AuditLogDto>>> GetAuditLogs(Guid id)
     {
         var tenantId = GetTenantId();

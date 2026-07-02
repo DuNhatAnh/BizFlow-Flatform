@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.DTOs.Payroll;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BizFlow.WebApi.Controllers;
 
@@ -29,6 +30,7 @@ public class PayrollController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.PayrollRead)]
     public async Task<ActionResult<PagedResult<PayrollDto>>> GetPayrollRecords(
         [FromQuery] int year,
         [FromQuery] int month,
@@ -48,6 +50,7 @@ public class PayrollController : ControllerBase
     }
 
     [HttpPost("generate")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.PayrollManage)]
     public async Task<ActionResult<IEnumerable<PayrollDto>>> GeneratePayroll([FromQuery] int year, [FromQuery] int month)
     {
         try

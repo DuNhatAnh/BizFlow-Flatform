@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BizFlow.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Staff;
@@ -20,57 +21,69 @@ public class StaffService : IStaffService
         _context = context;
     }
 
-    public async Task<PagedResult<StaffDto>> GetStaffMembersAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
+    public async Task<PagedResult<PublicStaffDto>> GetStaffBasicAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
     {
-        var query = _context.Users
-            .Include(u => u.EmployeeProfile)
-            .Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
-
+        var query = _context.Users.Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var lowerTerm = searchTerm.ToLower();
             query = query.Where(u => u.Username.ToLower().Contains(lowerTerm) || u.Fullname.ToLower().Contains(lowerTerm));
         }
-
         var totalCount = await query.CountAsync();
+        var staffEntities = await query.OrderByDescending(u => u.CreatedAt).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        var staffEntities = await query
-            .OrderByDescending(u => u.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        var staff = staffEntities.Select(u => new StaffDto
+        var items = staffEntities.Select(u => new PublicStaffDto
         {
-            Id = u.Id,
-            Username = u.Username,
-            Fullname = u.Fullname,
-            Role = u.Role.ToString(),
-            IsActive = u.IsActive,
-            Phone = u.Phone,
-            IdentityCard = u.EmployeeProfile?.IdentityCard,
-            DateOfBirth = u.EmployeeProfile?.DateOfBirth,
-            JoinDate = u.EmployeeProfile?.JoinDate,
-            CreatedAt = u.CreatedAt,
-            SocialInsuranceNo = u.EmployeeProfile?.SocialInsuranceNo,
-            HealthInsuranceNo = u.EmployeeProfile?.HealthInsuranceNo,
-            PersonalTaxCode = u.EmployeeProfile?.PersonalTaxCode,
-            BasicSalary = u.EmployeeProfile?.BasicSalary,
-            BankAccountNumber = u.EmployeeProfile?.BankAccountNumber,
-            BankName = u.EmployeeProfile?.BankName,
-            NumberOfDependents = u.EmployeeProfile?.NumberOfDependents
+            Id = u.Id, Username = u.Username, Fullname = u.Fullname, Role = u.Role.ToString(), IsActive = u.IsActive, Phone = u.Phone, AvatarUrl = u.AvatarUrl, CreatedAt = u.CreatedAt
         }).ToList();
 
-        return new PagedResult<StaffDto>
-        {
-            Items = staff,
-            TotalCount = totalCount,
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        };
+        return new PagedResult<PublicStaffDto> { Items = items, TotalCount = totalCount, PageNumber = pageNumber, PageSize = pageSize };
     }
 
-    public async Task<StaffDto> CreateStaffAsync(Guid tenantId, CreateStaffRequest request)
+    public async Task<PagedResult<StaffDetailDto>> GetStaffDetailAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
+    {
+        var query = _context.Users.Include(u => u.EmployeeProfile).Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerTerm = searchTerm.ToLower();
+            query = query.Where(u => u.Username.ToLower().Contains(lowerTerm) || u.Fullname.ToLower().Contains(lowerTerm));
+        }
+        var totalCount = await query.CountAsync();
+        var staffEntities = await query.OrderByDescending(u => u.CreatedAt).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = staffEntities.Select(u => new StaffDetailDto
+        {
+            Id = u.Id, Username = u.Username, Fullname = u.Fullname, Role = u.Role.ToString(), IsActive = u.IsActive, Phone = u.Phone, AvatarUrl = u.AvatarUrl, CreatedAt = u.CreatedAt,
+            IdentityCard = u.EmployeeProfile?.IdentityCard, DateOfBirth = u.EmployeeProfile?.DateOfBirth, JoinDate = u.EmployeeProfile?.JoinDate,
+            SocialInsuranceNo = u.EmployeeProfile?.SocialInsuranceNo, HealthInsuranceNo = u.EmployeeProfile?.HealthInsuranceNo, NumberOfDependents = u.EmployeeProfile?.NumberOfDependents
+        }).ToList();
+
+        return new PagedResult<StaffDetailDto> { Items = items, TotalCount = totalCount, PageNumber = pageNumber, PageSize = pageSize };
+    }
+
+    public async Task<PagedResult<StaffPayrollDto>> GetStaffPayrollAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
+    {
+        var query = _context.Users.Include(u => u.EmployeeProfile).Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerTerm = searchTerm.ToLower();
+            query = query.Where(u => u.Username.ToLower().Contains(lowerTerm) || u.Fullname.ToLower().Contains(lowerTerm));
+        }
+        var totalCount = await query.CountAsync();
+        var staffEntities = await query.OrderByDescending(u => u.CreatedAt).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = staffEntities.Select(u => new StaffPayrollDto
+        {
+            Id = u.Id, Username = u.Username, Fullname = u.Fullname, Role = u.Role.ToString(), IsActive = u.IsActive, Phone = u.Phone, AvatarUrl = u.AvatarUrl, CreatedAt = u.CreatedAt,
+            IdentityCard = u.EmployeeProfile?.IdentityCard, DateOfBirth = u.EmployeeProfile?.DateOfBirth, JoinDate = u.EmployeeProfile?.JoinDate,
+            SocialInsuranceNo = u.EmployeeProfile?.SocialInsuranceNo, HealthInsuranceNo = u.EmployeeProfile?.HealthInsuranceNo, NumberOfDependents = u.EmployeeProfile?.NumberOfDependents,
+            PersonalTaxCode = u.EmployeeProfile?.PersonalTaxCode, BasicSalary = u.EmployeeProfile?.BasicSalary, BankAccountNumber = u.EmployeeProfile?.BankAccountNumber, BankName = u.EmployeeProfile?.BankName
+        }).ToList();
+
+        return new PagedResult<StaffPayrollDto> { Items = items, TotalCount = totalCount, PageNumber = pageNumber, PageSize = pageSize };
+    }
+
+    public async Task<StaffPayrollDto> CreateStaffAsync(Guid tenantId, CreateStaffRequest request)
     {
         if (request.Password.Length < 6)
             throw new Exception("Mật khẩu quá ngắn, yêu cầu ít nhất 6 ký tự.");
@@ -137,26 +150,7 @@ public class StaffService : IStaffService
 
         await _context.SaveChangesAsync();
 
-        return new StaffDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Fullname = user.Fullname,
-            Role = user.Role.ToString(),
-            IsActive = user.IsActive,
-            Phone = user.Phone,
-            IdentityCard = user.EmployeeProfile?.IdentityCard,
-            DateOfBirth = user.EmployeeProfile?.DateOfBirth,
-            JoinDate = user.EmployeeProfile?.JoinDate,
-            CreatedAt = user.CreatedAt,
-            SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo,
-            HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo,
-            PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode,
-            BasicSalary = user.EmployeeProfile?.BasicSalary,
-            BankAccountNumber = user.EmployeeProfile?.BankAccountNumber,
-            BankName = user.EmployeeProfile?.BankName,
-            NumberOfDependents = user.EmployeeProfile?.NumberOfDependents
-        };
+        return new StaffPayrollDto { Id = user.Id, Username = user.Username, Fullname = user.Fullname, Role = user.Role.ToString(), IsActive = user.IsActive, Phone = user.Phone, AvatarUrl = user.AvatarUrl, CreatedAt = user.CreatedAt, IdentityCard = user.EmployeeProfile?.IdentityCard, DateOfBirth = user.EmployeeProfile?.DateOfBirth, JoinDate = user.EmployeeProfile?.JoinDate, SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo, HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo, NumberOfDependents = user.EmployeeProfile?.NumberOfDependents, PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode, BasicSalary = user.EmployeeProfile?.BasicSalary, BankAccountNumber = user.EmployeeProfile?.BankAccountNumber, BankName = user.EmployeeProfile?.BankName };
     }
 
     public async Task<bool> ToggleStaffStatusAsync(Guid tenantId, Guid staffId)
@@ -202,7 +196,7 @@ public class StaffService : IStaffService
             .ToListAsync();
     }
 
-    public async Task<StaffDto> UpdateStaffAsync(Guid tenantId, Guid staffId, UpdateStaffRequest request)
+    public async Task<StaffPayrollDto> UpdateStaffAsync(Guid tenantId, Guid staffId, UpdateStaffRequest request)
     {
         var user = await _context.Users
             .Include(u => u.EmployeeProfile)
@@ -261,25 +255,6 @@ public class StaffService : IStaffService
 
         await _context.SaveChangesAsync();
 
-        return new StaffDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Fullname = user.Fullname,
-            Role = user.Role.ToString(),
-            IsActive = user.IsActive,
-            Phone = user.Phone,
-            IdentityCard = user.EmployeeProfile?.IdentityCard,
-            DateOfBirth = user.EmployeeProfile?.DateOfBirth,
-            JoinDate = user.EmployeeProfile?.JoinDate,
-            CreatedAt = user.CreatedAt,
-            SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo,
-            HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo,
-            PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode,
-            BasicSalary = user.EmployeeProfile?.BasicSalary,
-            BankAccountNumber = user.EmployeeProfile?.BankAccountNumber,
-            BankName = user.EmployeeProfile?.BankName,
-            NumberOfDependents = user.EmployeeProfile?.NumberOfDependents
-        };
+        return new StaffPayrollDto { Id = user.Id, Username = user.Username, Fullname = user.Fullname, Role = user.Role.ToString(), IsActive = user.IsActive, Phone = user.Phone, AvatarUrl = user.AvatarUrl, CreatedAt = user.CreatedAt, IdentityCard = user.EmployeeProfile?.IdentityCard, DateOfBirth = user.EmployeeProfile?.DateOfBirth, JoinDate = user.EmployeeProfile?.JoinDate, SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo, HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo, NumberOfDependents = user.EmployeeProfile?.NumberOfDependents, PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode, BasicSalary = user.EmployeeProfile?.BasicSalary, BankAccountNumber = user.EmployeeProfile?.BankAccountNumber, BankName = user.EmployeeProfile?.BankName };
     }
 }

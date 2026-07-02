@@ -59,6 +59,42 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("subscription_plans");
             entity.Property(e => e.Price).HasPrecision(15, 2);
+
+            entity.HasData(
+                new SubscriptionPlan
+                {
+                    Id = 1,
+                    Name = "Gói Chuyên Nghiệp",
+                    Price = 500000.00m,
+                    DurationMonths = 1,
+                    Description = "Đầy đủ các chức năng quản lý, báo cáo thuế TT88 và Trợ lý AI",
+                    MaxOrdersPerMonth = null,
+                    Features = "[\"pos\",\"inventory\",\"reports\",\"ai\",\"tt88\",\"multi_store\"]",
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new SubscriptionPlan
+                {
+                    Id = 2,
+                    Name = "Gói Miễn Phí",
+                    Price = 0m,
+                    DurationMonths = 0,
+                    Description = "Quản lý bán hàng cơ bản, tối đa 50 đơn/tháng. Không bao gồm báo cáo thuế TT88 và Trợ lý AI.",
+                    MaxOrdersPerMonth = 50,
+                    Features = "[\"pos\",\"inventory\"]",
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new SubscriptionPlan
+                {
+                    Id = 3,
+                    Name = "Gói Cơ Bản",
+                    Price = 150000.00m,
+                    DurationMonths = 1,
+                    Description = "Quản lý bán hàng nâng cao, tối đa 300 đơn/tháng. Bao gồm báo cáo doanh thu và theo dõi công nợ. Chưa bao gồm Trợ lý AI và báo cáo thuế TT88.",
+                    MaxOrdersPerMonth = 300,
+                    Features = "[\"pos\",\"inventory\",\"reports\",\"debt_tracking\"]",
+                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         });
 
         // 2. Tenant configurations

@@ -4,6 +4,8 @@ using BizFlow.Application.Common.Interfaces;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace BizFlow.WebApi.Controllers;
 
 public class CustomersController : ApiControllerBase
@@ -29,6 +31,7 @@ public class CustomersController : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.CustomersManage)]
     public async Task<ActionResult<Customer>> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
         if (string.IsNullOrEmpty(request.Fullname))

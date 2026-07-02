@@ -6,6 +6,8 @@ using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace BizFlow.WebApi.Controllers;
 
 public class OrdersController : ApiControllerBase
@@ -22,6 +24,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
     public async Task<ActionResult<IEnumerable<Order>>> GetOrders([FromQuery] Guid tenantId, [FromQuery] string? dateStr, [FromQuery] string? sourceStr, [FromQuery] Guid? createdBy)
     {
         var query = _context.Orders
@@ -90,6 +93,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersCreate)]
     public async Task<ActionResult<Order>> CreateOrder([FromBody] [ValidateNever] Order order)
     {
         try
@@ -138,6 +142,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpGet("drafts")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
     public async Task<ActionResult<IEnumerable<Order>>> GetDrafts([FromQuery] Guid tenantId)
     {
         return await _context.Orders
@@ -280,6 +285,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
     public async Task<ActionResult<Order>> GetOrderById(Guid id, [FromQuery] Guid tenantId)
     {
         var order = await _context.Orders

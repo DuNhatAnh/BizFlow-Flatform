@@ -4,6 +4,8 @@ using BizFlow.Application.DTOs.Products;
 using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace BizFlow.WebApi.Controllers;
 
 public class ProductsController : ApiControllerBase
@@ -18,6 +20,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
     public async Task<ActionResult<PagedResult<ProductDto>>> GetProducts(
         [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
@@ -34,6 +37,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
     public async Task<ActionResult<ProductDto>> GetProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
@@ -45,6 +49,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
     public async Task<ActionResult<ProductDto>> CreateProduct([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] CreateProductRequest request)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
@@ -62,6 +67,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
     public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] UpdateProductRequest request)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
@@ -93,6 +99,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
     public async Task<ActionResult> DeleteProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
@@ -113,6 +120,7 @@ public class ProductsController : ApiControllerBase
     }
 
     [HttpGet("{id}/history")]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
     public async Task<ActionResult<List<ProductHistoryDto>>> GetProductHistory(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
     {
         if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
