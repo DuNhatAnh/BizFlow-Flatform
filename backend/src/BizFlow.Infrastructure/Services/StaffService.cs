@@ -23,6 +23,7 @@ public class StaffService : IStaffService
     public async Task<PagedResult<StaffDto>> GetStaffMembersAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
     {
         var query = _context.Users
+            .Include(u => u.EmployeeProfile)
             .Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee);
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -47,17 +48,17 @@ public class StaffService : IStaffService
             Role = u.Role.ToString(),
             IsActive = u.IsActive,
             Phone = u.Phone,
-            IdentityCard = u.IdentityCard,
-            DateOfBirth = u.DateOfBirth,
-            JoinDate = u.JoinDate,
+            IdentityCard = u.EmployeeProfile?.IdentityCard,
+            DateOfBirth = u.EmployeeProfile?.DateOfBirth,
+            JoinDate = u.EmployeeProfile?.JoinDate,
             CreatedAt = u.CreatedAt,
-            SocialInsuranceNo = u.SocialInsuranceNo,
-            HealthInsuranceNo = u.HealthInsuranceNo,
-            PersonalTaxCode = u.PersonalTaxCode,
-            BasicSalary = u.BasicSalary,
-            BankAccountNumber = u.BankAccountNumber,
-            BankName = u.BankName,
-            NumberOfDependents = u.NumberOfDependents
+            SocialInsuranceNo = u.EmployeeProfile?.SocialInsuranceNo,
+            HealthInsuranceNo = u.EmployeeProfile?.HealthInsuranceNo,
+            PersonalTaxCode = u.EmployeeProfile?.PersonalTaxCode,
+            BasicSalary = u.EmployeeProfile?.BasicSalary,
+            BankAccountNumber = u.EmployeeProfile?.BankAccountNumber,
+            BankName = u.EmployeeProfile?.BankName,
+            NumberOfDependents = u.EmployeeProfile?.NumberOfDependents
         }).ToList();
 
         return new PagedResult<StaffDto>
@@ -90,16 +91,19 @@ public class StaffService : IStaffService
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             Phone = request.Phone,
-            IdentityCard = request.IdentityCard,
-            DateOfBirth = request.DateOfBirth?.ToUniversalTime(),
-            JoinDate = request.JoinDate?.ToUniversalTime(),
-            SocialInsuranceNo = request.SocialInsuranceNo,
-            HealthInsuranceNo = request.HealthInsuranceNo,
-            PersonalTaxCode = request.PersonalTaxCode,
-            BasicSalary = request.BasicSalary,
-            BankAccountNumber = request.BankAccountNumber,
-            BankName = request.BankName,
-            NumberOfDependents = request.NumberOfDependents
+            EmployeeProfile = new EmployeeProfile
+            {
+                IdentityCard = request.IdentityCard,
+                DateOfBirth = request.DateOfBirth?.ToUniversalTime(),
+                JoinDate = request.JoinDate?.ToUniversalTime(),
+                SocialInsuranceNo = request.SocialInsuranceNo,
+                HealthInsuranceNo = request.HealthInsuranceNo,
+                PersonalTaxCode = request.PersonalTaxCode,
+                BasicSalary = request.BasicSalary,
+                BankAccountNumber = request.BankAccountNumber,
+                BankName = request.BankName,
+                NumberOfDependents = request.NumberOfDependents
+            }
         };
 
         _context.Users.Add(user);
@@ -141,17 +145,17 @@ public class StaffService : IStaffService
             Role = user.Role.ToString(),
             IsActive = user.IsActive,
             Phone = user.Phone,
-            IdentityCard = user.IdentityCard,
-            DateOfBirth = user.DateOfBirth,
-            JoinDate = user.JoinDate,
+            IdentityCard = user.EmployeeProfile?.IdentityCard,
+            DateOfBirth = user.EmployeeProfile?.DateOfBirth,
+            JoinDate = user.EmployeeProfile?.JoinDate,
             CreatedAt = user.CreatedAt,
-            SocialInsuranceNo = user.SocialInsuranceNo,
-            HealthInsuranceNo = user.HealthInsuranceNo,
-            PersonalTaxCode = user.PersonalTaxCode,
-            BasicSalary = user.BasicSalary,
-            BankAccountNumber = user.BankAccountNumber,
-            BankName = user.BankName,
-            NumberOfDependents = user.NumberOfDependents
+            SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo,
+            HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo,
+            PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode,
+            BasicSalary = user.EmployeeProfile?.BasicSalary,
+            BankAccountNumber = user.EmployeeProfile?.BankAccountNumber,
+            BankName = user.EmployeeProfile?.BankName,
+            NumberOfDependents = user.EmployeeProfile?.NumberOfDependents
         };
     }
 
@@ -201,6 +205,7 @@ public class StaffService : IStaffService
     public async Task<StaffDto> UpdateStaffAsync(Guid tenantId, Guid staffId, UpdateStaffRequest request)
     {
         var user = await _context.Users
+            .Include(u => u.EmployeeProfile)
             .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == staffId && u.Role == UserRole.Employee);
             
         if (user == null)
@@ -220,16 +225,21 @@ public class StaffService : IStaffService
 
         user.Fullname = request.Fullname;
         user.Phone = request.Phone;
-        user.IdentityCard = request.IdentityCard;
-        user.DateOfBirth = request.DateOfBirth?.ToUniversalTime();
-        user.JoinDate = request.JoinDate?.ToUniversalTime();
-        user.SocialInsuranceNo = request.SocialInsuranceNo;
-        user.HealthInsuranceNo = request.HealthInsuranceNo;
-        user.PersonalTaxCode = request.PersonalTaxCode;
-        user.BasicSalary = request.BasicSalary;
-        user.BankAccountNumber = request.BankAccountNumber;
-        user.BankName = request.BankName;
-        user.NumberOfDependents = request.NumberOfDependents;
+        if (user.EmployeeProfile == null)
+        {
+            user.EmployeeProfile = new EmployeeProfile { Id = user.Id };
+        }
+
+        user.EmployeeProfile.IdentityCard = request.IdentityCard;
+        user.EmployeeProfile.DateOfBirth = request.DateOfBirth?.ToUniversalTime();
+        user.EmployeeProfile.JoinDate = request.JoinDate?.ToUniversalTime();
+        user.EmployeeProfile.SocialInsuranceNo = request.SocialInsuranceNo;
+        user.EmployeeProfile.HealthInsuranceNo = request.HealthInsuranceNo;
+        user.EmployeeProfile.PersonalTaxCode = request.PersonalTaxCode;
+        user.EmployeeProfile.BasicSalary = request.BasicSalary;
+        user.EmployeeProfile.BankAccountNumber = request.BankAccountNumber;
+        user.EmployeeProfile.BankName = request.BankName;
+        user.EmployeeProfile.NumberOfDependents = request.NumberOfDependents;
 
         if (request.AvatarUrl != null) 
         {
@@ -259,17 +269,17 @@ public class StaffService : IStaffService
             Role = user.Role.ToString(),
             IsActive = user.IsActive,
             Phone = user.Phone,
-            IdentityCard = user.IdentityCard,
-            DateOfBirth = user.DateOfBirth,
-            JoinDate = user.JoinDate,
+            IdentityCard = user.EmployeeProfile?.IdentityCard,
+            DateOfBirth = user.EmployeeProfile?.DateOfBirth,
+            JoinDate = user.EmployeeProfile?.JoinDate,
             CreatedAt = user.CreatedAt,
-            SocialInsuranceNo = user.SocialInsuranceNo,
-            HealthInsuranceNo = user.HealthInsuranceNo,
-            PersonalTaxCode = user.PersonalTaxCode,
-            BasicSalary = user.BasicSalary,
-            BankAccountNumber = user.BankAccountNumber,
-            BankName = user.BankName,
-            NumberOfDependents = user.NumberOfDependents
+            SocialInsuranceNo = user.EmployeeProfile?.SocialInsuranceNo,
+            HealthInsuranceNo = user.EmployeeProfile?.HealthInsuranceNo,
+            PersonalTaxCode = user.EmployeeProfile?.PersonalTaxCode,
+            BasicSalary = user.EmployeeProfile?.BasicSalary,
+            BankAccountNumber = user.EmployeeProfile?.BankAccountNumber,
+            BankName = user.EmployeeProfile?.BankName,
+            NumberOfDependents = user.EmployeeProfile?.NumberOfDependents
         };
     }
 }

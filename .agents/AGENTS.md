@@ -1,88 +1,544 @@
 # AGENTS.md — BizFlow Platform
 
-Context đặc thù cho AI coding agent (Claude, Copilot...) khi làm việc trên repo này. File này KHÔNG thay thế các skill review chung (VD `senior-code-reviewer`) — nó bổ sung rule nghiệp vụ mà skill generic không thể tự biết.
+Context đặc thù cho AI coding agent (Claude, Copilot, Cursor, GPT...) khi làm việc trên repo này.  
+File này KHÔNG thay thế các skill review chung (ví dụ: senior-code-reviewer) — nó bổ sung business rules và architectural constraints mà generic coding agent không tự biết.
 
 ---
 
-## 1. Tổng quan dự án
+# 1. Project Overview
 
-BizFlow Platform là SaaS quản lý bán hàng cho hộ kinh doanh cá thể/cửa hàng bán lẻ VN, tích hợp Trợ lý AI (giọng nói → đơn hàng nháp) và tự động hạch toán sổ sách theo **Thông tư 88/2021/TT-BTC**.
+BizFlow Platform là SaaS quản lý bán hàng cho hộ kinh doanh cá thể / cửa hàng bán lẻ tại Việt Nam.
 
-## 2. Cấu trúc Monorepo — detect theo từng service
+Core capabilities:
+- Quản lý bán hàng (POS)
+- Quản lý kho
+- Công nợ khách hàng
+- Báo cáo doanh thu
+- AI Assistant (voice → draft order)
+- Tự động hạch toán sổ sách theo **Thông tư 88/2021/TT-BTC**
 
-```
+Tech stack:
+- Frontend: Next.js 14
+- Backend: .NET 8 (Clean Architecture + EF Core)
+- AI Service: FastAPI (Python)
+- Mobile: Flutter
+- Database: PostgreSQL (Supabase)
+- Cache / Queue: Redis
+
+---
+
+# 2. Monorepo Structure
+
+```bash
 BizFlow-Flatform/
-├── docker-compose.yml    # PostgreSQL, Redis, Adminer
-├── frontend/             # Next.js 14 App Router — Web quản trị & POS
-├── backend/               # .NET 8 Clean Architecture — API core
-├── ai-service/            # FastAPI Python — Whisper + Gemini
-└── mobile/                # Flutter — app nhân viên bán hàng
+├── docker-compose.yml
+├── frontend/      # Next.js 14 App Router
+├── backend/       # .NET 8 Clean Architecture
+├── ai-service/    # FastAPI (Whisper + Gemini)
+└── mobile/        # Flutter
 ```
 
-Khi review/sửa code: xác định đang làm việc trong service nào trước, áp đúng convention của service đó (xem `references/stack-notes.md` trong skill `senior-code-reviewer`). Nếu thay đổi xuyên nhiều service (VD luồng AI: `mobile/` hoặc voice input → `ai-service/` → `backend/` → DB), kiểm tra kỹ **API contract** giữa các service — đây là nơi dễ thiếu validate nhất.
+Rule cho AI agent:
+1. Luôn xác định đang sửa service nào trước.
+2. Áp convention đúng cho service đó.
+3. Nếu thay đổi cross-service:
+   - mobile → ai-service
+   - frontend → backend
+   - ai-service → backend
+   → phải kiểm tra kỹ API contract.
 
-## 3. Kiến trúc đa tenant & phân quyền
+Đặc biệt chú ý:
+- DTO mismatch
+- Enum mismatch
+- JSON serialization mismatch
+- Validation missing
 
-Mô hình: **Isolated DB Connection** — mỗi hộ kinh doanh (tenant) có kết nối CSDL biệt lập, không dùng chung 1 DB với cột `TenantId`.
+---
 
-3 role cố định, mỗi role có workspace riêng:
+# 3. Multi-Tenant Architecture & Authorization
 
-| Role | Phạm vi truy cập |
+## Current Tenant Model
+
+**Shared Database + TenantId isolation**
+
+Tất cả tenant dùng chung 1 PostgreSQL database.
+
+Isolation được thực hiện bằng:
+- `TenantId`
+- Authorization
+- Query filtering
+- Service layer validation
+
+## Critical Rules
+
+Mọi business table PHẢI có:
+- `Id`
+- `TenantId`
+- timestamps (nếu applicable)
+
+Ví dụ:
+- products
+- orders
+- customers
+- inventory_receipts
+- accounting_ledger_s2
+
+## Query Safety Rules
+
+### REQUIRED
+Mọi business query cho Owner / Employee PHẢI filter theo TenantId.
+
+Ví dụ đúng:
+```csharp
+context.Products
+    .Where(x => x.TenantId == tenantId)
+```
+
+Ví dụ nguy hiểm:
+```csharp
+context.Products.FirstOrDefault(x => x.Id == id)
+```
+
+Thiếu TenantId = potential data leak.
+
+---
+
+## Roles
+
+| Role | Permission Scope |
 |---|---|
-| **Admin** (Platform Administrator) | Quản lý danh sách tenant, kết nối DB biệt lập, cấu hình gói thuê bao. Truy cập chéo tenant hợp lệ theo thiết kế — nhưng PHẢI đi qua endpoint/quyền riêng, có audit log, không dùng chung code path với API của Owner/Employee. |
-| **Owner** (Chủ doanh nghiệp) | Toàn quyền trong phạm vi tenant của mình: báo cáo doanh thu, TT88, kho, công nợ. |
-| **Employee** (Nhân viên bán hàng) | POS bán hàng, ghi nợ nhanh, duyệt đơn nháp từ AI. KHÔNG được truy cập báo cáo tài chính tổng hợp/cấu hình hệ thống. |
+| Admin | Quản lý platform, tenant, subscription |
+| Owner | Toàn quyền trong tenant |
+| Employee | POS, bán hàng, ghi nợ, thu nợ |
 
-**Khi review code liên quan phân quyền**: luôn kiểm tra middleware resolve tenant + role có chạy trên MỌI request không (kể cả job nền/script), và endpoint không bị lộ dữ liệu của role cao hơn cho role thấp (VD Employee gọi nhầm API dành cho Owner). Xem thêm `references/data-leak-prevention.md` phần Layer 7 (Multi-Tenant Isolation) trong skill review.
+---
 
-## 4. Rule bắt buộc: Tuân thủ Thông tư 88/2021/TT-BTC
+## Authorization Rules
 
-Áp dụng từ 01/01/2022, cho hộ kinh doanh/cá nhân kinh doanh nộp thuế theo phương pháp kê khai. Mọi nghiệp vụ ghi sổ tự động PHẢI map đúng vào 1 trong 7 loại sổ kế toán sau — đây là ràng buộc nghiệp vụ cứng, không được tự ý đổi cấu trúc cột hay gộp sổ:
+### Admin
+Có thể cross-tenant nhưng:
+- phải qua admin endpoint riêng
+- phải audit log
+- không dùng chung code path với Owner/Employee
 
-| Sổ | Mã mẫu | Mục đích | Nguồn dữ liệu trong hệ thống |
-|---|---|---|---|
-| Sổ chi tiết doanh thu bán hàng hóa, dịch vụ | S1-HKD | Căn cứ xác định nghĩa vụ thuế GTGT, TNCN — mở theo nhóm ngành nghề có cùng mức thuế suất | Đơn hàng đã duyệt (bán thủ công + bán qua AI) |
-| Sổ chi tiết vật liệu, dụng cụ, sản phẩm, hàng hóa | S2-HKD | Theo dõi nhập/xuất/tồn kho, đối chiếu với kiểm kê thực tế | Phiếu nhập kho, phiếu xuất kho, đơn hàng trừ kho |
-| Sổ chi phí sản xuất, kinh doanh | S3-HKD | Tập hợp chi phí theo địa điểm kinh doanh: nhân công, điện nước, viễn thông, thuê mặt bằng, quản lý... | Phiếu chi, chi phí vận hành |
-| Sổ theo dõi tình hình thực hiện nghĩa vụ thuế với NSNN | S4-HKD | Theo dõi thuế phải nộp/đã nộp/còn phải nộp — mở chi tiết theo từng sắc thuế (GTGT, TNCN...) | Tính toán tự động từ doanh thu + quy định thuế hiện hành |
-| Sổ theo dõi tình hình thanh toán tiền lương | — | Thanh toán lương, phụ cấp, thưởng cho người lao động | Module nhân sự (nếu có) |
-| Sổ quỹ tiền mặt | — | Theo dõi thu/chi tiền mặt thực tế | Thanh toán tiền mặt |
-| Sổ tiền gửi ngân hàng | — | Theo dõi thu/chi qua chuyển khoản | Thanh toán chuyển khoản |
+### Owner
+Có quyền:
+- báo cáo
+- kho
+- TT88
+- công nợ
+- cấu hình tenant
 
-*(Nguồn: Điều 5 Thông tư 88/2021/TT-BTC. Việc xác định doanh thu/chi phí cụ thể theo ngành nghề còn tham chiếu thêm Thông tư 40/2021/TT-BTC — cần xác nhận với kế toán/chuyên gia thuế cho từng loại hình kinh doanh cụ thể, AI không tự suy diễn mức thuế suất.)*
+### Employee
+Có quyền:
+- POS
+- tạo đơn
+- ghi nợ
+- thu nợ
+- AI draft approval
 
-### Ràng buộc kỹ thuật quan trọng khi code phần hạch toán:
+Không được:
+- xem báo cáo tài chính tổng
+- chỉnh system config
+- xem tax reports
 
-- **Không tẩy xóa dữ liệu sổ kế toán đã ghi.** Luật Kế toán chỉ cho phép sửa bằng 1 trong 3 cách: ghi cải chính (có traceability), ghi số âm, hoặc ghi điều chỉnh bằng chứng từ mới. → Về mặt hệ thống: bảng lưu bút toán kế toán nên là **append-only / immutable**, sửa sai phải tạo bản ghi điều chỉnh mới kèm tham chiếu tới bản ghi gốc, KHÔNG được `UPDATE`/`DELETE` trực tiếp lên bút toán đã chốt sổ.
-- Sổ kế toán mở đầu kỳ năm, khóa sổ cuối kỳ trước khi lập báo cáo — cần cơ chế "khóa kỳ" (period lock), sau khi khóa không cho phát sinh bút toán mới vào kỳ đó (chỉ tạo bút toán điều chỉnh ở kỳ hiện tại).
-- Hộ kinh doanh có nhiều địa điểm kinh doanh phải tách sổ theo từng địa điểm — nếu tenant có multi-location, kiểm tra dữ liệu có được phân tách đúng theo địa điểm trong các sổ trên không.
-- Không lập, không ghi sổ hoặc ghi sai có thể bị xử phạt hành chính (Nghị định 125/2020/NĐ-CP) — vì vậy lỗi ở luồng hạch toán tự động nên được xếp **Critical** khi review, không phải Medium.
+---
 
-## 5. Rule đặc thù cho luồng AI (Whisper + Gemini)
+## Security Review Checklist
 
-- Output trích xuất thực thể từ giọng nói (số lượng, đơn giá, tên khách hàng, hình thức thanh toán) chỉ tạo **Đơn hàng nháp**, KHÔNG được tự động ghi thẳng vào sổ kế toán hay trừ kho — phải qua bước duyệt của Employee/Owner trước.
-- Số lượng/giá tiền do AI trích xuất phải được validate lại theo danh mục sản phẩm thực tế trong hệ thống (không tin tưởng tuyệt đối con số LLM trả về) trước khi hiển thị cho người duyệt.
+Khi review:
+- middleware resolve tenant chạy chưa?
+- background jobs có tenant context không?
+- cron jobs có leak data không?
+- endpoint role check đủ chưa?
 
-## 6. Tài khoản test (chỉ dùng ở môi trường dev/seed, KHÔNG deploy kèm production)
+Data leak bug = **CRITICAL**
 
-Repo có seed 3 tài khoản test mặc định cho 3 role (xem README). Khi review, đảm bảo đoạn seed data này chỉ chạy ở môi trường development (không nằm trong migration chạy tự động ở production), và không sử dụng chung pattern mật khẩu yếu cho môi trường thật.
+---
 
-## 7. Database Schema Rules (MANDATORY)
+# 4. Database Schema Rules (CRITICAL)
 
-- EF Core migrations là single source of truth cho schema.
-- Nghiêm cấm CREATE / ALTER / DROP TABLE trong Program.cs hoặc runtime startup code.
-- Raw SQL chỉ được dùng cho:
-  - DML (INSERT / UPDATE / DELETE)
-  - data repair scripts
-  - index hotfix khẩn cấp (có approval)
-- Mọi schema change bắt buộc theo flow:
+BizFlow vừa hoàn thành **EF Core Baseline Reset** sau khi loại bỏ legacy `SafeSql`.
 
-Entity change
--> Update Fluent API
--> dotnet ef migrations add <MigrationName>
--> Review migration manually
--> dotnet ef database update
+Điều này cực kỳ quan trọng.
 
-Trước khi merge PR:
-- Generate temporary migration SmokeTest
-- Nếu migration chứa schema change ngoài dự kiến => STOP
+---
+
+## STRICTLY FORBIDDEN
+
+### NEVER:
+- CREATE TABLE trong `Program.cs`
+- ALTER TABLE trong `Program.cs`
+- DROP TABLE runtime
+- SafeSql schema manipulation
+
+Ví dụ cấm:
+```csharp
+SafeSql("ALTER TABLE users ADD COLUMN ...");
+```
+
+Hoặc:
+```csharp
+db.Database.ExecuteSqlRaw("CREATE TABLE ...");
+```
+
+---
+
+## REQUIRED
+
+Mọi schema changes MUST đi qua:
+1. Update Entity
+2. Update DbContext mapping
+3. Generate migration
+4. Audit migration
+5. Apply migration
+
+---
+
+## Migration Safety Checklist
+
+Trước khi apply production:
+
+### Step 1
+Generate migration:
+```bash
+dotnet ef migrations add MigrationName
+```
+
+### Step 2
+Audit:
+- Up()
+- Down()
+
+Check:
+- CreateTable?
+- DropTable?
+- AddColumn?
+- DropColumn?
+- AlterColumn?
+- InsertData?
+
+---
+
+### Step 3
+Run smoke check
+
+Generate temp migration:
+```bash
+dotnet ef migrations add SmokeTest
+```
+
+Nếu:
+```csharp
+Up() {}
+Down() {}
+```
+
+=> No schema drift.
+
+---
+
+### Step 4
+Remove smoke migration:
+```bash
+dotnet ef migrations remove
+```
+
+---
+
+## Schema Drift Policy
+
+Nếu SmokeTest sinh ra:
+- AlterColumn
+- AddColumn
+- CreateIndex
+- DropColumn
+
+=> Schema drift detected.
+
+STOP deployment.
+
+---
+
+# 5. EF Core Rules
+
+BizFlow backend dùng:
+- EF Core 8
+- Code First
+- Migration-driven schema
+
+## Rules
+
+### Allowed
+- Fluent API
+- HasIndex
+- HasPrecision
+- HasDefaultValue
+
+### Avoid
+- Raw SQL schema modifications
+
+### Be careful with
+```csharp
+.Ignore(...)
+```
+
+EF sẽ nghĩ column bị remove → generate DropColumn.
+
+Luôn review kỹ migration nếu dùng:
+- Ignore
+- Rename
+- Split entity
+- Merge entity
+
+---
+
+# 6. Seed Data Rules
+
+## Production
+Production schema PHẢI sạch:
+- không credential
+- không dummy users
+- không demo tenant
+
+Forbidden:
+- admin123
+- owner123
+- employee123
+
+---
+
+## Development Only
+
+Test accounts chỉ tồn tại qua:
+
+`DevelopmentDataSeeder`
+
+Chỉ chạy khi:
+```csharp
+Environment == Development
+&& EnableDevSeed == true
+```
+
+Không được để test seed trong:
+- migrations
+- DbContext HasData
+
+---
+
+## Reference Seed
+
+Reference data an toàn có thể seed runtime:
+- enums
+- system constants
+- lookup values
+
+Không seed hardcoded credentials.
+
+---
+
+# 7. Accounting Rules (TT88) — HARD CONSTRAINT
+
+BizFlow phải tuân thủ:
+
+**Thông tư 88/2021/TT-BTC**
+
+Không được tự ý redesign accounting flow trái TT88.
+
+---
+
+## 7 Accounting Books
+
+| Sổ | Mã |
+|---|---|
+| Sổ doanh thu | S1-HKD |
+| Sổ kho | S2-HKD |
+| Sổ chi phí | S3-HKD |
+| Sổ thuế | S4-HKD |
+| Sổ lương | — |
+| Sổ quỹ tiền mặt | — |
+| Sổ ngân hàng | — |
+
+---
+
+## Data Sources
+
+### S1-HKD
+Nguồn:
+- approved orders
+
+### S2-HKD
+Nguồn:
+- receipts
+- inventory transactions
+- sales deductions
+
+### S3-HKD
+Nguồn:
+- expenses
+- operating cost
+
+### S4-HKD
+Nguồn:
+- tax engine
+- revenue + tax rules
+
+---
+
+# 8. Accounting Immutability Rules (CRITICAL)
+
+Accounting entries sau khi post phải **immutable**.
+
+Không được:
+- UPDATE posted entries
+- DELETE posted entries
+
+Đặc biệt:
+
+Tables:
+- accounting_ledger_s2
+- cash_transactions
+- tax ledgers
+
+Forbidden:
+```sql
+UPDATE accounting_ledger_s2 ...
+DELETE FROM accounting_ledger_s2 ...
+```
+
+---
+
+## Correction Methods
+
+Sửa sai chỉ bằng:
+1. reversal entry
+2. negative entry
+3. adjustment entry
+
+Append-only only.
+
+Accounting mutation bug = **CRITICAL**
+
+---
+
+# 9. Period Lock Rules
+
+Khi kỳ kế toán đã khóa:
+- không cho thêm transaction vào kỳ cũ
+- không sửa bút toán cũ
+
+Cho phép:
+- adjustment entry ở kỳ hiện tại
+
+---
+
+# 10. Inventory Rules
+
+Nguồn tồn kho chuẩn:
+- `accounting_ledger_s2`
+
+Legacy field:
+- `products.StockQuantity`
+
+`StockQuantity` là legacy cache field.
+
+Không dùng làm source of truth.
+
+Source of truth:
+```text
+Inventory Ledger (S2)
+```
+
+Nếu conflict:
+ledger wins.
+
+---
+
+# 11. HR / Payroll Rules
+
+Auth data và HR data nên tách riêng.
+
+User table chỉ nên chứa:
+- auth
+- identity
+- role
+- tenant linkage
+
+HR fields nên ở:
+- EmployeeProfile
+
+Ví dụ:
+- IdentityCard
+- BankAccountNumber
+- BasicSalary
+- DateOfBirth
+- TaxCode
+
+Tránh fat `users` table.
+
+---
+
+# 12. AI Flow Rules (Whisper + Gemini)
+
+AI không được auto-confirm transaction.
+
+AI chỉ được:
+### voice input
+↓
+### entity extraction
+↓
+### draft order
+
+---
+
+## Forbidden
+
+AI output KHÔNG được:
+- trừ kho trực tiếp
+- ghi accounting ledger
+- tạo invoice finalized
+
+---
+
+## Required Validation
+
+AI extracted:
+- product name
+- quantity
+- price
+- customer
+- payment method
+
+Phải validate với DB:
+- product exists?
+- quantity valid?
+- price valid?
+
+Không trust 100% LLM output.
+
+---
+
+# 13. Code Review Severity
+
+| Severity | Meaning |
+|---|---|
+| Critical | Data loss / financial corruption / tenant leak |
+| High | Security / auth bug |
+| Medium | Logic bug |
+| Low | Style / refactor |
+
+---
+
+# 14. Critical Failure Conditions
+
+Bất kỳ lỗi nào sau đây = CRITICAL:
+
+- Missing TenantId filter
+- Cross-tenant leak
+- Posted ledger mutation
+- AI auto-post accounting
+- Schema drift
+- Raw SQL schema modification
+- Production credential seed
+
+Agent MUST flag immediately.

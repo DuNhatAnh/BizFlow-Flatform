@@ -24,6 +24,7 @@ public class PayrollService : IPayrollService
     {
         var query = _context.PayrollRecords
             .Include(p => p.User)
+                .ThenInclude(u => u.EmployeeProfile)
             .Where(p => p.TenantId == tenantId && p.Year == year && p.Month == month);
 
         var totalCount = await query.CountAsync();
@@ -43,15 +44,17 @@ public class PayrollService : IPayrollService
                 BaseSalary = p.BaseSalary,
                 Allowances = p.Allowances,
                 Deductions = p.Deductions,
-                PersonalTax = p.BaseSalary > 0 ? CalculatePersonalIncomeTax(p.BaseSalary, p.User.NumberOfDependents ?? 0) : 0, // In a real app, this should be stored in DB to avoid recalculation, but computing on fly is fine for now
+                PersonalTax = p.BaseSalary > 0 
+                    ? CalculatePersonalIncomeTax(p.BaseSalary, p.User.EmployeeProfile != null && p.User.EmployeeProfile.NumberOfDependents.HasValue ? p.User.EmployeeProfile.NumberOfDependents.Value : 0) 
+                    : 0, 
                 NetPay = p.NetPay,
                 IsPaid = p.IsPaid,
                 PaymentDate = p.PaymentDate,
                 Note = p.Note,
                 CreatedAt = p.CreatedAt,
-                BankAccountNumber = p.User.BankAccountNumber,
-                BankName = p.User.BankName,
-                NumberOfDependents = p.User.NumberOfDependents ?? 0
+                BankAccountNumber = p.User.EmployeeProfile != null ? p.User.EmployeeProfile.BankAccountNumber : null,
+                BankName = p.User.EmployeeProfile != null ? p.User.EmployeeProfile.BankName : null,
+                NumberOfDependents = p.User.EmployeeProfile != null && p.User.EmployeeProfile.NumberOfDependents.HasValue ? p.User.EmployeeProfile.NumberOfDependents.Value : 0
             })
             .ToListAsync();
 
@@ -68,6 +71,7 @@ public class PayrollService : IPayrollService
     {
         // 1. Get all active employees for this tenant
         var employees = await _context.Users
+            .Include(u => u.EmployeeProfile)
             .Where(u => u.TenantId == tenantId && u.Role == UserRole.Employee && u.IsActive)
             .ToListAsync();
 
@@ -87,8 +91,8 @@ public class PayrollService : IPayrollService
                 continue;
             }
 
-            var baseSalary = employee.BasicSalary ?? 0;
-            var dependents = employee.NumberOfDependents ?? 0;
+            var baseSalary = employee.EmployeeProfile?.BasicSalary ?? 0;
+            var dependents = employee.EmployeeProfile?.NumberOfDependents ?? 0;
             
             // Basic Vietnam Personal Income Tax logic
             // Note: In standard accounting, allowances and deductables like Social Insurance are calculated before PIT.

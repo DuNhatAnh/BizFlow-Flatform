@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<EmployeeProfile> EmployeeProfiles => Set<EmployeeProfile>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductUnit> ProductUnits => Set<ProductUnit>();
@@ -91,6 +92,21 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.ToTable("users");
             entity.HasIndex(e => e.Username).IsUnique();
             entity.Property(e => e.Role).HasConversion<string>();
+        });
+
+        // 3.5. EmployeeProfile configurations
+        modelBuilder.Entity<EmployeeProfile>(entity =>
+        {
+            entity.ToTable("employee_profiles");
+            entity.Property(e => e.BasicSalary).HasPrecision(15, 2);
+            
+            // Shared PK/FK Relationship 1-to-1
+            entity.HasKey(e => e.Id);
+            
+            entity.HasOne(e => e.User)
+                  .WithOne(u => u.EmployeeProfile)
+                  .HasForeignKey<EmployeeProfile>(e => e.Id)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // 4. Category configurations

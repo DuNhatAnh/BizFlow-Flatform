@@ -11,6 +11,7 @@ using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Auth;
 using BizFlow.Application.Interfaces;
 using BCrypt.Net;
+using BizFlow.Domain.Entities;
 
 namespace BizFlow.Infrastructure.Services;
 
@@ -119,7 +120,9 @@ public class AuthService : IAuthService
 
     public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await _context.Users
+            .Include(u => u.EmployeeProfile)
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) throw new UnauthorizedAccessException("Không tìm thấy người dùng");
 
         var roleStr = user.Role == BizFlow.Domain.Enums.UserRole.Admin ? "PlatformAdmin" : user.Role.ToString();
@@ -132,29 +135,36 @@ public class AuthService : IAuthService
             RoleName = GetRoleName(roleStr),
             TenantId = user.TenantId,
             Phone = user.Phone,
-            IdentityCard = user.IdentityCard,
-            DateOfBirth = user.DateOfBirth,
-            JoinDate = user.JoinDate ?? user.CreatedAt,
+            IdentityCard = user.EmployeeProfile?.IdentityCard,
+            DateOfBirth = user.EmployeeProfile?.DateOfBirth,
+            JoinDate = user.EmployeeProfile?.JoinDate ?? user.CreatedAt,
             AvatarUrl = user.AvatarUrl
         };
     }
 
     public async Task UpdateUserProfileAsync(Guid userId, UpdateProfileRequest request, BizFlow.Domain.Enums.UserRole currentUserRole)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await _context.Users
+            .Include(u => u.EmployeeProfile)
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) throw new UnauthorizedAccessException("Không tìm thấy người dùng");
 
         user.Phone = request.Phone;
-        user.DateOfBirth = request.DateOfBirth;
         if (request.AvatarUrl != null) 
         {
             user.AvatarUrl = request.AvatarUrl;
         }
 
+        if (user.EmployeeProfile == null)
+        {
+            user.EmployeeProfile = new EmployeeProfile { Id = user.Id };
+        }
+
+        user.EmployeeProfile.DateOfBirth = request.DateOfBirth;
         if (currentUserRole == BizFlow.Domain.Enums.UserRole.Owner || currentUserRole == BizFlow.Domain.Enums.UserRole.Manager)
         {
-            user.IdentityCard = request.IdentityCard;
-            user.JoinDate = request.JoinDate;
+            user.EmployeeProfile.IdentityCard = request.IdentityCard;
+            user.EmployeeProfile.JoinDate = request.JoinDate;
         }
 
         await _context.SaveChangesAsync();
