@@ -45,16 +45,26 @@ export default function UserProfile() {
           dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : "",
           joinDate: data.joinDate ? data.joinDate.split('T')[0] : ""
         });
-        if (data.avatarUrl) {
-          setUser(prev => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
+        
+        // Cập nhật lại thông tin cá nhân (Fullname, Avatar) vào Cache để đồng bộ nếu Admin có đổi tên
+        setUser(prev => {
+          if (!prev) return null;
+          const updated = { 
+            ...prev, 
+            fullname: data.fullname || data.Fullname || prev.fullname,
+            avatarUrl: data.avatarUrl || data.AvatarUrl || prev.avatarUrl 
+          };
+          
           const stored = localStorage.getItem("bizflow_user");
           if (stored) {
              const pUser = JSON.parse(stored);
-             pUser.avatarUrl = data.avatarUrl;
+             pUser.fullname = updated.fullname;
+             pUser.avatarUrl = updated.avatarUrl;
              localStorage.setItem("bizflow_user", JSON.stringify(pUser));
-             window.dispatchEvent(new Event("storage")); // Notify Sidebar.tsx
+             window.dispatchEvent(new Event("storage")); // Notify Sidebar.tsx / Header.tsx
           }
-        }
+          return updated;
+        });
       }
     } catch (e) {
       console.error("Failed to fetch profile", e);

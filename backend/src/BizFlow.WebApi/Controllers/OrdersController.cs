@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
@@ -89,7 +90,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Order>> CreateOrder([FromBody] Order order)
+    public async Task<ActionResult<Order>> CreateOrder([FromBody] [ValidateNever] Order order)
     {
         try
         {
@@ -151,7 +152,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("draft")]
-    public async Task<ActionResult<Order>> CreateDraftOrder([FromBody] Order order)
+    public async Task<ActionResult<Order>> CreateDraftOrder([FromBody] [ValidateNever] Order order)
     {
         order.Status = OrderStatus.Draft;
         order.CreatedAt = DateTime.UtcNow;
@@ -172,7 +173,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/confirm")]
-    public async Task<IActionResult> ConfirmDraft(Guid id, [FromBody] Order updatedOrder)
+    public async Task<IActionResult> ConfirmDraft(Guid id, [FromBody] [ValidateNever] Order updatedOrder)
     {
         try
         {

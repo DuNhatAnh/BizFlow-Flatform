@@ -16,6 +16,7 @@ Là người trực tiếp thao tác tại quầy thu ngân. Giao diện tối �
 *   **Ghi nợ (Debt Record):** Chọn hình thức thanh toán "Ghi nợ" đối với các khách hàng thân thiết đã có tên trong hệ thống. Hệ thống sẽ tự động cập nhật số dư nợ mới vào hồ sơ khách hàng.
 *   **In hóa đơn:** Xem trước hóa đơn bán hàng và kết nối với máy in bill nhiệt hoặc xuất file hóa đơn định dạng PDF.
 *   **Xác nhận đơn hàng AI (Draft Orders):** Nhận thông báo thời gian thực khi Trợ lý AI tạo đơn hàng nháp từ giọng nói/văn bản. Xem lại chi tiết mặt hàng, số lượng và bấm **Xác nhận** (để trừ kho và in bill) hoặc **Hủy/Sửa đổi**.
+*   **Chấm công (Attendance):** Thực hiện Check-in (Vào ca) và Check-out (Kết ca) trực tiếp trên phần mềm POS hoặc Mobile App. Thao tác này đòi hỏi thiết bị phải kết nối đúng mạng Wi-Fi của cửa hàng (hoặc nằm trong bán kính GPS cho phép) để đảm bảo tính minh bạch.
 
 ### 1.2. Chủ cửa hàng (Store Owner)
 Quyền quản trị cao nhất cấp chi nhánh/hộ kinh doanh. Kế thừa toàn quyền của Nhân viên bán hàng, cộng thêm:
@@ -24,6 +25,7 @@ Quyền quản trị cao nhất cấp chi nhánh/hộ kinh doanh. Kế thừa to
 *   **Quản lý thông tin khách hàng & Công nợ:** Thêm mới khách hàng, theo dõi lịch sử mua hàng, tổng nợ hiện tại, ghi nhận phiếu thu tiền trả nợ của khách hàng và xem nhật ký thu nợ.
 *   **Xem báo cáo quản trị (Dashboard):** Xem biểu đồ thống kê doanh thu theo ngày/tuần/tháng, thống kê sản phẩm bán chạy nhất, cảnh báo sản phẩm sắp hết hạn/hết hàng trong kho, tổng nợ phải thu.
 *   **Quản lý nhân sự:** Tạo tài khoản cho nhân viên thu ngân, đổi mật khẩu, kích hoạt/khóa tài khoản nhân viên. Xem nhật ký hoạt động (Audit logs) của nhân viên để tránh gian lận.
+*   **Báo cáo chấm công:** Theo dõi lịch sử vào ca/kết ca của nhân viên. Tổng hợp số giờ làm việc thực tế trong ngày/tuần/tháng để làm cơ sở tính lương. Thiết lập cấu hình chống gian lận chấm công (chỉ định địa chỉ IP/MAC Wi-Fi, tọa độ GPS).
 
 ### 1.3. Quản trị viên nền tảng (Platform Administrator)
 Người vận hành toàn bộ hệ thống SaaS BizFlow.

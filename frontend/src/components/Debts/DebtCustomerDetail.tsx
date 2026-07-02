@@ -51,13 +51,15 @@ export default function DebtCustomerDetail({
         </div>
 
         {/* Bank Configuration trigger */}
-        <button
-          onClick={onOpenBankConfig}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-outline/35 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          Cấu hình Bank VietQR
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={onOpenBankConfig}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-outline/35 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Cấu hình Bank VietQR
+          </button>
+        )}
       </div>
 
       {/* Grid of indicators (Total Debt, Limit, Action button) */}
@@ -65,6 +67,7 @@ export default function DebtCustomerDetail({
         totalDebt={customer.totalDebt}
         debtLimit={customer.debtLimit}
         onOpenCollect={onOpenCollectModal}
+        isReadOnly={isReadOnly}
       />
 
       {/* Credit Limit warning alert */}

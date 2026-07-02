@@ -7,12 +7,14 @@ interface DebtFinancialCardsProps {
   totalDebt: number;
   debtLimit: number;
   onOpenCollect: () => void;
+  isReadOnly?: boolean;
 }
 
 export default function DebtFinancialCards({
   totalDebt,
   debtLimit,
-  onOpenCollect
+  onOpenCollect,
+  isReadOnly = false
 }: DebtFinancialCardsProps) {
   const isOverLimit = totalDebt > debtLimit;
 
@@ -62,10 +64,11 @@ export default function DebtFinancialCards({
         <div className="mt-2.5">
           <button
             onClick={onOpenCollect}
-            disabled={totalDebt <= 0}
+            disabled={totalDebt <= 0 || isReadOnly}
+            title={isReadOnly ? "Chỉ Chủ cửa hàng mới có quyền thu tiền nợ" : ""}
             className="w-full py-1.5 px-4 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-container hover:text-on-primary-container disabled:bg-surface-container-high disabled:text-outline disabled:cursor-not-allowed shadow-sm transition-all"
           >
-            Thu tiền nợ
+            {isReadOnly ? "Không có quyền thu nợ" : "Thu tiền nợ"}
           </button>
         </div>
       </div>

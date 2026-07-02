@@ -176,6 +176,30 @@ CREATE TABLE IF NOT EXISTS accounting_entries (
 );
 
 -- ============================
+-- 13. attendance_records (Chấm công nhân viên)
+-- ============================
+CREATE TABLE IF NOT EXISTS attendance_records (
+    "Id"                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "TenantId"          UUID NOT NULL REFERENCES tenants("Id") ON DELETE CASCADE,
+    "UserId"            UUID NOT NULL REFERENCES users("Id") ON DELETE CASCADE,
+    "CheckInTime"       TIMESTAMP NOT NULL,
+    "CheckOutTime"      TIMESTAMP,
+    "CheckInIpAddress"  VARCHAR(255),
+    "CheckOutIpAddress" VARCHAR(255),
+    "CheckInWifiMac"    VARCHAR(255),
+    "CheckOutWifiMac"   VARCHAR(255),
+    "CheckInLatitude"   DOUBLE PRECISION,
+    "CheckInLongitude"  DOUBLE PRECISION,
+    "CheckOutLatitude"  DOUBLE PRECISION,
+    "CheckOutLongitude" DOUBLE PRECISION,
+    "CheckInPhotoUrl"   TEXT,
+    "CheckOutPhotoUrl"  TEXT,
+    "Status"            VARCHAR(50) NOT NULL DEFAULT 'Present',
+    "Notes"             TEXT,
+    "CreatedAt"         TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ============================
 -- EF Core Migration history
 -- ============================
 CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (

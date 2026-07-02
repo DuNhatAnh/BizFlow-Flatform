@@ -19,6 +19,9 @@ import POS from "@/components/POS";
 import ToastNotification from "@/components/ToastNotification";
 import DebtManagement from "@/components/DebtManagement";
 import StoreSettings from "@/components/StoreSettings";
+import { ShiftManagement } from "@/components/ShiftManagement";
+import EmployeeSchedule from "@/components/EmployeeSchedule";
+import AttendanceReport from "@/components/AttendanceReport";
 import { parseDescriptionMetadata } from "@/utils/metadata";
 // Admin components
 import TenantsManagement from "@/components/Admin/TenantsManagement";
@@ -265,24 +268,35 @@ export default function Home() {
           connection.invoke("JoinTenantGroup", user.tenantId)
             .catch((err: any) => console.error("Failed to join tenant group:", err));
         }
+        if (user.id) {
+          connection.invoke("JoinUserGroup", user.id)
+            .catch((err: any) => console.error("Failed to join user group:", err));
+        }
       })
       .catch((err: any) => console.error("SignalR Connection failed: ", err));
 
-    connection.on("ReceiveNotification", (message: string) => {
+    connection.on("ReceiveNotification", (message: any) => {
       console.log("SignalR notification: ", message);
-      if (message === "NEW_DRAFT_ORDER") {
-        fetchDrafts(user);
-        showToast("Có đơn hàng nháp AI mới cần duyệt!", "info");
-        try {
-          const audio = new Audio("/notification.wav");
-          audio.volume = 0.6;
-          audio.play().catch(e => console.log("Autoplay audio blocked by browser:", e));
-        } catch (err) {
-          console.error("Audio play error:", err);
+      if (typeof message === "string") {
+        if (message === "NEW_DRAFT_ORDER") {
+          fetchDrafts(user);
+          showToast("Có đơn hàng nháp AI mới cần duyệt!", "info");
+          try {
+            const audio = new Audio("/notification.wav");
+            audio.volume = 0.6;
+            audio.play().catch(e => console.log("Autoplay audio blocked by browser:", e));
+          } catch (err) {
+            console.error("Audio play error:", err);
+          }
+        } else if (message === "STOCK_CHANGED") {
+          fetchProducts(user);
+          setStockUpdateTrigger((prev) => prev + 1);
         }
-      } else if (message === "STOCK_CHANGED") {
-        fetchProducts(user);
-        setStockUpdateTrigger((prev) => prev + 1);
+      } else if (typeof message === "object" && message !== null) {
+        const title = message.title || message.Title;
+        const msg = message.message || message.Message;
+        showToast(`${title}: ${msg}`, "info");
+        window.dispatchEvent(new CustomEvent("new_notification", { detail: message }));
       }
     });
 
@@ -581,7 +595,18 @@ export default function Home() {
       ...raw,
       paymentMethod: paymentMethod,
       status: "Completed",
-      createdBy: userObj.id || raw.createdBy
+      createdBy: userObj.id || raw.createdBy,
+      orderItems: raw.orderItems?.map((item: any) => ({
+        id: item.id,
+        orderId: item.orderId,
+        productId: item.productId,
+        productUnitId: item.productUnitId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        vatRate: item.vatRate,
+        vatAmount: item.vatAmount
+      }))
     };
 
     const previousDrafts = [...aiDrafts];
@@ -812,6 +837,10 @@ export default function Home() {
         );
       }
 
+      if (activeTab === "my-schedule") {
+        return <EmployeeSchedule />;
+      }
+
       return (
         <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
           <h2 className="text-xl font-bold text-on-surface">Tra cứu thông tin POS</h2>
@@ -844,6 +873,10 @@ export default function Home() {
 
     if (activeTab === "staff") {
       return <StaffManagement />;
+    }
+    
+    if (activeTab === "shifts") {
+      return <ShiftManagement />;
     }
 
     if (activeTab === "customers") {
@@ -912,6 +945,16 @@ export default function Home() {
         return {
           title: "Quản lý Nhân sự",
           subtitle: "Danh sách tài khoản nhân viên thu ngân của cửa hàng"
+        };
+      case "shifts":
+        return {
+          title: "Phân công ca làm việc",
+          subtitle: "Quản lý lịch làm việc và phân bổ nhân sự theo ca"
+        };
+      case "my-schedule":
+        return {
+          title: "Lịch làm việc của tôi",
+          subtitle: "Xem các ca làm việc đã được phân công"
         };
       case "debts":
         return {

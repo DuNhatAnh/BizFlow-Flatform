@@ -67,7 +67,7 @@ export default function ProductEditModal({
 
   const [availableVatRates, setAvailableVatRates] = useState<string[]>(["0", "5", "8", "10", "KCT"]);
   const [defaultVatRate, setDefaultVatRate] = useState<string>("10");
-  
+
   React.useEffect(() => {
     const fetchStore = async () => {
       try {
@@ -80,7 +80,7 @@ export default function ProductEditModal({
           if (data && data.length > 0) {
             const store = data[0];
             if (store.availableVatRates) {
-              setAvailableVatRates(store.availableVatRates.split(',').map((s:string) => s.trim()));
+              setAvailableVatRates(store.availableVatRates.split(',').map((s: string) => s.trim()));
             }
             if (store.defaultVatRate) {
               setDefaultVatRate(store.defaultVatRate);
@@ -90,10 +90,10 @@ export default function ProductEditModal({
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchStore();
-    
+
     // Set defaults if new product
     if (!editingProduct.id) {
       if (editingProduct.priceIncludesVat === undefined) {
@@ -108,21 +108,21 @@ export default function ProductEditModal({
 
     try {
       setIsUploading(true);
-      
+
       // Compress image
       const options = {
         maxSizeMB: 0.2, // 200KB limit
         maxWidthOrHeight: 1024,
         useWebWorker: true,
       };
-      
+
       showToast(`Đang xử lý ${files.length} ảnh...`);
       const newUrls: string[] = [];
 
       for (const file of files) {
         const compressedFile = await imageCompression(file, options);
         const fileName = `images/${Date.now()}_${compressedFile.name}`;
-        
+
         const { error } = await supabase
           .storage
           .from('products')
@@ -132,18 +132,18 @@ export default function ProductEditModal({
           });
 
         if (error) throw error;
-        
+
         const { data: publicUrlData } = supabase
           .storage
           .from('products')
           .getPublicUrl(fileName);
-          
+
         newUrls.push(publicUrlData.publicUrl);
       }
-        
+
       setImageUrls(prev => [...prev, ...newUrls]);
       showToast("Tải ảnh thành công!", "success");
-      
+
     } catch (error: any) {
       console.error("Lỗi upload ảnh:", error);
       showToast("Lỗi khi tải ảnh: " + error.message, "error");
@@ -175,7 +175,7 @@ export default function ProductEditModal({
     setEditingProduct({
       ...editingProduct,
       units: [
-        ...editingProduct.units, 
+        ...editingProduct.units,
         { id: null, unitName: "", conversionRate: 1, price: 0, isDefault: false }
       ]
     });
@@ -227,7 +227,7 @@ export default function ProductEditModal({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 bg-surface-container-low/20">
-          
+
           {/* Section 1: Basic Info */}
           <div className="bg-white p-5 rounded-xl border border-surface-container-high mb-6 shadow-sm">
             <h4 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-4 border-b pb-2 border-surface-container-low">
@@ -236,29 +236,29 @@ export default function ProductEditModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Tên sản phẩm *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingProduct.name}
-                  onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
                   placeholder="VD: Xi măng Hà Tiên"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mã vạch / SKU</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingProduct.code}
-                  onChange={(e) => setEditingProduct({...editingProduct, code: e.target.value})}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, code: e.target.value })}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm font-mono focus:outline-none focus:border-primary text-on-surface"
                   placeholder="VD: XM-HT-01"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Danh mục</label>
-                <select 
+                <select
                   value={editingProduct.categoryId || 0}
-                  onChange={(e) => setEditingProduct({...editingProduct, categoryId: Number(e.target.value)})}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, categoryId: Number(e.target.value) })}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface cursor-pointer"
                 >
                   {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -266,10 +266,10 @@ export default function ProductEditModal({
               </div>
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Đơn vị cơ bản (Base Unit) *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingProduct.baseUnit}
-                  onChange={(e) => setEditingProduct({...editingProduct, baseUnit: e.target.value})}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, baseUnit: e.target.value })}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
                   placeholder="VD: Bao, Cái, Lon..."
                 />
@@ -277,8 +277,8 @@ export default function ProductEditModal({
               </div>
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mức cảnh báo tồn kho tối thiểu</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="0"
                   value={customMinStock}
                   onChange={(e) => setCustomMinStock(e.target.value === "" ? "" : Number(e.target.value))}
@@ -288,8 +288,8 @@ export default function ProductEditModal({
               </div>
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Vị trí lưu kho</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={customLocation}
                   onChange={(e) => setCustomLocation(e.target.value)}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
@@ -300,7 +300,7 @@ export default function ProductEditModal({
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mức Thuế VAT</label>
                 <select
                   value={editingProduct.vatRate || defaultVatRate}
-                  onChange={(e) => setEditingProduct({...editingProduct, vatRate: e.target.value})}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, vatRate: e.target.value })}
                   className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface cursor-pointer"
                 >
                   {availableVatRates.map(rate => (
@@ -312,21 +312,21 @@ export default function ProductEditModal({
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Giá bán đã bao gồm VAT?</label>
                 <div className="flex items-center gap-3 h-[38px]">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="priceIncludesVat" 
+                    <input
+                      type="radio"
+                      name="priceIncludesVat"
                       checked={editingProduct.priceIncludesVat !== false}
-                      onChange={() => setEditingProduct({...editingProduct, priceIncludesVat: true})}
+                      onChange={() => setEditingProduct({ ...editingProduct, priceIncludesVat: true })}
                       className="accent-primary"
                     />
                     <span className="text-sm">Đã bao gồm VAT</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="priceIncludesVat" 
+                    <input
+                      type="radio"
+                      name="priceIncludesVat"
                       checked={editingProduct.priceIncludesVat === false}
-                      onChange={() => setEditingProduct({...editingProduct, priceIncludesVat: false})}
+                      onChange={() => setEditingProduct({ ...editingProduct, priceIncludesVat: false })}
                       className="accent-primary"
                     />
                     <span className="text-sm">Chưa bao gồm</span>
@@ -337,8 +337,8 @@ export default function ProductEditModal({
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Hình ảnh sản phẩm</label>
                 <div className="flex gap-3 items-start flex-col">
                   <div>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/*"
                       multiple
                       ref={fileInputRef}
@@ -355,7 +355,7 @@ export default function ProductEditModal({
                       {isUploading ? "Đang xử lý..." : "Chọn ảnh"}
                     </button>
                   </div>
-                  
+
                   {imageUrls.length > 0 && (
                     <div className="flex flex-wrap gap-3 mt-2">
                       {imageUrls.map((url, idx) => (
@@ -376,7 +376,7 @@ export default function ProductEditModal({
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mô tả thêm</label>
-                <textarea 
+                <textarea
                   value={descText}
                   onChange={(e) => setDescText(e.target.value)}
                   rows={2}
@@ -394,12 +394,12 @@ export default function ProductEditModal({
                 <div className="group relative cursor-help">
                   <AlertCircle className="w-4 h-4 text-primary" />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs p-2 rounded hidden group-hover:block z-10 font-normal">
-                    1 Sản phẩm có thể có nhiều đơn vị. Tỷ lệ quy đổi tính theo Đơn vị cơ bản. <br/>
+                    1 Sản phẩm có thể có nhiều đơn vị. Tỷ lệ quy đổi tính theo Đơn vị cơ bản. <br />
                     Ví dụ: Base = Lon. Lốc = 6 Lon (Tỷ lệ: 6).
                   </div>
                 </div>
               </h4>
-              <button 
+              <button
                 onClick={handleAddUnit}
                 className="text-primary hover:text-primary-container text-xs font-bold flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
               >
@@ -436,14 +436,14 @@ export default function ProductEditModal({
 
         {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-surface-container-high bg-surface-container-low/50 flex justify-end gap-3 rounded-b-2xl">
-          <button 
+          <button
             onClick={onClose}
             disabled={isSaving}
             className="px-5 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50"
           >
             Hủy bỏ
           </button>
-          <button 
+          <button
             onClick={handleSave}
             disabled={isSaving}
             className="px-5 py-2 text-sm font-bold bg-primary hover:bg-primary-container text-white rounded-lg flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"

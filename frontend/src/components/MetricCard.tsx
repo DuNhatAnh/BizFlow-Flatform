@@ -34,24 +34,24 @@ export default function MetricCard({
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-card border border-surface-container-high flex flex-col justify-between hover:shadow-md transition-shadow">
+    <div className="bg-white p-4 rounded-xl shadow-card border border-surface-container-high flex flex-col justify-between hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
             {title}
           </span>
-          <h3 className="text-2xl font-bold text-on-surface mt-2 tracking-tight">
+          <h3 className="text-xl font-bold text-on-surface mt-1.5 tracking-tight">
             {value}
           </h3>
         </div>
 
         {/* Icon Circle Container */}
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${iconBgColor}`}>
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgColor}`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-surface-container-low flex items-center">
+      <div className="mt-3 pt-3 border-t border-surface-container-low flex items-center">
         <span className={`text-xs ${trendClass}`}>{trend}</span>
       </div>
     </div>

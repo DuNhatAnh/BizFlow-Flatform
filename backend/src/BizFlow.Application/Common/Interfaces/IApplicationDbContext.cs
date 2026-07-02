@@ -23,11 +23,15 @@ public interface IApplicationDbContext
     DbSet<InventoryReceipt> InventoryReceipts { get; }
     DbSet<InventoryReceiptDetail> InventoryReceiptDetails { get; }
     DbSet<AccountingLedgerS2> AccountingLedgerS2s { get; }
+    DbSet<WorkShift> WorkShifts { get; }
+    DbSet<ShiftAssignment> ShiftAssignments { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<PayrollRecord> PayrollRecords { get; }
     DbSet<CashTransaction> CashTransactions { get; }
     DbSet<SystemConfig> SystemConfigs { get; }
     DbSet<AiRequestLog> AiRequestLogs { get; }
+    DbSet<AttendanceRecord> AttendanceRecords { get; }
+    DbSet<Notification> Notifications { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

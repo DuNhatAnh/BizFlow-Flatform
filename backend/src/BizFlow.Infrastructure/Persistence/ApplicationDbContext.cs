@@ -42,8 +42,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
     public DbSet<AiRequestLog> AiRequestLogs => Set<AiRequestLog>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
+    public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
+
     {
         base.OnModelCreating(modelBuilder);
 
@@ -305,7 +310,50 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Key);
         });
 
-        // 22. AiRequestLog configurations
+        // 22. AttendanceRecord configurations
+        modelBuilder.Entity<AttendanceRecord>(entity =>
+        {
+            entity.ToTable("attendance_records");
+            entity.Property(e => e.Status).HasConversion<string>();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Tenant)
+                  .WithMany()
+                  .HasForeignKey(e => e.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 23. WorkShift configurations
+        modelBuilder.Entity<WorkShift>(entity =>
+        {
+            entity.ToTable("work_shifts");
+            entity.HasOne(e => e.Tenant)
+                  .WithMany()
+                  .HasForeignKey(e => e.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 24. ShiftAssignment configurations
+        modelBuilder.Entity<ShiftAssignment>(entity =>
+        {
+            entity.ToTable("shift_assignments");
+            entity.HasOne(e => e.Tenant)
+                  .WithMany()
+                  .HasForeignKey(e => e.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.WorkShift)
+                  .WithMany()
+                  .HasForeignKey(e => e.WorkShiftId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 25. AiRequestLog configurations
         modelBuilder.Entity<AiRequestLog>(entity =>
         {
             entity.ToTable("ai_request_logs");
@@ -344,6 +392,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AiRequestLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<WorkShift>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Notification>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
 
 
 

@@ -76,10 +76,10 @@ public class StaffService : IStaffService
             throw new Exception("Mật khẩu quá ngắn, yêu cầu ít nhất 6 ký tự.");
 
         var existingUser = await _context.Users
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == request.Username);
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
             
         if (existingUser != null)
-            throw new Exception("Tài khoản (Username) này đã tồn tại trong hệ thống.");
+            throw new Exception("Tên đăng nhập (Email) đã được sử dụng trong hệ thống.");
 
         var user = new User
         {
@@ -215,10 +215,10 @@ public class StaffService : IStaffService
         if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
         {
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == request.Username);
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
                 
             if (existingUser != null)
-                throw new Exception("Tên đăng nhập (Email) đã tồn tại trong hệ thống.");
+                throw new Exception("Tên đăng nhập (Email) đã được sử dụng trong hệ thống.");
                 
             user.Username = request.Username;
         }

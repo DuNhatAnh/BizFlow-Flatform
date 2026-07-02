@@ -13,6 +13,9 @@ public class Store
     public string? TaxCode { get; set; }
     public string? Email { get; set; }
     public string? LogoUrl { get; set; }
+    
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

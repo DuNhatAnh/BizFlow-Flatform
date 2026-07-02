@@ -18,6 +18,10 @@ public class OrderServiceTests
     {
         public Task SendToTenantAsync(Guid tenantId, string message) => Task.CompletedTask;
         public Task SendToUserAsync(Guid userId, string message) => Task.CompletedTask;
+        public Task<System.Collections.Generic.List<BizFlow.Domain.Entities.Notification>> GetUserNotificationsAsync(Guid userId) => Task.FromResult(new System.Collections.Generic.List<BizFlow.Domain.Entities.Notification>());
+        public Task<int> GetUnreadCountAsync(Guid userId) => Task.FromResult(0);
+        public Task MarkAsReadAsync(Guid notificationId) => Task.CompletedTask;
+        public Task CreateNotificationAsync(Guid tenantId, Guid userId, string title, string message, string type) => Task.CompletedTask;
     }
 
     private class MockInventoryService : BizFlow.Application.Interfaces.IInventoryService

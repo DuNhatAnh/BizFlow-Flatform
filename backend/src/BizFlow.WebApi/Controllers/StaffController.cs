@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using BizFlow.Application.DTOs.Staff;
 using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Common.Interfaces;
@@ -9,6 +10,7 @@ using BizFlow.Application.DTOs.Staff;
 
 namespace BizFlow.WebApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class StaffController : ControllerBase

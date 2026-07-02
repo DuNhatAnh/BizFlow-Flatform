@@ -20,8 +20,11 @@ import {
   Contact,
   LogOut,
   LifeBuoy,
-  Banknote
+  Banknote,
+  Clock,
+  Calendar
 } from "lucide-react";
+
 
 interface SidebarProps {
   activeTab: string;
@@ -114,6 +117,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           { id: "orders", label: "Đơn hàng của tôi", icon: ShoppingCart },
           { id: "ai-drafts", label: "Đơn nháp AI [F8]", icon: Mic, badge: draftCount > 0 ? draftCount : undefined },
           { type: "header", label: "TRA CỨU" },
+          { id: "my-schedule", label: "Lịch làm việc", icon: Calendar },
           { id: "products", label: "Tra cứu sản phẩm", icon: Package },
           { id: "debts", label: "Ghi nợ nhanh", icon: CreditCard },
         ];
@@ -127,7 +131,8 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
           { id: "products", label: "Hàng hóa & Đơn vị", icon: Package },
           { id: "inventory", label: "Quản lý Kho hàng", icon: Warehouse },
           { id: "customers", label: "Khách hàng & Công nợ", icon: Users },
-          { id: "staff", label: "Quản lý Nhân sự", icon: Contact },
+          { id: "staff", label: "Quản lý nhân sự", icon: Users, role: "Owner" },
+          { id: "shifts", label: "Phân ca làm việc", icon: Calendar, role: "Owner" },
           { type: "header", label: "TÀI CHÍNH" },
           { id: "cashbook", label: "Sổ quỹ & Thu chi", icon: Banknote },
           { type: "header", label: "BÁO CÁO & CÀI ĐẶT" },

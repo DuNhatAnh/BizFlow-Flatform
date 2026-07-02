@@ -111,6 +111,7 @@ using (var scope = app.Services.CreateScope())
             catch (Exception ex) { Console.WriteLine("SafeSql Error: " + ex.Message); }
         }
 
+
         // Migrate Cashier to Employee
         SafeSql("UPDATE users SET \"Role\" = 'Employee' WHERE \"Role\" = 'Cashier';");
 
