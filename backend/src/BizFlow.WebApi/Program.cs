@@ -139,7 +139,7 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-// Enable CORS
+app.UseRouting();
 app.UseCors("CorsPolicy");
 
 // Middleware: log raw request body for POST/PUT to help debug 400s

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowUpFromLine, ArrowDownToLine, AlertCircle, MoreHorizontal, Eye, Trash2 } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, AlertCircle, MoreHorizontal, Eye, Trash2, Search, Filter } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Skeleton } from "../../ui/Skeleton";
 import { Pagination } from "../../ui/Pagination";
@@ -47,9 +47,18 @@ export default function ReceiptHistoryTab({
 }: ReceiptHistoryTabProps) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
-  const [sortOption, setSortOption] = useState("oldest");
+  const [sortOption, setSortOption] = useState("newest"); // Default to newest
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const sortedData = [...displayData].sort((a, b) => {
+  const filteredAndSortedData = [...displayData].filter(item => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    const code = (item.code || "").toLowerCase();
+    const note = (item.note || "").toLowerCase();
+    const customer = (item.customerName || "").toLowerCase();
+    return code.includes(lowerQuery) || note.includes(lowerQuery) || customer.includes(lowerQuery);
+  }).sort((a, b) => {
     const dateA = new Date(a.createdAt || a.date || 0).getTime();
     const dateB = new Date(b.createdAt || b.date || 0).getTime();
     
@@ -65,45 +74,46 @@ export default function ReceiptHistoryTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="flex flex-col gap-2">
           <h3 className="text-lg font-bold text-on-surface">
             {activeSubTab === "receipts_in" ? "Lịch sử Nhập kho" : "Lịch sử Xuất kho"}
           </h3>
           {activeSubTab === "receipts_out" && (
-            <div className="flex gap-1 bg-surface-container-low p-1 rounded-lg w-max mt-2">
+            <div className="flex flex-wrap gap-1 bg-surface-container-low p-1 rounded-lg w-max mt-2">
               <button onClick={() => setExportFilterTab("all")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "all" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Tất cả</button>
               <button onClick={() => setExportFilterTab("export_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "export_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Phiếu xuất kho</button>
               <button onClick={() => setExportFilterTab("sales_slip")} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${exportFilterTab === "sales_slip" ? "bg-white shadow text-primary" : "text-on-surface-variant hover:bg-surface-container"}`}>Xuất từ bán hàng</button>
             </div>
           )}
         </div>
-        <div className="flex gap-3 items-start">
-          <select 
-            value={sortOption} 
-            onChange={e => setSortOption(e.target.value)}
-            className="px-3 py-2 border border-surface-container-high rounded-lg text-sm outline-none focus:border-primary text-on-surface-variant bg-white shadow-sm cursor-pointer"
-          >
-            <option value="newest">Mới nhất đến cũ nhất</option>
-            <option value="oldest">Cũ đến mới nhất</option>
-            <option value="price_asc">Giá tiền thấp nhất</option>
-            <option value="price_desc">Giá tiền cao nhất</option>
-          </select>
+        <div className="flex flex-wrap gap-3 items-center w-full lg:w-auto">
+          <div className="relative flex-grow lg:flex-grow-0 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input 
+              type="text" 
+              placeholder="Tìm theo mã phiếu, lý do..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-surface-container-high rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full lg:w-64 bg-white shadow-sm transition-all"
+            />
+          </div>
+
 
           {activeSubTab === "receipts_in" && (
             <button
               onClick={() => handleOpenReceiptModal(1)}
-              className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors"
+              className="whitespace-nowrap shrink-0 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors"
             >
-              <ArrowDownToLine className="w-4 h-4" /> Lập Phiếu Nhập Kho
+              <ArrowDownToLine className="w-4 h-4 shrink-0" /> Lập Phiếu Nhập Kho
             </button>
           )}
           {activeSubTab === "receipts_out" && (
             <button
               onClick={() => handleOpenReceiptModal(2)}
-              className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-amber-100"
+              className="whitespace-nowrap shrink-0 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-amber-100"
             >
-              <ArrowUpFromLine className="w-4 h-4" /> Lập Phiếu Xuất Kho
+              <ArrowUpFromLine className="w-4 h-4 shrink-0" /> Lập Phiếu Xuất Kho
             </button>
           )}
         </div>
@@ -131,7 +141,28 @@ export default function ReceiptHistoryTab({
                 </>
               )}
               <th className="p-4 text-center">Trạng thái</th>
-              <th className="p-4 rounded-tr-lg w-16 text-center"></th>
+              <th className="p-4 rounded-tr-lg w-16 text-center relative">
+                <div 
+                  className="flex justify-center items-center cursor-pointer hover:text-primary transition-colors p-1 rounded-full hover:bg-surface-container" 
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  title="Sắp xếp danh sách"
+                >
+                  <Filter className={`w-4 h-4 ${sortOption !== 'newest' ? 'text-primary' : 'text-gray-400'}`} />
+                </div>
+                {isSortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSortOpen(false)}></div>
+                    <div className="absolute right-4 top-full mt-1 bg-white border shadow-lg rounded-lg z-50 w-48 py-1.5 font-normal text-gray-700 normal-case tracking-normal text-left">
+                      <div className="px-3 py-1 text-xs text-gray-400 uppercase tracking-wider font-semibold">Sắp xếp theo</div>
+                      <button onClick={() => {setSortOption("newest"); setIsSortOpen(false)}} className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm ${sortOption === 'newest' ? 'text-primary font-medium bg-primary/5' : ''}`}>Ngày: Mới nhất</button>
+                      <button onClick={() => {setSortOption("oldest"); setIsSortOpen(false)}} className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm ${sortOption === 'oldest' ? 'text-primary font-medium bg-primary/5' : ''}`}>Ngày: Cũ nhất</button>
+                      <div className="border-t my-1"></div>
+                      <button onClick={() => {setSortOption("price_desc"); setIsSortOpen(false)}} className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm ${sortOption === 'price_desc' ? 'text-primary font-medium bg-primary/5' : ''}`}>Giá: Cao đến thấp</button>
+                      <button onClick={() => {setSortOption("price_asc"); setIsSortOpen(false)}} className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm ${sortOption === 'price_asc' ? 'text-primary font-medium bg-primary/5' : ''}`}>Giá: Thấp đến cao</button>
+                    </div>
+                  </>
+                )}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-container-low">
@@ -161,9 +192,9 @@ export default function ReceiptHistoryTab({
                   </div>
                 </td>
               </tr>
-            ) : sortedData.length === 0 ? (
+            ) : filteredAndSortedData.length === 0 ? (
               <tr><td colSpan={8} className="p-8 text-center text-on-surface-variant">Chưa có dữ liệu phiếu</td></tr>
-            ) : sortedData.map((r: any, i: number) => {
+            ) : filteredAndSortedData.map((r: any, i: number) => {
                 const isOrder = r.customer !== undefined || r.orderItems !== undefined;
                 const isExport = isOrder || r.type === 1 || r.type === "Export";
                 const code = isOrder ? (r.code ? r.code : (r.id ? r.id.substring(0, 8).toUpperCase() : "N/A")) : (r.referenceDocumentNo || r.referenceId || "N/A");

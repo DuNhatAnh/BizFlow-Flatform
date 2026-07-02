@@ -44,7 +44,7 @@ public class StaffController : ControllerBase
         return Ok(staff);
     }
 
-    [HttpGet("detail")]
+    [HttpGet]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
     public async Task<ActionResult<PagedResult<StaffDetailDto>>> GetStaffDetail(
         [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,

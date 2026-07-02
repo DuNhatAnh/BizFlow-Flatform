@@ -51,6 +51,7 @@ export default function CashBook({ user, showToast }: { user: any; showToast: an
     return res.charAt(0).toUpperCase() + res.slice(1) + " đồng";
   };
   const [transactions, setTransactions] = useState<CashTransaction[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [balance, setBalance] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -411,6 +412,8 @@ export default function CashBook({ user, showToast }: { user: any; showToast: an
             <input 
               type="text" 
               placeholder="Tìm theo mã phiếu, lý do..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-64"
             />
           </div>
@@ -429,13 +432,20 @@ export default function CashBook({ user, showToast }: { user: any; showToast: an
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {transactions.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Chưa có giao dịch nào.</td>
-                </tr>
-              ) : (
-                transactions.map((t) => (
-                  <tr key={t.id} onClick={() => { setSelectedTransaction(t); setIsDetailModalOpen(true); }} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
+              {(() => {
+                const filteredTransactions = transactions.filter(t => 
+                  (t.transactionCode || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  (t.reason || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (t.payerReceiverName || "").toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                
+                return filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Chưa có giao dịch nào.</td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((t) => (
+                    <tr key={t.id} onClick={() => { setSelectedTransaction(t); setIsDetailModalOpen(true); }} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
                     <td className="px-6 py-4 font-medium text-gray-900">{t.transactionCode}</td>
                     <td className="px-6 py-4">{new Date(t.transactionDate).toLocaleString('vi-VN')}</td>
                     <td className="px-6 py-4 text-center">
@@ -462,7 +472,8 @@ export default function CashBook({ user, showToast }: { user: any; showToast: an
                     </td>
                   </tr>
                 ))
-              )}
+                );
+              })()}
             </tbody>
           </table>
         </div>
