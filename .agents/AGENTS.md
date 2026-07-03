@@ -1,544 +1,307 @@
-# AGENTS.md — BizFlow Platform
+# AGENTS.md — BizFlow Platform Operating Manual
 
-Context đặc thù cho AI coding agent (Claude, Copilot, Cursor, GPT...) khi làm việc trên repo này.  
-File này KHÔNG thay thế các skill review chung (ví dụ: senior-code-reviewer) — nó bổ sung business rules và architectural constraints mà generic coding agent không tự biết.
-
----
-
-# 1. Project Overview
-
-BizFlow Platform là SaaS quản lý bán hàng cho hộ kinh doanh cá thể / cửa hàng bán lẻ tại Việt Nam.
-
-Core capabilities:
-- Quản lý bán hàng (POS)
-- Quản lý kho
-- Công nợ khách hàng
-- Báo cáo doanh thu
-- AI Assistant (voice → draft order)
-- Tự động hạch toán sổ sách theo **Thông tư 88/2021/TT-BTC**
-
-Tech stack:
-- Frontend: Next.js 14
-- Backend: .NET 8 (Clean Architecture + EF Core)
-- AI Service: FastAPI (Python)
-- Mobile: Flutter
-- Database: PostgreSQL (Supabase)
-- Cache / Queue: Redis
+This document is the definitive operating manual and architecture control contract for all AI coding agents (Claude, Antigravity, Cursor, Copilot, GPT, etc.) working on this repository.
 
 ---
 
-# 2. Monorepo Structure
+## 1. Repository Architecture & Service Boundaries
 
-```bash
-BizFlow-Flatform/
-├── docker-compose.yml
-├── frontend/      # Next.js 14 App Router
-├── backend/       # .NET 8 Clean Architecture
-├── ai-service/    # FastAPI (Whisper + Gemini)
-└── mobile/        # Flutter
+BizFlow Platform is organized as a multi-service monorepo. Agents must respect boundaries, responsibilities, and dependency directions.
+
+```
+BizFlow-Flatform/ (Monorepo Root)
+├── frontend/             # Next.js 14 Web Application (POS, Owner Dashboard, Admin Portal)
+├── backend/              # ASP.NET Core 8 Web API (Clean Architecture core)
+├── ai-service/           # FastAPI Microservice (Whisper STT & Gemini entity extraction)
+├── mobile/               # Flutter Mobile Client (Cashier voice input & attendance)
+└── database/             # Schema bootstrap scripts (Local dev only)
 ```
 
-Rule cho AI agent:
-1. Luôn xác định đang sửa service nào trước.
-2. Áp convention đúng cho service đó.
-3. Nếu thay đổi cross-service:
-   - mobile → ai-service
-   - frontend → backend
-   - ai-service → backend
-   → phải kiểm tra kỹ API contract.
-
-Đặc biệt chú ý:
-- DTO mismatch
-- Enum mismatch
-- JSON serialization mismatch
-- Validation missing
+### Dependency Direction Constraints
+- **Frontend & Mobile Clients** MUST interact with the **Backend API** for all transaction and database operations.
+- **Mobile Client** MUST upload audio to the **AI Service** for transcription and extraction.
+- **AI Service** MUST NOT query the database directly. It must act as a stateless pipeline returning draft order JSON to the requesting client.
+- **Cross-Service API Contract Changes** MUST be validated against the recipient DTO schemas to prevent JSON serialization mismatches.
 
 ---
 
-# 3. Multi-Tenant Architecture & Authorization
+## 2. Backend Conventions (.NET 8 Clean Architecture)
 
-## Current Tenant Model
+The backend code MUST adhere strictly to the following layered conventions:
 
-**Shared Database + TenantId isolation**
+### Layer Responsibilities
+- **Domain Layer (`BizFlow.Domain`):** Contains core enterprise entities, value objects, domain enums, and constants. It MUST NOT reference any other layer or external package (e.g. EF Core or WebApi).
+- **Application Layer (`BizFlow.Application`):** Defines service interfaces, DTOs, CQRS commands/queries (if applicable), and validator definitions.
+- **Infrastructure Layer (`BizFlow.Infrastructure`):** Implements external services (Auth, Caching, DB access, EF Core Migrations).
+- **WebApi Layer (`BizFlow.WebApi`):** Houses HTTP controllers, SignalR hubs, route definitions, and startup middleware configurations.
 
-Tất cả tenant dùng chung 1 PostgreSQL database.
-
-Isolation được thực hiện bằng:
-- `TenantId`
-- Authorization
-- Query filtering
-- Service layer validation
-
-## Critical Rules
-
-Mọi business table PHẢI có:
-- `Id`
-- `TenantId`
-- timestamps (nếu applicable)
-
-Ví dụ:
-- products
-- orders
-- customers
-- inventory_receipts
-- accounting_ledger_s2
-
-## Query Safety Rules
-
-### REQUIRED
-Mọi business query cho Owner / Employee PHẢI filter theo TenantId.
-
-Ví dụ đúng:
-```csharp
-context.Products
-    .Where(x => x.TenantId == tenantId)
-```
-
-Ví dụ nguy hiểm:
-```csharp
-context.Products.FirstOrDefault(x => x.Id == id)
-```
-
-Thiếu TenantId = potential data leak.
+### Coding Rules
+1. **No Business Logic in Controllers:** Controllers MUST only perform input binding, authorization check delegation, and response formatting. All business logic, database queries, and ledger updates MUST reside in Application Services or Domain Services.
+2. **Dependency Injection (DI):** All dependencies MUST be registered via their abstraction (interface) in `DependencyInjection.cs`. Implementations MUST NOT be instantiated manually via `new` in business code.
+3. **Data Annotations & FluentValidation:**
+   - Input DTOs MUST be validated before reaching service logic.
+   - The attribute `[ValidateNever]` MUST NOT be used to bypass model validation on core business entities (like `Order`).
+4. **Exception Handling & Response Formatting:**
+   - Stack traces and raw database exception messages MUST NOT be returned in API responses to clients.
+   - Standard HTTP status codes MUST be returned: `400 BadRequest` for validation/logic failures, `401 Unauthorized` for expired/invalid auth, `403 Forbidden` for role check failures, and `404 NotFound` for missing resources.
+5. **Caching:** Redis is the registered distributed cache provider. Large read-heavy datasets (such as product categories or subscription plan metadata) SHOULD use `IDistributedCache` before querying PostgreSQL.
 
 ---
 
-## Roles
+## 3. Frontend Conventions (Next.js 14)
 
-| Role | Permission Scope |
+### Folder & Component Structure
+- All core business components MUST be placed in `src/components/`.
+- Page routes MUST follow Next.js 14 App Router conventions inside `src/app/`.
+- Reusable UI elements MUST be stateless and presentational. State orchestration MUST be kept in container components or custom hooks.
+
+### Networking & API Integration
+- **Zero Hardcoded localhost URLs:** All HTTP requests MUST target `process.env.NEXT_PUBLIC_API_URL` (or the default fallback determined at build time). Hostnames and ports MUST NOT be embedded as raw string literals.
+- **React Query (TanStack Query):** All server mutations and queries MUST use TanStack Query hooks. Direct `fetch` or `axios` calls inside UI component `useEffect` blocks are forbidden for transaction endpoints.
+- **Authentication Token Lifecycle:** JWT tokens MUST be stored securely. If stored in `localStorage`, agents must evaluate XSS risks. In production configurations, `HttpOnly` cookie storage is preferred.
+- **Tenancy Context Isolation:** Local storage keys MUST be isolated per tenant ID where appropriate to avoid data collisions during local test runs.
+
+---
+
+## 4. AI Service Conventions (FastAPI & Python)
+
+### Performance & Safety
+- **Prompt Injection Prevention:** User voice transcripts or raw text inputs MUST be escaped and wrapped in strict system prompt boundaries. Raw text inputs MUST NOT be placed directly at the end of prompt strings.
+- **MIME-Type & Size Validation:** The `/api/voice-order` endpoint MUST validate files by checking both the filename extension AND the MIME-type from the file headers. A maximum file size constraint (e.g., 10MB) MUST be enforced.
+- **Statelessness:** The AI service MUST NOT write or read database records.
+- **Whisper Load Optimization:** The OpenAI Whisper model (e.g., base) MUST be loaded at service startup, NOT lazily during the first HTTP request, to prevent request timeouts.
+
+---
+
+## 5. Mobile Conventions (Flutter)
+
+### Client Standards
+- **Secure Storage:** All authentication tokens, tenant details, and user profiles MUST be stored using `flutter_secure_storage`. Plain text key-value stores (such as SharedPreferences) MUST NOT be used for JWT tokens.
+- **Network Call Standardization:** All remote calls MUST use a centralized client wrapper that automatically appends `Authorization: Bearer <Token>` and `X-Tenant-Id` headers.
+- **State Management:** Keep business logic separated from visual widgets using Provider or Bloc patterns.
+
+---
+
+## 6. Database & Migration Rules (CRITICAL)
+
+BizFlow uses Entity Framework Core 8 Code-First migrations as the **only source of truth** for database schemas.
+
+### STRICTLY FORBIDDEN
+- **No runtime DDL SQL execution:** Using `ExecuteSqlRaw` or similar methods to run `CREATE TABLE`, `ALTER TABLE`, or schema manipulations in application services is strictly forbidden.
+- **No manual SQL scripts in production:** Scripts like `database/init.sql` must only be used as local Docker development bootstraps.
+
+### Migration Smoke-Test Workflow
+For every schema change, the agent MUST run the following steps locally:
+1. Generate the migration:
+   ```bash
+   dotnet ef migrations add <MigrationName> --project src/BizFlow.Infrastructure --startup-project src/BizFlow.WebApi
+   ```
+2. Verify `Up()` and `Down()` logic.
+3. Run a smoke-check:
+   ```bash
+   dotnet ef migrations add SmokeTest --project src/BizFlow.Infrastructure --startup-project src/BizFlow.WebApi
+   ```
+4. If the `SmokeTest` migration contains **any operations** (e.g. `CreateTable`, `AddColumn`), schema drift is detected. STOP and fix the DbContext mapping.
+5. Remove the smoke migration before committing:
+   ```bash
+   dotnet ef migrations remove --project src/BizFlow.Infrastructure --startup-project src/BizFlow.WebApi
+   ```
+
+### Constraints & Indexes
+- Every business table MUST include a foreign key to the `Tenants` table.
+- Indexing strategy: Columns frequently used in filters (`TenantId`, `ProductId`, `CustomerId`, `Date`) MUST be indexed.
+- Delete Behavior: Foreign keys to master/parent tables MUST use `DeleteBehavior.Restrict` or `DeleteBehavior.SetNull` to prevent accidental cascading deletes of historical financial data.
+
+---
+
+## 7. Multi-Tenant Architecture & Data Security
+
+### Tenant Isolation
+- **Global Query Filters:** All tenant-specific entities mapped in `ApplicationDbContext.cs` MUST have a query filter applied during `OnModelCreating`:
+  ```csharp
+  modelBuilder.Entity<MyEntity>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+  ```
+- **No Fallback to Default Tenant:** API endpoints and service methods MUST NOT fallback to a default or development tenant GUID (such as `"11111111-1111-1111-1111-111111111111"`) if the tenant context is missing. If authentication or tenant header validation fails, an unauthorized response MUST be returned.
+- **Cross-Tenant Queries:** Platform admin controllers performing cross-tenant operations MUST reside in separate admin-only namespaces, require the `PlatformAdmin` role, and be audited.
+
+---
+
+## 8. Authentication & Authorization
+
+### Authentication Verification
+- Custom token parsing logic (e.g., splitting authorization headers to extract IDs without signature checking) is **strictly forbidden**. All endpoints requiring user identification MUST utilize claims extracted by the verified ASP.NET Core JWT middleware.
+- JWT secret keys, DB passwords, and API credentials MUST NOT be committed to version control in plaintext. Use environment variable placeholders (`${MY_SECRET}`).
+
+### Role Enforcement
+- Endpoints MUST be protected using explicit role-based or policy-based authorization attributes.
+- **Default Fail-Closed Policy:** All controllers MUST inherit from `ApiControllerBase` or use `[Authorize]` at class-level. Public endpoints must be explicitly decorated with `[AllowAnonymous]`.
+
+---
+
+## 9. Accounting Rules (TT88 Compliance)
+
+BizFlow must comply with **Thông tư 88/2021/TT-BTC** for Vietnamese individual business households.
+
+### Data Model Rules
+- **Accounting Ledgers (S1-ĐH, S2-ĐH, S3-ĐH):** Must act as the immutable source of truth.
+- **Cash Book & Inventory Balance:** Must be calculated by aggregating ledger entries (`accounting_ledger_s2` for inventory, `cash_transactions` for cash). Cached columns (like `products.StockQuantity`) are auxiliary data and MUST NOT be trusted as the ultimate balance in case of conflicts.
+- **Immutability Constraint:** Completed transactions posted to accounting ledgers, cash books, or tax records MUST NOT be updated (`UPDATE`) or deleted (`DELETE`).
+- **Correction Protocol:** Errors must be corrected only by creating reversing entries (negative amounts) or adjustment transactions.
+- **Period Lock:** When an accounting period (month/quarter/year) is locked by the owner, no new transactions can be back-dated into the locked period.
+
+---
+
+## 10. Anti-Hallucination Rules
+
+When writing code or generating configurations, coding agents MUST follow these strict guidelines to prevent system failures:
+
+1. **Verify Before Implementing:**
+   - DO NOT assume an API endpoint exists. Look it up in the Controllers folder.
+   - DO NOT assume a database column exists. Look it up in the Entity definitions (`BizFlow.Domain/Entities`).
+   - DO NOT assume a DTO field is available. Verify the definition in the DTO or Request classes.
+2. **Do Not Generate Hardcoded Secrets:**
+   - DO NOT hardcode developer-specific GUIDs, database passwords, bypass backdoor keys (e.g. `"internal_ai_secret_code_123"`), or signing credentials.
+3. **Handle Missing Information:**
+   - If you cannot find a configuration key, an endpoint, or an implementation detail, you MUST leave a `// TODO:` comment or ask the user for clarification. Do not make assumptions.
+
+---
+
+## 11. Code Review Severity
+
+When auditing or reviewing code changes, classify issues using the following checklist:
+
+| Severity | Definition |
 |---|---|
-| Admin | Quản lý platform, tenant, subscription |
-| Owner | Toàn quyền trong tenant |
-| Employee | POS, bán hàng, ghi nợ, thu nợ |
+| **Critical (P0)** | Cross-tenant data leaks, unauthenticated financial writes, committed credentials/db backups, or accounting immutability violations. |
+| **High (P1)** | Security signature validation bypass, lack of authentication on state-changing endpoints, CORS wildcard on write APIs, or missing query filters. |
+| **Medium (P2)** | Model validation bypass (`[ValidateNever]`), hardcoded local dev credentials, duplicate logic, or missing transaction boundaries. |
+| **Low (P3)** | Code styling issues, unused import directives, or redundant local log statements. |
 
 ---
 
-## Authorization Rules
+## 12. Critical Failure Conditions
 
-### Admin
-Có thể cross-tenant nhưng:
-- phải qua admin endpoint riêng
-- phải audit log
-- không dùng chung code path với Owner/Employee
-
-### Owner
-Có quyền:
-- báo cáo
-- kho
-- TT88
-- công nợ
-- cấu hình tenant
-
-### Employee
-Có quyền:
-- POS
-- tạo đơn
-- ghi nợ
-- thu nợ
-- AI draft approval
-
-Không được:
-- xem báo cáo tài chính tổng
-- chỉnh system config
-- xem tax reports
+Any of the following violations constitutes a **CRITICAL** failure. An agent MUST flag these immediately during code generation or review:
+- Missing TenantId filters or default tenant fallbacks.
+- Posted accounting ledger mutations (UPDATE/DELETE on ledger tables).
+- AI service auto-posting or auto-confirming transactions directly without human review.
+- Schema drift or executing raw SQL schema modifications at runtime.
+- Committing plaintext secrets or seeding production credentials.
 
 ---
 
-## Security Review Checklist
+## 13. Mandatory Agent Workflow
 
-Khi review:
-- middleware resolve tenant chạy chưa?
-- background jobs có tenant context không?
-- cron jobs có leak data không?
-- endpoint role check đủ chưa?
+AI coding agents MUST execute the following workflow step-by-step for every task:
 
-Data leak bug = **CRITICAL**
-
----
-
-# 4. Database Schema Rules (CRITICAL)
-
-BizFlow vừa hoàn thành **EF Core Baseline Reset** sau khi loại bỏ legacy `SafeSql`.
-
-Điều này cực kỳ quan trọng.
+1. **Information Discovery:** Read `README.md`, `.agents/AGENTS.md`, and `functional_specs.md` first.
+2. **Context Analysis:** Identify the affected service layers (Frontend, Backend, AI, Mobile, DB, Docker).
+3. **Dependency Tracing:** Identify all callers, consumers, and internal dependency injection registrations.
+4. **Contract Verification:** Inspect the JSON DTOs, API routing definitions, and serialization settings.
+5. **Implementation & Refactoring:** Apply the code changes matching existing styles.
+6. **Self-Review Checklist:** Scan the code against security, tenant-isolation, and performance rules.
+7. **Documentation Update:** Sync any configuration changes or API mutations to `README.md` and related schemas.
+8. **Validation & Verification:** Validate that the application compiles, builds, and runs cleanly.
+9. **Outcome Reporting:** Produce a concise summary of the changes, verification results, and any remaining gaps.
 
 ---
 
-## STRICTLY FORBIDDEN
+## 14. Evidence-First Policy
 
-### NEVER:
-- CREATE TABLE trong `Program.cs`
-- ALTER TABLE trong `Program.cs`
-- DROP TABLE runtime
-- SafeSql schema manipulation
+To eliminate hallucination and false assumptions, the agent MUST adhere to this strict verification policy:
 
-Ví dụ cấm:
-```csharp
-SafeSql("ALTER TABLE users ADD COLUMN ...");
-```
-
-Hoặc:
-```csharp
-db.Database.ExecuteSqlRaw("CREATE TABLE ...");
-```
+- **Zero Guessing:** Do NOT state any architectural fact, API path, database structure, or system behavior without referencing concrete code evidence in the repository.
+- **Valid Sources of Truth:** Rely ONLY on active source code, configuration manifests (`appsettings.json`, `.env`), Docker files, migrations history, and official documents inside this repository.
+- **Boundary Handling:** If evidence is missing or context is ambiguous, the agent MUST NOT invent the behavior. Instead, leave a clear `// TODO:` comment or ask the user for clarification.
 
 ---
 
-## REQUIRED
+## 15. Architecture Protection Rules
 
-Mọi schema changes MUST đi qua:
-1. Update Entity
-2. Update DbContext mapping
-3. Generate migration
-4. Audit migration
-5. Apply migration
+To prevent architecture drift, coding agents MUST preserve all core design decisions of the repository:
 
----
-
-## Migration Safety Checklist
-
-Trước khi apply production:
-
-### Step 1
-Generate migration:
-```bash
-dotnet ef migrations add MigrationName
-```
-
-### Step 2
-Audit:
-- Up()
-- Down()
-
-Check:
-- CreateTable?
-- DropTable?
-- AddColumn?
-- DropColumn?
-- AlterColumn?
-- InsertData?
+- **Clean Architecture Protection:** Maintain the boundaries of WebApi, Infrastructure, Application, and Domain layers. Do NOT bypass layers or introduce circular dependencies.
+- **ORM Preservation:** Do NOT substitute EF Core 8 with other ORMs or thô database query mechanisms unless explicitly requested.
+- **SignalR Hub Security:** Keep the real-time notification mechanism implemented on SignalR and ensure hubs are protected with appropriate authentication.
+- **Supabase Integration:** Maintain the Supabase cloud PostgreSQL connection configuration and the local Docker Alpine-Postgres helper setup.
 
 ---
 
-### Step 3
-Run smoke check
+## 16. Cross-Service Change Checklist
 
-Generate temp migration:
-```bash
-dotnet ef migrations add SmokeTest
-```
+Whenever a change is proposed to one component, the agent MUST run this checklist to determine if other components require updates:
 
-Nếu:
-```csharp
-Up() {}
-Down() {}
-```
-
-=> No schema drift.
+- [ ] **Database Schema:** If changed, update EF Core entities, register DbContext configurations, and generate migrations.
+- [ ] **Backend API:** If database models or DTOs changed, update WebApi controllers and services.
+- [ ] **Frontend Web:** If backend APIs changed, update React Query hooks, fetch parameters, and API base URL configs.
+- [ ] **Mobile Client:** If backend APIs changed, update Flutter models, secure storage parameters, and network client wrappers.
+- [ ] **AI Service:** If the voice processing flow changed, update FastAPI routes, Gemini models, or prompt parameters.
+- [ ] **Docker Orchestration:** If environment variables or build configurations changed, update `docker-compose.yml` and Dockerfiles.
 
 ---
 
-### Step 4
-Remove smoke migration:
-```bash
-dotnet ef migrations remove
-```
+## 17. Documentation Synchronization Policy
+
+No code modification affecting endpoints or core behaviors should leave documentation outdated. The agent MUST verify if the following require documentation sync:
+
+- **API Mutations:** Update `README.md` and OpenAPI Swagger comments.
+- **Enums & Roles:** Update the permissions matrix and roles description in `README.md`.
+- **Environment Variables:** Document any new configuration keys in both backend `appsettings.json` and frontend `.env` lists.
+- **Accounting Rules:** Sync any changes to S1/S2/S3 bookkeeping logic with Circular 88 reference guides.
 
 ---
 
-## Schema Drift Policy
+## 18. Breaking Change Policy
 
-Nếu SmokeTest sinh ra:
-- AlterColumn
-- AddColumn
-- CreateIndex
-- DropColumn
+Before deleting, renaming, or modifying any of the following, the agent MUST identify every consumer inside the monorepo:
+- API endpoint paths and HTTP request methods.
+- Database columns and EF Core entity property names.
+- DTO fields and request/response models.
+- Enums, configuration keys, or environment variables.
 
-=> Schema drift detected.
-
-STOP deployment.
+If the change breaks the frontend, mobile app, AI service, or test suites, the agent MUST NOT proceed without documenting a migration/backward-compatibility path.
 
 ---
 
-# 5. EF Core Rules
+## 19. Performance Checklist
 
-BizFlow backend dùng:
-- EF Core 8
-- Code First
-- Migration-driven schema
+Every code modification MUST be audited against the following performance bottlenecks:
 
-## Rules
-
-### Allowed
-- Fluent API
-- HasIndex
-- HasPrecision
-- HasDefaultValue
-
-### Avoid
-- Raw SQL schema modifications
-
-### Be careful with
-```csharp
-.Ignore(...)
-```
-
-EF sẽ nghĩ column bị remove → generate DropColumn.
-
-Luôn review kỹ migration nếu dùng:
-- Ignore
-- Rename
-- Split entity
-- Merge entity
+- [ ] **N+1 Queries:** Do NOT run database queries inside loops. Use eager loading (`.Include()`) or projections (`.Select()`) where appropriate.
+- [ ] **Unnecessary SaveChanges:** Avoid calling `SaveChangesAsync()` repeatedly within a single transaction boundary.
+- [ ] **Synchronous I/O:** Do NOT use blocking synchronous calls (e.g. `.Result`, `.Wait()`, `.Read()`, `.Write()`). Always use the matching async APIs.
+- [ ] **Large Include Chains:** Avoid massive, multi-level `.Include()` paths that produce Cartesian explosions in database queries.
+- [ ] **Blocking Async Code:** Avoid thread pool starvation by avoiding `Task.Run()` for short, CPU-bound operations in Web API request pipelines.
 
 ---
 
-# 6. Seed Data Rules
+## 20. Definition of Done (DoD)
 
-## Production
-Production schema PHẢI sạch:
-- không credential
-- không dummy users
-- không demo tenant
+A task is not considered complete until the agent meets all of the following requirements:
 
-Forbidden:
-- admin123
-- owner123
-- employee123
+- [ ] **Successful Build:** The affected projects compile and build successfully without errors or warnings.
+- [ ] **Security Audited:** Authorization decorators (`[Authorize]`) are present, and JWT signature verification is intact.
+- [ ] **Tenant Isolation Verified:** All business queries filter by `TenantId`, and global query filters are actively applied.
+- [ ] **Migration Cleanliness:** Database migrations have been tested, and smoke-checks indicate zero schema drift.
+- [ ] **Zero Hardcoded Secrets:** No passwords, bypass keys, or API keys are committed in plaintext.
+- [ ] **Zero Fictional TODOs:** No unresolved warnings or unexplained placeholders are left in the codebase.
 
 ---
 
-## Development Only
+## 21. Repository Knowledge Boundaries
 
-Test accounts chỉ tồn tại qua:
+The agent MUST explicitly distinguish between established facts and assumptions:
 
-`DevelopmentDataSeeder`
-
-Chỉ chạy khi:
-```csharp
-Environment == Development
-&& EnableDevSeed == true
-```
-
-Không được để test seed trong:
-- migrations
-- DbContext HasData
+- **No Fictional Endpoints:** Only use endpoints actively mapped in the WebApi controllers.
+- **No Fictional DB Columns:** Only map attributes defined in EF Core entity definitions.
+- **No Fictional DTO Fields:** Only instantiate properties present in DTO classes.
+- **No Fictional Permissions:** Only enforce roles and policies declared in `Program.cs`.
 
 ---
 
-## Reference Seed
-
-Reference data an toàn có thể seed runtime:
-- enums
-- system constants
-- lookup values
-
-Không seed hardcoded credentials.
-
----
-
-# 7. Accounting Rules (TT88) — HARD CONSTRAINT
-
-BizFlow phải tuân thủ:
-
-**Thông tư 88/2021/TT-BTC**
-
-Không được tự ý redesign accounting flow trái TT88.
-
----
-
-## 7 Accounting Books
-
-| Sổ | Mã |
-|---|---|
-| Sổ doanh thu | S1-HKD |
-| Sổ kho | S2-HKD |
-| Sổ chi phí | S3-HKD |
-| Sổ thuế | S4-HKD |
-| Sổ lương | — |
-| Sổ quỹ tiền mặt | — |
-| Sổ ngân hàng | — |
-
----
-
-## Data Sources
-
-### S1-HKD
-Nguồn:
-- approved orders
-
-### S2-HKD
-Nguồn:
-- receipts
-- inventory transactions
-- sales deductions
-
-### S3-HKD
-Nguồn:
-- expenses
-- operating cost
-
-### S4-HKD
-Nguồn:
-- tax engine
-- revenue + tax rules
-
----
-
-# 8. Accounting Immutability Rules (CRITICAL)
-
-Accounting entries sau khi post phải **immutable**.
-
-Không được:
-- UPDATE posted entries
-- DELETE posted entries
-
-Đặc biệt:
-
-Tables:
-- accounting_ledger_s2
-- cash_transactions
-- tax ledgers
-
-Forbidden:
-```sql
-UPDATE accounting_ledger_s2 ...
-DELETE FROM accounting_ledger_s2 ...
-```
-
----
-
-## Correction Methods
-
-Sửa sai chỉ bằng:
-1. reversal entry
-2. negative entry
-3. adjustment entry
-
-Append-only only.
-
-Accounting mutation bug = **CRITICAL**
-
----
-
-# 9. Period Lock Rules
-
-Khi kỳ kế toán đã khóa:
-- không cho thêm transaction vào kỳ cũ
-- không sửa bút toán cũ
-
-Cho phép:
-- adjustment entry ở kỳ hiện tại
-
----
-
-# 10. Inventory Rules
-
-Nguồn tồn kho chuẩn:
-- `accounting_ledger_s2`
-
-Legacy field:
-- `products.StockQuantity`
-
-`StockQuantity` là legacy cache field.
-
-Không dùng làm source of truth.
-
-Source of truth:
-```text
-Inventory Ledger (S2)
-```
-
-Nếu conflict:
-ledger wins.
-
----
-
-# 11. HR / Payroll Rules
-
-Auth data và HR data nên tách riêng.
-
-User table chỉ nên chứa:
-- auth
-- identity
-- role
-- tenant linkage
-
-HR fields nên ở:
-- EmployeeProfile
-
-Ví dụ:
-- IdentityCard
-- BankAccountNumber
-- BasicSalary
-- DateOfBirth
-- TaxCode
-
-Tránh fat `users` table.
-
----
-
-# 12. AI Flow Rules (Whisper + Gemini)
-
-AI không được auto-confirm transaction.
-
-AI chỉ được:
-### voice input
-↓
-### entity extraction
-↓
-### draft order
-
----
-
-## Forbidden
-
-AI output KHÔNG được:
-- trừ kho trực tiếp
-- ghi accounting ledger
-- tạo invoice finalized
-
----
-
-## Required Validation
-
-AI extracted:
-- product name
-- quantity
-- price
-- customer
-- payment method
-
-Phải validate với DB:
-- product exists?
-- quantity valid?
-- price valid?
-
-Không trust 100% LLM output.
-
----
-
-# 13. Code Review Severity
-
-| Severity | Meaning |
-|---|---|
-| Critical | Data loss / financial corruption / tenant leak |
-| High | Security / auth bug |
-| Medium | Logic bug |
-| Low | Style / refactor |
-
----
-
-# 14. Critical Failure Conditions
-
-Bất kỳ lỗi nào sau đây = CRITICAL:
-
-- Missing TenantId filter
-- Cross-tenant leak
-- Posted ledger mutation
-- AI auto-post accounting
-- Schema drift
-- Raw SQL schema modification
-- Production credential seed
-
-Agent MUST flag immediately.
+## 22. AI Behavior Rules
+
+- **Low-Confidence Mode:** If the agent lacks repository evidence or confidence in a technical direction, it MUST stop, state the unknown factors, and request clarification.
+- **Banned Implementations:** The agent is FORBIDDEN from generating fictional code placeholders or placeholders that bypass security rules.
+- **Fail-Safe Rules:** Keep AI services stateless, optional, and decoupled from the transactional flow of POS.
+
