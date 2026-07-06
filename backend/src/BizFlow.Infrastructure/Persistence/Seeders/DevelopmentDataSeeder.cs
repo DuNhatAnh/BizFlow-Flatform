@@ -12,7 +12,7 @@ namespace BizFlow.Infrastructure.Persistence.Seeders
         public static async Task SeedAsync(ApplicationDbContext context)
         {
             // Only seed if the admin account does not exist (idempotency check)
-            if (!context.Users.Any(x => x.Username == "admin@bizflow.com"))
+            if (!context.Users.IgnoreQueryFilters().Any(x => x.Username == "admin@bizflow.com"))
             {
                 var systemTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
                 var storeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -92,7 +92,7 @@ namespace BizFlow.Infrastructure.Persistence.Seeders
 
                 // 3. Store
                 var storeId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-                if (!context.Stores.Any(s => s.Id == storeId))
+                if (!context.Stores.IgnoreQueryFilters().Any(s => s.Id == storeId))
                 {
                     context.Stores.Add(new Store
                     {

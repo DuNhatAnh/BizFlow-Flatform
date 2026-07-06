@@ -88,7 +88,7 @@ public class TenantsController : ApiControllerBase
         }
 
         // Check if username already exists globally
-        var userExists = await _context.Users.AnyAsync(u => u.Username.ToLower() == req.OwnerEmail.ToLower());
+        var userExists = await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Username.ToLower() == req.OwnerEmail.ToLower());
         if (userExists)
         {
             return BadRequest(new { message = "Email/Tên đăng nhập của chủ sở hữu đã tồn tại trên hệ thống." });
@@ -264,7 +264,7 @@ public class TenantsController : ApiControllerBase
             return BadRequest(new { message = "Tên doanh nghiệp, tên chủ sở hữu, email và mật khẩu không được để trống." });
         }
 
-        var userExists = await _context.Users.AnyAsync(u => u.Username.ToLower() == req.OwnerEmail.ToLower());
+        var userExists = await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Username.ToLower() == req.OwnerEmail.ToLower());
         if (userExists)
         {
             return BadRequest(new { message = "Email/Tên đăng nhập của chủ sở hữu đã tồn tại trên hệ thống." });

@@ -29,6 +29,7 @@ public class AuthService : IAuthService
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users
+            .IgnoreQueryFilters()
             .Include(u => u.Tenant)
             .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
 
@@ -102,9 +103,9 @@ public class AuthService : IAuthService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Username),
-            new Claim("tenant_id", user.TenantId.ToString()),
+            new Claim(BizFlow.Domain.Constants.ClaimConstants.TenantId, user.TenantId.ToString()),
             new Claim(ClaimTypes.Role, roleStr),
-            new Claim("fullname", user.Fullname)
+            new Claim(BizFlow.Domain.Constants.ClaimConstants.FullName, user.Fullname)
         };
 
         var token = new JwtSecurityToken(

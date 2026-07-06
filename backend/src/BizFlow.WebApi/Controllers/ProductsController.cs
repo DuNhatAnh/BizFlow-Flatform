@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.DTOs.Products;
-using BizFlow.Application.DTOs.Products;
 using BizFlow.Application.DTOs.Common;
 using BizFlow.Application.Interfaces;
-
+using BizFlow.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace BizFlow.WebApi.Controllers;
@@ -12,22 +11,33 @@ public class ProductsController : ApiControllerBase
 {
     private readonly IProductService _productService;
     private readonly INotificationService _notificationService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public ProductsController(IProductService productService, INotificationService notificationService)
+    public ProductsController(IProductService productService, INotificationService notificationService, ICurrentTenantService currentTenantService)
     {
         _productService = productService;
         _notificationService = notificationService;
+        _currentTenantService = currentTenantService;
+    }
+
+    private Guid GetTenantId()
+    {
+        var tenantId = _currentTenantService.TenantId;
+        if (!tenantId.HasValue || tenantId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Tenant ID is missing.");
+        }
+        return tenantId.Value;
     }
 
     [HttpGet]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
     public async Task<ActionResult<PagedResult<ProductDto>>> GetProducts(
-        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
-        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var id = GetTenantId();
         try {
             var products = await _productService.GetAllAsync(id, page, pageSize, search);
             return Ok(products);
@@ -38,10 +48,9 @@ public class ProductsController : ApiControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
-    public async Task<ActionResult<ProductDto>> GetProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    public async Task<ActionResult<ProductDto>> GetProduct(Guid id)
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
-
+        var tenantId = GetTenantId();
         var product = await _productService.GetByIdAsync(tenantId, id);
         if (product == null) return NotFound();
 
@@ -50,10 +59,9 @@ public class ProductsController : ApiControllerBase
 
     [HttpPost]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
-    public async Task<ActionResult<ProductDto>> CreateProduct([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] CreateProductRequest request)
+    public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] CreateProductRequest request)
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
-
+        var tenantId = GetTenantId();
         var product = await _productService.CreateAsync(tenantId, request);
         try
         {
@@ -63,14 +71,14 @@ public class ProductsController : ApiControllerBase
         {
             // Soft fail to avoid blocking if SignalR is not running
         }
-        return CreatedAtAction(nameof(GetProduct), new { id = product.Id, tenantId }, product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
-    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] UpdateProductRequest request)
+    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromBody] UpdateProductRequest request)
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        var tenantId = GetTenantId();
         
         if (!ModelState.IsValid)
         {
@@ -100,9 +108,9 @@ public class ProductsController : ApiControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsManage)]
-    public async Task<ActionResult> DeleteProduct(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    public async Task<ActionResult> DeleteProduct(Guid id)
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        var tenantId = GetTenantId();
 
         var result = await _productService.DeleteAsync(tenantId, id);
         if (!result) return NotFound();
@@ -121,18 +129,18 @@ public class ProductsController : ApiControllerBase
 
     [HttpGet("{id}/history")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.ProductsRead)]
-    public async Task<ActionResult<List<ProductHistoryDto>>> GetProductHistory(Guid id, [FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    public async Task<ActionResult<List<ProductHistoryDto>>> GetProductHistory(Guid id)
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        var tenantId = GetTenantId();
 
         var histories = await _productService.GetHistoryAsync(tenantId, id);
         return Ok(histories);
     }
 
     [HttpGet("history/all")]
-    public async Task<ActionResult<List<ProductHistoryDto>>> GetGlobalHistory([FromHeader(Name = "X-Tenant-Id")] Guid tenantId)
+    public async Task<ActionResult<List<ProductHistoryDto>>> GetGlobalHistory()
     {
-        if (tenantId == Guid.Empty) return BadRequest("TenantId is required.");
+        var tenantId = GetTenantId();
 
         var histories = await _productService.GetAllHistoryAsync(tenantId);
         return Ok(histories);

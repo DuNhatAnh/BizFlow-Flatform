@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.Interfaces;
+using BizFlow.Application.Common.Interfaces;
+using BizFlow.WebApi.Extensions;
+using System.Linq;
 
 namespace BizFlow.WebApi.Controllers;
 
@@ -12,22 +15,22 @@ namespace BizFlow.WebApi.Controllers;
 public class ShiftsController : ControllerBase
 {
     private readonly IShiftService _shiftService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public ShiftsController(IShiftService shiftService)
+    public ShiftsController(IShiftService shiftService, ICurrentTenantService currentTenantService)
     {
         _shiftService = shiftService;
+        _currentTenantService = currentTenantService;
     }
 
     private Guid GetTenantId()
     {
-        if (Request.Headers.TryGetValue("X-Tenant-Id", out var tenantIdValues))
+        var tenantId = _currentTenantService.TenantId;
+        if (!tenantId.HasValue || tenantId == Guid.Empty)
         {
-            if (Guid.TryParse(tenantIdValues.First(), out var tenantId))
-                return tenantId;
+            throw new UnauthorizedAccessException("Tenant ID not found");
         }
-        var claim = User.Claims.FirstOrDefault(c => c.Type == "TenantId")?.Value;
-        if (Guid.TryParse(claim, out var tid)) return tid;
-        throw new UnauthorizedAccessException("Tenant ID not found");
+        return tenantId.Value;
     }
 
     [HttpGet]
@@ -154,8 +157,8 @@ public class ShiftsController : ControllerBase
     public async Task<IActionResult> GetMyShiftToday()
     {
         var tenantId = GetTenantId();
-        var userIdStr = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-        if (!Guid.TryParse(userIdStr, out var userId)) return Unauthorized();
+        var userId = User.GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
 
         var today = DateTime.UtcNow.Date;
         var assignment = await _shiftService.GetAssignmentForUserOnDateAsync(tenantId, userId, today);

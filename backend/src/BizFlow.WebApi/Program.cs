@@ -158,6 +158,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthentication();
+app.UseMiddleware<BizFlow.WebApi.Middleware.TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

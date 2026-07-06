@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Attendance;
+using BizFlow.WebApi.Extensions;
 
 namespace BizFlow.WebApi.Controllers;
 
@@ -15,26 +16,28 @@ namespace BizFlow.WebApi.Controllers;
 public class AttendanceController : ControllerBase
 {
     private readonly IAttendanceService _attendanceService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public AttendanceController(IAttendanceService attendanceService)
+    public AttendanceController(IAttendanceService attendanceService, ICurrentTenantService currentTenantService)
     {
         _attendanceService = attendanceService;
+        _currentTenantService = currentTenantService;
     }
 
     private Guid GetTenantId()
     {
-        var tenantIdClaim = User.FindFirst("tenant_id")?.Value ?? User.FindFirst("TenantId")?.Value;
-        if (string.IsNullOrEmpty(tenantIdClaim) || !Guid.TryParse(tenantIdClaim, out var tenantId))
+        var tenantId = _currentTenantService.TenantId;
+        if (!tenantId.HasValue || tenantId == Guid.Empty)
         {
             throw new UnauthorizedAccessException("TenantId is missing or invalid.");
         }
-        return tenantId;
+        return tenantId.Value;
     }
 
     private Guid GetUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        var userId = User.GetUserId();
+        if (userId == Guid.Empty)
         {
             throw new UnauthorizedAccessException("UserId is missing or invalid.");
         }

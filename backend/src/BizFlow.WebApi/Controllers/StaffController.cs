@@ -16,30 +16,32 @@ namespace BizFlow.WebApi.Controllers;
 public class StaffController : ControllerBase
 {
     private readonly IStaffService _staffService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public StaffController(IStaffService staffService)
+    public StaffController(IStaffService staffService, ICurrentTenantService currentTenantService)
     {
         _staffService = staffService;
+        _currentTenantService = currentTenantService;
     }
 
     private Guid GetTenantId()
     {
-        if (Request.Headers.TryGetValue("X-Tenant-Id", out var tenantIdStr) && Guid.TryParse(tenantIdStr, out var tenantId))
+        var tenantId = _currentTenantService.TenantId;
+        if (!tenantId.HasValue || tenantId == Guid.Empty)
         {
-            return tenantId;
+            throw new UnauthorizedAccessException("Tenant ID is missing.");
         }
-        throw new UnauthorizedAccessException("Tenant ID is missing.");
+        return tenantId.Value;
     }
 
     [HttpGet("basic")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
     public async Task<ActionResult<PagedResult<PublicStaffDto>>> GetStaffBasic(
-        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
-        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var id = GetTenantId();
         var staff = await _staffService.GetStaffBasicAsync(id, page, pageSize, search);
         return Ok(staff);
     }
@@ -47,12 +49,11 @@ public class StaffController : ControllerBase
     [HttpGet]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.StaffRead)]
     public async Task<ActionResult<PagedResult<StaffDetailDto>>> GetStaffDetail(
-        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
-        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var id = GetTenantId();
         var staff = await _staffService.GetStaffDetailAsync(id, page, pageSize, search);
         return Ok(staff);
     }
@@ -60,12 +61,11 @@ public class StaffController : ControllerBase
     [HttpGet("payroll")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.PayrollRead)]
     public async Task<ActionResult<PagedResult<StaffPayrollDto>>> GetStaffPayroll(
-        [FromHeader(Name = "X-Tenant-Id")] Guid? tenantId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
-        var id = tenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var id = GetTenantId();
         var staff = await _staffService.GetStaffPayrollAsync(id, page, pageSize, search);
         return Ok(staff);
     }

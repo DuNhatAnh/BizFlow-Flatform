@@ -5,8 +5,10 @@ using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.Interfaces;
 using BizFlow.Domain.Entities;
 using BizFlow.Domain.Enums;
-
+using BizFlow.Application.DTOs.Orders;
+using BizFlow.WebApi.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using System.Linq;
 
 namespace BizFlow.WebApi.Controllers;
 
@@ -15,18 +17,31 @@ public class OrdersController : ApiControllerBase
     private readonly IApplicationDbContext _context;
     private readonly IOrderService _orderService;
     private readonly INotificationService _notificationService;
+    private readonly ICurrentTenantService _currentTenantService;
 
-    public OrdersController(IApplicationDbContext context, IOrderService orderService, INotificationService notificationService)
+    public OrdersController(IApplicationDbContext context, IOrderService orderService, INotificationService notificationService, ICurrentTenantService currentTenantService)
     {
         _context = context;
         _orderService = orderService;
         _notificationService = notificationService;
+        _currentTenantService = currentTenantService;
+    }
+
+    private Guid GetTenantId()
+    {
+        var tenantId = _currentTenantService.TenantId;
+        if (!tenantId.HasValue || tenantId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Tenant context is missing");
+        }
+        return tenantId.Value;
     }
 
     [HttpGet]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
-    public async Task<ActionResult<IEnumerable<Order>>> GetOrders([FromQuery] Guid tenantId, [FromQuery] string? dateStr, [FromQuery] string? sourceStr, [FromQuery] Guid? createdBy)
+    public async Task<ActionResult<IEnumerable<Order>>> GetOrders([FromQuery] string? dateStr, [FromQuery] string? sourceStr, [FromQuery] Guid? createdBy)
     {
+        var tenantId = GetTenantId();
         var query = _context.Orders
             .Where(o => o.TenantId == tenantId)
             .Include(o => o.Customer)
@@ -94,10 +109,30 @@ public class OrdersController : ApiControllerBase
 
     [HttpPost]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersCreate)]
-    public async Task<ActionResult<Order>> CreateOrder([FromBody] [ValidateNever] Order order)
+    public async Task<ActionResult<Order>> CreateOrder([FromBody] CreateOrderRequest request)
     {
         try
         {
+            var tenantId = GetTenantId();
+            var userId = User.GetUserId();
+            
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                CustomerId = request.CustomerId,
+                PaymentMethod = request.PaymentMethod,
+                CustomerName = request.CustomerName,
+                CreatedBy = userId == Guid.Empty ? null : userId,
+                OrderItems = request.OrderItems.Select(oi => new OrderItem
+                {
+                    ProductId = oi.ProductId,
+                    ProductUnitId = oi.ProductUnitId,
+                    Quantity = oi.Quantity,
+                    UnitPrice = oi.UnitPrice
+                }).ToList()
+            };
+
             var createdOrder = await _orderService.CreateOrderAsync(order, CancellationToken.None);
             try
             {
@@ -120,10 +155,11 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/cancel")]
-    public async Task<IActionResult> CancelOrder(Guid id, [FromQuery] Guid tenantId)
+    public async Task<IActionResult> CancelOrder(Guid id)
     {
         try
         {
+            var tenantId = GetTenantId();
             var cancelledOrder = await _orderService.CancelOrderAsync(id, tenantId, CancellationToken.None);
             try
             {
@@ -143,8 +179,9 @@ public class OrdersController : ApiControllerBase
 
     [HttpGet("drafts")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
-    public async Task<ActionResult<IEnumerable<Order>>> GetDrafts([FromQuery] Guid tenantId)
+    public async Task<ActionResult<IEnumerable<Order>>> GetDrafts()
     {
+        var tenantId = GetTenantId();
         return await _context.Orders
             .Where(o => o.TenantId == tenantId && o.Status == OrderStatus.Draft)
             .Include(o => o.Customer)
@@ -157,10 +194,29 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("draft")]
-    public async Task<ActionResult<Order>> CreateDraftOrder([FromBody] [ValidateNever] Order order)
+    public async Task<ActionResult<Order>> CreateDraftOrder([FromBody] CreateOrderRequest request)
     {
-        order.Status = OrderStatus.Draft;
-        order.CreatedAt = DateTime.UtcNow;
+        var tenantId = GetTenantId();
+        var userId = User.GetUserId();
+
+        var order = new Order
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CustomerId = request.CustomerId,
+            PaymentMethod = request.PaymentMethod,
+            CustomerName = request.CustomerName,
+            CreatedBy = userId == Guid.Empty ? null : userId,
+            Status = OrderStatus.Draft,
+            CreatedAt = DateTime.UtcNow,
+            OrderItems = request.OrderItems.Select(oi => new OrderItem
+            {
+                ProductId = oi.ProductId,
+                ProductUnitId = oi.ProductUnitId,
+                Quantity = oi.Quantity,
+                UnitPrice = oi.UnitPrice
+            }).ToList()
+        };
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync(CancellationToken.None);
@@ -178,10 +234,28 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/confirm")]
-    public async Task<IActionResult> ConfirmDraft(Guid id, [FromBody] [ValidateNever] Order updatedOrder)
+    public async Task<IActionResult> ConfirmDraft(Guid id, [FromBody] ConfirmDraftOrderRequest request)
     {
         try
         {
+            var tenantId = GetTenantId();
+            var userId = User.GetUserId();
+
+            var updatedOrder = new Order
+            {
+                CustomerId = request.CustomerId,
+                PaymentMethod = request.PaymentMethod,
+                CustomerName = request.CustomerName,
+                CreatedBy = userId == Guid.Empty ? null : userId,
+                OrderItems = request.OrderItems.Select(oi => new OrderItem
+                {
+                    ProductId = oi.ProductId,
+                    ProductUnitId = oi.ProductUnitId,
+                    Quantity = oi.Quantity,
+                    UnitPrice = oi.UnitPrice
+                }).ToList()
+            };
+
             var confirmedOrder = await _orderService.ConfirmDraftOrderAsync(id, updatedOrder, CancellationToken.None);
             try
             {
@@ -204,8 +278,9 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/reject")]
-    public async Task<IActionResult> RejectDraft(Guid id, [FromQuery] Guid tenantId)
+    public async Task<IActionResult> RejectDraft(Guid id)
     {
+        var tenantId = GetTenantId();
         var order = await _context.Orders
             .FirstOrDefaultAsync(o => o.Id == id && o.TenantId == tenantId);
 
@@ -221,10 +296,11 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/return")]
-    public async Task<IActionResult> ReturnOrder(Guid id, [FromQuery] Guid tenantId, [FromBody] ReturnOrderRequest request)
+    public async Task<IActionResult> ReturnOrder(Guid id, [FromBody] ReturnOrderRequest request)
     {
         try
         {
+            var tenantId = GetTenantId();
             var returnedOrder = await _orderService.ReturnOrderAsync(id, tenantId, request.Items, request.PerformedBy, CancellationToken.None);
             try
             {
@@ -247,10 +323,11 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/report-ai-error")]
-    public async Task<IActionResult> ReportAIError(Guid id, [FromQuery] Guid tenantId, [FromBody] AIErrorRequest request)
+    public async Task<IActionResult> ReportAIError(Guid id, [FromBody] AIErrorRequest request)
     {
         try
         {
+            var tenantId = GetTenantId();
             var userId = request.PerformedBy;
             if (userId == Guid.Empty)
             {
@@ -286,8 +363,9 @@ public class OrdersController : ApiControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Policy = BizFlow.Domain.Constants.Permissions.OrdersRead)]
-    public async Task<ActionResult<Order>> GetOrderById(Guid id, [FromQuery] Guid tenantId)
+    public async Task<ActionResult<Order>> GetOrderById(Guid id)
     {
+        var tenantId = GetTenantId();
         var order = await _context.Orders
             .Where(o => o.Id == id && o.TenantId == tenantId)
             .Include(o => o.Customer)

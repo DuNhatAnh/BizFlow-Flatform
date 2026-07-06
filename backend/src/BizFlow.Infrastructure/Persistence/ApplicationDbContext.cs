@@ -407,31 +407,31 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         // ==========================================
         // GLOBAL QUERY FILTERS FOR TENANT ISOLATION
         // ==========================================
-        modelBuilder.Entity<Store>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<User>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<Category>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<Product>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Store>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<User>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Category>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Product>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         // ProductUnit does not have TenantId
-        modelBuilder.Entity<ProductHistory>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<Customer>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<Order>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ProductHistory>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<InventoryTransaction>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Customer>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Order>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         // OrderItem does not have TenantId
-        modelBuilder.Entity<DebtTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<AccountingEntry>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<InventoryReceipt>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DebtTransaction>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AccountingEntry>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<InventoryReceipt>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         // InventoryReceiptDetail does not have TenantId
-        modelBuilder.Entity<AccountingLedgerS2>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<CashTransaction>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<ExpenseRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<TaxObligation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<AiRequestLog>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<WorkShift>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<Notification>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AccountingLedgerS2>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<CashTransaction>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ExpenseRecord>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TaxObligation>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AiRequestLog>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<WorkShift>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Notification>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
 
 
 
