@@ -24,6 +24,7 @@ import {
   Clock,
   Calendar
 } from "lucide-react";
+import { BizFlowLogo } from "./BizFlowLogo";
 
 
 interface SidebarProps {
@@ -34,7 +35,6 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraftCount }: SidebarProps) {
   const [user, setUser] = React.useState<{ username: string; fullname: string; role: string; roleName: string; avatarUrl?: string } | null>(null);
-  const [imageError, setImageError] = React.useState(false);
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
   const [draftCount, setDraftCount] = React.useState<number>(0);
@@ -148,23 +148,9 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
   return (
     <aside className="w-[260px] fixed top-0 left-0 bottom-0 bg-white border-r border-surface-container-high flex flex-col z-30">
       {/* Brand Logo */}
-      <div className="pt-4 pb-0 flex flex-col items-center shrink-0 overflow-hidden">
-        <div className="relative w-48 flex items-center justify-center transform scale-[1.15]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/logo.png" 
-            alt="BizFlow Logo" 
-            draggable={false}
-            className={`object-contain w-full h-auto mix-blend-multiply pointer-events-none select-none ${imageError ? 'hidden' : 'block'}`}
-            onError={() => setImageError(true)}
-          />
-          {/* Logo fallback text */}
-          {imageError && (
-            <div className="flex flex-col items-center justify-center text-center font-bold text-primary py-4">
-              <span className="text-xl tracking-wider uppercase font-sans">BizFlow</span>
-              <span className="text-[10px] text-gray-400 font-normal">PLATFORM</span>
-            </div>
-          )}
+      <div className="pt-6 pb-2 flex flex-col items-center shrink-0">
+        <div className="relative w-48 flex items-center justify-center">
+          <BizFlowLogo className="w-full max-w-[150px]" />
         </div>
       </div>
 

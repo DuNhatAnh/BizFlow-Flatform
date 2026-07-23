@@ -32,6 +32,7 @@ public interface IApplicationDbContext
     DbSet<AiRequestLog> AiRequestLogs { get; }
     DbSet<AttendanceRecord> AttendanceRecords { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<TenantSetting> TenantSettings { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

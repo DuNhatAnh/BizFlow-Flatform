@@ -127,7 +127,7 @@ export default function AIDraftCard({
             <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Hội thoại gốc của khách:
             </p>
-            <p className="text-sm italic text-on-surface font-sans leading-relaxed">"{draft.rawText}"</p>
+            <p className="text-sm italic text-on-surface font-sans leading-relaxed">&quot;{draft.rawText}&quot;</p>
           </div>
 
           {/* Render Audio Player if Voice source */}

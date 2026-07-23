@@ -30,4 +30,5 @@ public class Tenant
     public ICollection<DebtTransaction> DebtTransactions { get; set; } = new List<DebtTransaction>();
     public ICollection<AccountingEntry> AccountingEntries { get; set; } = new List<AccountingEntry>();
     public ICollection<Store> Stores { get; set; } = new List<Store>();
+    public ICollection<TenantSetting> TenantSettings { get; set; } = new List<TenantSetting>();
 }

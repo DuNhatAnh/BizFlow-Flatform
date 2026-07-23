@@ -114,6 +114,9 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "ProductId", "Date")
                         .IsDescending(false, false, true);
 
+                    b.HasIndex("TenantId", "Type", "Date")
+                        .IsDescending(false, false, true);
+
                     b.ToTable("accounting_ledger_s2", (string)null);
                 });
 
@@ -163,6 +166,73 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ai_request_logs", (string)null);
+                });
+
+            modelBuilder.Entity("BizFlow.Domain.Entities.AttendanceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CheckInIpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("CheckInLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("CheckInLongitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("CheckInPhotoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CheckInTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CheckInWifiMac")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CheckOutIpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("CheckOutLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("CheckOutLongitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("CheckOutPhotoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CheckOutTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CheckOutWifiMac")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("attendance_records", (string)null);
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.AuditLog", b =>
@@ -259,6 +329,8 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "TransactionDate");
 
                     b.ToTable("cash_transactions", (string)null);
                 });
@@ -628,6 +700,51 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("inventory_transactions", (string)null);
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("notifications");
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -683,7 +800,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "CreatedAt");
 
                     b.ToTable("orders", (string)null);
                 });
@@ -728,11 +845,11 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
-
                     b.HasIndex("ProductId");
 
                     b.HasIndex("ProductUnitId");
+
+                    b.HasIndex("OrderId", "ProductId");
 
                     b.ToTable("order_items", (string)null);
                 });
@@ -920,6 +1037,42 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("product_units", (string)null);
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.ShiftAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkShiftId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WorkShiftId");
+
+                    b.ToTable("shift_assignments", (string)null);
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.Store", b =>
                 {
                     b.Property<Guid>("Id")
@@ -955,8 +1108,14 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("LogoUrl")
                         .HasColumnType("text");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1165,6 +1324,41 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("tenants", (string)null);
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.TenantSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("tenant_settings", (string)null);
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1210,6 +1404,41 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("BizFlow.Domain.Entities.WorkShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("interval");
+
+                    b.Property<int>("GracePeriodMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinimumStaffCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("interval");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("work_shifts", (string)null);
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.AccountingEntry", b =>
@@ -1259,6 +1488,25 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BizFlow.Domain.Entities.AttendanceRecord", b =>
+                {
+                    b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BizFlow.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Tenant");
 
@@ -1433,6 +1681,17 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("BizFlow.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.Order", b =>
                 {
                     b.HasOne("BizFlow.Domain.Entities.User", "Creator")
@@ -1540,6 +1799,33 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.ShiftAssignment", b =>
+                {
+                    b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BizFlow.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BizFlow.Domain.Entities.WorkShift", "WorkShift")
+                        .WithMany()
+                        .HasForeignKey("WorkShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WorkShift");
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.Store", b =>
                 {
                     b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
@@ -1579,10 +1865,32 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.Navigation("SubscriptionPlan");
                 });
 
+            modelBuilder.Entity("BizFlow.Domain.Entities.TenantSetting", b =>
+                {
+                    b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
+                        .WithMany("TenantSettings")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("BizFlow.Domain.Entities.User", b =>
                 {
                     b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
                         .WithMany("Users")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("BizFlow.Domain.Entities.WorkShift", b =>
+                {
+                    b.HasOne("BizFlow.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1647,6 +1955,8 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("Stores");
+
+                    b.Navigation("TenantSettings");
 
                     b.Navigation("Users");
                 });

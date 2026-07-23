@@ -148,8 +148,7 @@ export default function Home() {
   const fetchCustomers = async (userObj: any) => {
     try {
       const res = await fetch(
-        `http://localhost:5178/api/customers?tenantId=${
-          userObj.tenantId || "11111111-1111-1111-1111-111111111111"
+        `http://localhost:5178/api/customers?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"
         }`,
         {
           headers: {
@@ -170,8 +169,7 @@ export default function Home() {
   const fetchDrafts = async (userObj: any) => {
     try {
       const res = await fetch(
-        `http://localhost:5178/api/orders/drafts?tenantId=${
-          userObj.tenantId || "11111111-1111-1111-1111-111111111111"
+        `http://localhost:5178/api/orders/drafts?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"
         }`,
         {
           headers: {
@@ -532,10 +530,8 @@ export default function Home() {
     setCustomerSearch("");
     setIsDebt(false);
     showToast(
-      `Thanh toán thành công đơn hàng!\nKhách hàng: ${
-        previousCustomer?.fullname || "Khách vãng lai"
-      }\nTổng tiền: ${total.toLocaleString()} đ\nHình thức: ${
-        previousIsDebt ? "Ghi nợ" : "Tiền mặt"
+      `Thanh toán thành công đơn hàng!\nKhách hàng: ${previousCustomer?.fullname || "Khách vãng lai"
+      }\nTổng tiền: ${total.toLocaleString()} đ\nHình thức: ${previousIsDebt ? "Ghi nợ" : "Tiền mặt"
       }\nChứng từ kế toán đã được ghi nhận tự động vào Sổ cái.`,
       "success"
     );
@@ -562,8 +558,7 @@ export default function Home() {
         setSelectedCustomer(previousCustomer);
         setIsDebt(previousIsDebt);
         showToast(
-          `Lỗi khi tạo đơn hàng: ${
-            err.message || err.Message || "Yêu cầu không hợp lệ"
+          `Lỗi khi tạo đơn hàng: ${err.message || err.Message || "Yêu cầu không hợp lệ"
           }`,
           "error"
         );
@@ -640,8 +635,7 @@ export default function Home() {
         const err = await res.json();
         setAiDrafts(previousDrafts);
         showToast(
-          `Lỗi khi duyệt đơn hàng nháp: ${
-            err.message || err.Message || "Yêu cầu không hợp lệ"
+          `Lỗi khi duyệt đơn hàng nháp: ${err.message || err.Message || "Yêu cầu không hợp lệ"
           }`,
           "error"
         );
@@ -664,8 +658,7 @@ export default function Home() {
 
     try {
       const res = await fetch(
-        `http://localhost:5178/api/orders/${draftId}/reject?tenantId=${
-          userObj.tenantId || "11111111-1111-1111-1111-111111111111"
+        `http://localhost:5178/api/orders/${draftId}/reject?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"
         }`,
         {
           method: "POST",
@@ -874,7 +867,7 @@ export default function Home() {
     if (activeTab === "staff") {
       return <StaffManagement />;
     }
-    
+
     if (activeTab === "shifts") {
       return <ShiftManagement />;
     }

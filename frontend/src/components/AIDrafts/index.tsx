@@ -412,7 +412,7 @@ export default function AIDrafts({
         {/* Small hint block */}
         <div className="mt-4 pt-3 border-t border-primary/10 flex items-center gap-2 text-xs text-on-surface-variant">
           <Info className="w-4 h-4 text-primary" />
-          <span><b>Hướng dẫn sử dụng:</b> Bạn có thể nói hoặc nhập câu lệnh tiếng Việt tự nhiên bất kỳ để tự động tạo đơn nháp (ví dụ: <i>"Lấy cho chú Ba 5 bao xi măng Hà Tiên ghi nợ nhé"</i> hoặc <i>"Bán cho Anh Nam 3 lốc bia Saigon chuyển khoản"</i>).</span>
+          <span><b>Hướng dẫn sử dụng:</b> Bạn có thể nói hoặc nhập câu lệnh tiếng Việt tự nhiên bất kỳ để tự động tạo đơn nháp (ví dụ: <i>&quot;Lấy cho chú Ba 5 bao xi măng Hà Tiên ghi nợ nhé&quot;</i> hoặc <i>&quot;Bán cho Anh Nam 3 lốc bia Saigon chuyển khoản&quot;</i>).</span>
         </div>
 
       </div>

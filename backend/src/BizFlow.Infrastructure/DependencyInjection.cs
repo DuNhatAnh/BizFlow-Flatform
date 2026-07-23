@@ -28,8 +28,11 @@ public static class DependencyInjection
         services.AddScoped<IStoreService, BizFlow.Infrastructure.Services.StoreService>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentTenantService, BizFlow.Infrastructure.Services.CurrentTenantService>();
+        services.AddScoped<ICurrentUserService, BizFlow.Infrastructure.Services.CurrentUserService>();
         services.AddScoped<IAttendanceService, BizFlow.Infrastructure.Services.AttendanceService>();
         services.AddScoped<IShiftService, BizFlow.Infrastructure.Services.ShiftService>();
+        services.AddScoped<ITenantSettingService, BizFlow.Infrastructure.Services.TenantSettingService>();
+        services.AddScoped<IDashboardService, BizFlow.Infrastructure.Services.DashboardService>();
 
 
         // Register Redis Cache

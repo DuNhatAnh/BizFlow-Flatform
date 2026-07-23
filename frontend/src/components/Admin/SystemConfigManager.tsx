@@ -167,7 +167,7 @@ export default function SystemConfigManager() {
                 <input
                   type="number"
                   step="0.000001"
-                  value={(aiCost as Record<string, number>)[key]}
+                  value={(aiCost as unknown as Record<string, number>)[key]}
                   onChange={e => setAiCost({ ...aiCost, [key]: parseFloat(e.target.value) || 0 })}
                   className="flex-1 border border-surface-container-high rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
@@ -207,7 +207,7 @@ export default function SystemConfigManager() {
                 { key: "enableS3", label: "Sổ S3-HKD", desc: "Chi phí SXKD" },
                 { key: "enableS4", label: "Sổ S4-HKD", desc: "Nghĩa vụ thuế" },
               ].map(({ key, label, desc }) => {
-                const val = (tt88.accounting as Record<string, unknown>)[key] as boolean;
+                const val = (tt88.accounting as unknown as Record<string, unknown>)[key] as boolean;
                 return (
                   <button
                     key={key}

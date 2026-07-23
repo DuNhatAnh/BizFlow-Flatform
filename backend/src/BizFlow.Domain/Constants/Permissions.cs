@@ -18,4 +18,12 @@ public static class Permissions
     public const string CustomersRead = "Customers.Read";
     
     public const string SystemManage = "System.Manage";
+
+    public const string DashboardViewRevenue = "Dashboard.ViewRevenue";
+    public const string DashboardViewOrders = "Dashboard.ViewOrders";
+    public const string DashboardViewProfit = "Dashboard.ViewProfit";
+    public const string DashboardViewCash = "Dashboard.ViewCash";
+    public const string DashboardViewInventory = "Dashboard.ViewInventory";
+    public const string DashboardViewProducts = "Dashboard.ViewProducts";
+    public const string DashboardViewCustomers = "Dashboard.ViewCustomers";
 }

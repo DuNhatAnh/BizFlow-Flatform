@@ -54,7 +54,7 @@ export default function DraftFeedbackModal({
               Câu lệnh gốc của khách
             </span>
             <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant text-xs italic text-on-surface font-sans">
-              "{draft.rawText}"
+              &quot;{draft.rawText}&quot;
             </div>
           </div>
 

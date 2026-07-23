@@ -1,67 +1,42 @@
-import React from "react";
-import MetricCard from "@/components/MetricCard";
-import RevenueChart from "@/components/RevenueChart";
-import TopProducts from "@/components/TopProducts";
-import AIInsight from "@/components/AIInsight";
-import { DollarSign, ShoppingCart, Package, CreditCard } from "lucide-react";
+import React from 'react';
+import { useDashboard } from '../hooks/useDashboard';
+import { DashboardProvider, useDashboardContext } from './Dashboard/DashboardContext';
+import { DashboardRenderer } from './Dashboard/DashboardRenderer';
+import { DashboardControls } from './Dashboard/DashboardControls';
+import { DashboardSkeleton } from './Dashboard/DashboardSkeleton';
+
+const DashboardContent: React.FC = () => {
+  const { data, isLoading, isError, refetch } = useDashboard();
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 w-full">
+      <DashboardControls />
+
+      {/* Dashboard Body */}
+      {isLoading ? (
+        <DashboardSkeleton />
+      ) : isError ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl text-center">
+          <h3 className="text-lg font-bold mb-2">Lỗi tải dữ liệu Dashboard</h3>
+          <p>Không thể kết nối đến máy chủ hoặc bạn không có quyền truy cập.</p>
+          <button 
+            onClick={() => refetch()}
+            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      ) : data?.widgets ? (
+        <DashboardRenderer widgets={data.widgets} />
+      ) : null}
+    </div>
+  );
+};
 
 export default function OwnerOverview() {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100 fill-mode-both">
-        <MetricCard
-          title="Doanh thu hôm nay"
-          value="12.860.000 đ"
-          trend="↑ 18.5% so với hôm qua"
-          trendType="up"
-          icon={DollarSign}
-          iconBgColor="bg-emerald-50"
-          iconColor="text-primary"
-        />
-        <MetricCard
-          title="Đơn hàng hôm nay"
-          value="156"
-          trend="↑ 12.3% so với hôm qua"
-          trendType="up"
-          icon={ShoppingCart}
-          iconBgColor="bg-blue-50"
-          iconColor="text-secondary"
-        />
-        <MetricCard
-          title="Sản phẩm trong kho"
-          value="1.248"
-          trend="Đang kinh doanh tốt"
-          trendType="neutral"
-          icon={Package}
-          iconBgColor="bg-amber-50"
-          iconColor="text-amber-500"
-        />
-        <MetricCard
-          title="Công nợ"
-          value="8.540.000 đ"
-          trend="3 khoản sắp đến hạn"
-          trendType="warning"
-          icon={CreditCard}
-          iconBgColor="bg-red-50"
-          iconColor="text-error"
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-200 fill-mode-both">
-        <div className="lg:col-span-7 xl:col-span-8">
-          <RevenueChart />
-        </div>
-        <div className="lg:col-span-5 xl:col-span-4">
-          <TopProducts />
-        </div>
-      </div>
-
-      {/* Smart AI Insight Box */}
-      <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-300 fill-mode-both">
-        <AIInsight />
-      </div>
-    </div>
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
   );
 }

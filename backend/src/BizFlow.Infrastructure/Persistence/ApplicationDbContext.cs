@@ -46,6 +46,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
     public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<TenantSetting> TenantSettings => Set<TenantSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 
@@ -213,6 +214,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Order>(entity =>
         {
             entity.ToTable("orders");
+            entity.HasIndex(e => new { e.TenantId, e.CreatedAt });
             entity.Property(e => e.TotalAmount).HasPrecision(15, 2);
             entity.Property(e => e.TotalVatAmount).HasPrecision(18, 2).HasDefaultValue(0.00m);
             entity.Property(e => e.PaymentMethod).HasConversion<string>();
@@ -228,6 +230,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<OrderItem>(entity =>
         {
             entity.ToTable("order_items");
+            entity.HasIndex(e => new { e.OrderId, e.ProductId });
             entity.Property(e => e.Quantity).HasPrecision(15, 4);
             entity.Property(e => e.UnitPrice).HasPrecision(15, 2);
             entity.Property(e => e.TotalPrice).HasPrecision(15, 2);
@@ -282,6 +285,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("accounting_ledger_s2");
             entity.HasIndex(e => new { e.TenantId, e.ProductId, e.Date }).IsDescending(false, false, true);
+            entity.HasIndex(e => new { e.TenantId, e.Type, e.Date }).IsDescending(false, false, true);
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.QuantityIn).HasPrecision(18, 4);
             entity.Property(e => e.ValueIn).HasPrecision(15, 2);
@@ -296,6 +300,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.ToTable("cash_transactions");
             entity.HasIndex(e => e.TenantId);
+            entity.HasIndex(e => new { e.TenantId, e.TransactionDate });
             entity.Property(e => e.Amount).HasPrecision(15, 2);
             entity.Property(e => e.Type).HasConversion<string>();
             entity.Property(e => e.PaymentMethod).HasConversion<string>().HasDefaultValue(PaymentMethod.Cash);
@@ -404,6 +409,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // 26. TenantSetting configurations
+        modelBuilder.Entity<TenantSetting>(entity =>
+        {
+            entity.ToTable("tenant_settings");
+            entity.HasIndex(e => new { e.TenantId, e.Key }).IsUnique();
+        });
+
         // ==========================================
         // GLOBAL QUERY FILTERS FOR TENANT ISOLATION
         // ==========================================
@@ -432,6 +444,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<WorkShift>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<Notification>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TenantSetting>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
 
 
 

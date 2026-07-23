@@ -260,7 +260,7 @@ export default function SubscriptionPlansManagement() {
           })}
           {plans.length === 0 && !loading && (
             <div className="col-span-3 py-20 text-center text-on-surface-variant text-sm">
-              Chưa có gói dịch vụ nào. Nhấn "Thêm gói mới" để bắt đầu.
+              Chưa có gói dịch vụ nào. Nhấn &quot;Thêm gói mới&quot; để bắt đầu.
             </div>
           )}
         </div>

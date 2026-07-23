@@ -21,6 +21,22 @@ public class InventoryService : IInventoryService
     {
         _context = context;
     }
+    private async Task<AccountingLedgerS2?> GetLastLedgerAsync(Guid tenantId, Guid productId, CancellationToken ct)
+    {
+        // 1. Check if we have a pending ledger entry for this product in the current transaction (ChangeTracker)
+        var localLedger = _context.AccountingLedgerS2s.Local
+            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
+            .LastOrDefault();
+
+        if (localLedger != null)
+            return localLedger;
+
+        // 2. Fallback to database query if no pending entry exists
+        return await _context.AccountingLedgerS2s
+            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
+            .OrderByDescending(l => l.Date)
+            .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<ReceiptDto> CreateReceiptAsync(Guid tenantId, CreateReceiptRequest request, Guid? userId = null)
     {
@@ -91,10 +107,7 @@ public class InventoryService : IInventoryService
                 totalVatAmount += detail.VatAmount;
 
                 // Create Ledger Entry
-                var lastLedger = await _context.AccountingLedgerS2s
-                    .Where(l => l.TenantId == tenantId && l.ProductId == product.Id)
-                    .OrderByDescending(l => l.Date)
-                    .FirstOrDefaultAsync();
+                var lastLedger = await GetLastLedgerAsync(tenantId, product.Id, default);
 
                 var ledgerEntry = new AccountingLedgerS2
                 {
@@ -232,10 +245,7 @@ public class InventoryService : IInventoryService
                 if (product == null) continue;
 
                 // Create Adjustment Ledger Entry for Reversal
-                var lastLedger = await _context.AccountingLedgerS2s
-                    .Where(l => l.TenantId == tenantId && l.ProductId == product.Id)
-                    .OrderByDescending(l => l.Date)
-                    .FirstOrDefaultAsync();
+                var lastLedger = await GetLastLedgerAsync(tenantId, product.Id, default);
 
                 var prevQty = lastLedger?.QuantityBalance ?? 0;
                 var prevVal = lastLedger?.ValueBalance ?? 0;
@@ -411,10 +421,7 @@ public class InventoryService : IInventoryService
         
         if (tenant == null || product == null) return;
 
-        var lastLedger = await _context.AccountingLedgerS2s
-            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
-            .OrderByDescending(l => l.Date)
-            .FirstOrDefaultAsync(cancellationToken);
+        var lastLedger = await GetLastLedgerAsync(tenantId, productId, cancellationToken);
 
         var prevQty = lastLedger?.QuantityBalance ?? 0;
         var prevVal = lastLedger?.ValueBalance ?? 0;
@@ -455,10 +462,7 @@ public class InventoryService : IInventoryService
         
         if (tenant == null || product == null) return;
 
-        var lastLedger = await _context.AccountingLedgerS2s
-            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
-            .OrderByDescending(l => l.Date)
-            .FirstOrDefaultAsync(cancellationToken);
+        var lastLedger = await GetLastLedgerAsync(tenantId, productId, cancellationToken);
 
         var prevQty = lastLedger?.QuantityBalance ?? 0;
         var prevVal = lastLedger?.ValueBalance ?? 0;
