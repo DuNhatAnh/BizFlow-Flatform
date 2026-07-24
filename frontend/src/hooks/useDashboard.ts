@@ -41,7 +41,7 @@ export const useDashboard = () => {
       if (raw.widgets) {
         raw.widgets = raw.widgets.map((w: any) => ({
           ...w,
-          id: w.widgetId || w.id,
+          id: w.widgetId || w.widgetId,
           data: w.kpiData || w.chartData || w.listData || w.alertData || w.data
         }));
       }
@@ -61,7 +61,7 @@ export const useWidget = (widget: DashboardWidgetDto, limit: number = 5) => {
   const { fromDate, toDate, timezoneOffsetMinutes } = useDashboardContext();
 
   return useQuery<DashboardWidgetDto, Error>({
-    queryKey: ['widget', widget.id, fromDate, toDate, timezoneOffsetMinutes, limit],
+    queryKey: ['widget', widget.widgetId, fromDate, toDate, timezoneOffsetMinutes, limit],
     queryFn: async ({ signal }) => {
       const queryParams = new URLSearchParams({
         fromDate,
@@ -70,7 +70,7 @@ export const useWidget = (widget: DashboardWidgetDto, limit: number = 5) => {
         limit: limit.toString(),
       });
 
-      const res = await fetch(`${API_BASE_URL}/dashboard/widgets/${widget.id}/data?${queryParams}`, {
+      const res = await fetch(`${API_BASE_URL}/dashboard/widgets/${widget.widgetId}/data?${queryParams}`, {
         headers: getAuthHeaders(),
         signal,
       });
@@ -82,11 +82,10 @@ export const useWidget = (widget: DashboardWidgetDto, limit: number = 5) => {
       const raw = await res.json();
       return {
         ...raw,
-        id: raw.widgetId || raw.id,
+        id: raw.widgetId || raw.widgetId,
         data: raw.kpiData || raw.chartData || raw.listData || raw.alertData || raw.data
       };
     },
-    initialData: widget,
     enabled: false, // CRITICAL: Prevent waterfall/auto-fetching
     staleTime: 0, // Dữ liệu initial luôn có thể xem là stale, nhưng vì enabled: false nên sẽ không tự fetch. Khi gọi refetch() thủ công thì luôn lấy mới nhất.
     retry: 1,

@@ -5,11 +5,12 @@ import { WidgetHeader } from './WidgetHeader';
 import { TrendingUp, TrendingDown, Minus, Info, X, ChevronRight } from 'lucide-react';
 
 export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) => {
-  const { data: updatedWidget, refetch, isFetching, dataUpdatedAt } = useWidget(widget);
+  const { data: queryWidget, refetch, isFetching, dataUpdatedAt } = useWidget(widget);
   const [showFormulaModal, setShowFormulaModal] = useState(false);
-  const data = updatedWidget?.data as DashboardKpiDataDto | undefined;
+  const displayWidget = queryWidget || widget;
+  const data = displayWidget.data as DashboardKpiDataDto | undefined;
 
-  if (!data) return null;
+
 
   const formatValue = (val: number, format: string) => {
     if (format === 'currency') return `${val.toLocaleString('vi-VN')} đ`;
@@ -71,38 +72,47 @@ export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) 
           )}
         </div>
         <WidgetHeader 
-          title={updatedWidget?.title || widget.title} 
+          title={displayWidget.title} 
           isFetching={isFetching}
           updatedAt={dataUpdatedAt}
-          iconType="info"
-          onAction={() => setShowFormulaModal(true)}
+          iconType={data ? "info" : undefined}
+          onAction={() => {
+            if (data) setShowFormulaModal(true);
+          }}
         />
-        <div className="flex-1 flex flex-col justify-end mt-1">
-          <div 
-            className="text-2xl lg:text-[1.75rem] font-bold text-primary mb-2.5 tracking-tight break-words font-fira-code"
-            title={formatValue(data.value, data.format)}
-          >
-            {formatValue(data.value, data.format)}
+        {!data ? (
+          <div className="flex-1 flex flex-col justify-end mt-1 animate-pulse">
+            <div className="w-32 h-8 bg-gray-100 rounded mb-2.5" />
+            <div className="w-48 h-4 bg-gray-100 rounded" />
           </div>
-          <div className="flex items-center text-[11px] xl:text-xs font-medium">
-            {data.trendPercentage === 0 ? (
-              <span className="text-gray-500 inline-flex items-center bg-gray-50 px-2 py-1 rounded max-w-full">
-                <Minus className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                <span className="truncate">Không đổi so với kỳ trước</span>
-              </span>
-            ) : data.isPositiveTrend ? (
-              <span className="text-emerald-600 inline-flex items-center bg-emerald-50 px-2 py-1 rounded max-w-full">
-                <TrendingUp className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                <span className="truncate">{data.trendPercentage.toFixed(1)}% so với kỳ trước</span>
-              </span>
-            ) : (
-              <span className="text-rose-600 inline-flex items-center bg-rose-50 px-2 py-1 rounded max-w-full">
-                <TrendingDown className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                <span className="truncate">{Math.abs(data.trendPercentage).toFixed(1)}% so với kỳ trước</span>
-              </span>
-            )}
+        ) : (
+          <div className="flex-1 flex flex-col justify-end mt-1">
+            <div 
+              className="text-2xl lg:text-[1.75rem] font-bold text-primary mb-2.5 tracking-tight break-words font-fira-code"
+              title={formatValue(data.value, data.format)}
+            >
+              {formatValue(data.value, data.format)}
+            </div>
+            <div className="flex items-center text-[11px] xl:text-xs font-medium">
+              {data.trendPercentage === 0 ? (
+                <span className="text-gray-500 inline-flex items-center bg-gray-50 px-2 py-1 rounded max-w-full">
+                  <Minus className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                  <span className="truncate">Không đổi so với kỳ trước</span>
+                </span>
+              ) : data.isPositiveTrend ? (
+                <span className="text-emerald-600 inline-flex items-center bg-emerald-50 px-2 py-1 rounded max-w-full">
+                  <TrendingUp className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                  <span className="truncate">{data.trendPercentage.toFixed(1)}% so với kỳ trước</span>
+                </span>
+              ) : (
+                <span className="text-rose-600 inline-flex items-center bg-rose-50 px-2 py-1 rounded max-w-full">
+                  <TrendingDown className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                  <span className="truncate">{Math.abs(data.trendPercentage).toFixed(1)}% so với kỳ trước</span>
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {showFormulaModal && (
@@ -114,7 +124,7 @@ export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) 
             <div className="flex items-center justify-between p-4 border-b-2 border-gray-100 bg-gray-50/50 shrink-0">
               <h3 className="font-bold text-gray-800 flex items-center gap-2 font-fira-sans">
                 <Info className="w-5 h-5 text-primary" />
-                Công thức: {updatedWidget?.title || widget.title}
+                Công thức: {displayWidget.title}
               </h3>
               <button 
                 onClick={() => setShowFormulaModal(false)}
@@ -128,7 +138,7 @@ export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) 
                 {getFormulaExplanation(widget.widgetId)}
               </p>
               
-              {data.breakdownValues && Object.keys(data.breakdownValues).length > 0 && (
+              {data && data.breakdownValues && Object.keys(data.breakdownValues).length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-2">
                   <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Chi tiết thông số</h4>
                   <div className="space-y-3">
@@ -138,10 +148,10 @@ export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) 
                         <span className="font-bold text-gray-900 font-fira-code">{formatValue(val, data.format)}</span>
                       </div>
                     ))}
-                    <div className="pt-3 border-t border-gray-200 mt-2 flex justify-between items-center text-sm">
-                      <span className="font-bold text-gray-800">Kết quả ({updatedWidget?.title || widget.title})</span>
-                      <span className="font-black text-primary text-base font-fira-code">{formatValue(data.value, data.format)}</span>
-                    </div>
+                      <div className="pt-3 border-t border-gray-200 mt-2 flex justify-between items-center text-sm">
+                        <span className="font-bold text-gray-800">Kết quả ({displayWidget.title})</span>
+                        <span className="font-black text-primary text-base font-fira-code">{data ? formatValue(data.value, data.format) : ''}</span>
+                      </div>
                   </div>
                 </div>
               )}

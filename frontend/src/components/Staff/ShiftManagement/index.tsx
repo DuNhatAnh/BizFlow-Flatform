@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Calendar, Clock, Users, MapPin, ChevronRight, Check, CheckCircle2, AlertCircle, FileText, GripVertical, ChevronLeft, Save } from "lucide-react";
-import AttendanceReport from "@/components/AttendanceReport";
+import AttendanceReport from "@/components/Staff/AttendanceReport";
 
 interface WorkShift {
   id: string;

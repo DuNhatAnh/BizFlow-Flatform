@@ -100,16 +100,16 @@ export default function CategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col transform transition-all scale-100 max-h-[85vh]">
-        <div className="flex justify-between items-center p-5 border-b bg-surface-container-low rounded-t-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col transform transition-all scale-100 max-h-[85vh] border border-slate-200">
+        <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-slate-50/50 rounded-t-2xl">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-primary" />
             Quản lý Danh mục
           </h3>
           <button 
             onClick={onClose} 
-            className="p-2 hover:bg-slate-200 rounded-full transition-colors text-on-surface-variant"
+            className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -123,7 +123,7 @@ export default function CategoryModal({
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Nhập tên danh mục mới..."
-                className="flex-1 px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface min-w-[120px]"
+                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 min-w-[120px] transition-all placeholder-slate-400"
                 onKeyDown={async (e) => {
                   if (e.key === "Enter" && newCategoryName.trim() && !isSavingCategory) {
                     await handleAdd();
@@ -133,7 +133,7 @@ export default function CategoryModal({
               <select
                 value={newCategoryParentId}
                 onChange={(e) => setNewCategoryParentId(e.target.value === "" ? "" : Number(e.target.value))}
-                className="px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary max-w-[140px] text-on-surface cursor-pointer shrink-0"
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white max-w-[140px] text-slate-800 cursor-pointer shrink-0 transition-all hover:bg-slate-100"
               >
                 <option value="">- Không có cha -</option>
                 {categories.map((c: any) => (
@@ -143,20 +143,20 @@ export default function CategoryModal({
               <button 
                 onClick={handleAdd}
                 disabled={!newCategoryName.trim() || isSavingCategory}
-                className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 transition-colors shrink-0"
+                className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-xl font-semibold flex items-center justify-center disabled:opacity-50 transition-all shadow-sm hover:shadow hover:-translate-y-0.5 shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
             
             <div className="flex gap-3 items-center px-1">
-              <span className="text-xs text-on-surface-variant font-medium shrink-0">Màu sắc:</span>
+              <span className="text-[13px] text-slate-600 font-bold shrink-0">Màu sắc:</span>
               <div className="flex gap-2.5 flex-wrap">
                 {sortedColors.slice(0, 10).map((color) => (
                   <button
                     key={color}
                     onClick={() => setNewCategoryColor(color)}
-                    className={`w-6 h-6 rounded-full transition-transform shrink-0 ${newCategoryColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-110'}`}
+                    className={`w-6 h-6 rounded-full transition-transform shrink-0 shadow-sm ${newCategoryColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
                     style={{ backgroundColor: color }}
                     title="Chọn màu"
                   />
@@ -165,9 +165,9 @@ export default function CategoryModal({
             </div>
           </div>
 
-          <div className="mt-4 border border-surface-container-high rounded-xl overflow-hidden">
+          <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30">
             {categoryTree.length === 0 ? (
-              <div className="p-6 text-center text-on-surface-variant text-sm">
+              <div className="p-6 text-center text-slate-400 text-sm">
                 Chưa có danh mục nào.
               </div>
             ) : (

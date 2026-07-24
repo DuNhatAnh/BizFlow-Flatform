@@ -80,33 +80,20 @@ class _AIDraftReviewModalState extends State<AIDraftReviewModal> {
               // Payment Method
               const Text('Phương thức thanh toán:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Inter')),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Mặt', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
-                      value: 'Cash',
-                      groupValue: paymentMethod,
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => paymentMethod = val);
-                        }
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Nợ', style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
-                      value: 'Debt',
-                      groupValue: paymentMethod,
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => paymentMethod = val);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment<String>(value: 'Cash', label: Text('Tiền mặt', style: TextStyle(fontSize: 12, fontFamily: 'Inter'))),
+                    ButtonSegment<String>(value: 'Debt', label: Text('Nợ', style: TextStyle(fontSize: 12, fontFamily: 'Inter'))),
+                  ],
+                  selected: <String>{paymentMethod},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    setState(() {
+                      paymentMethod = newSelection.first;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 16),
 

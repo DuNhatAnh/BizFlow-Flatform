@@ -4,6 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BizFlow Platform - Hệ thống quản lý bán hàng thông minh",
   description: "Hệ thống quản lý bán hàng thông minh tích hợp trợ lý AI và tự động hóa sổ sách kế toán theo Thông tư 88/2021/TT-BTC",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  }
 };
 
 import NextTopLoader from 'nextjs-toploader';

@@ -48,6 +48,9 @@ export const DashboardRenderer: React.FC<{ widgets: DashboardWidgetDto[] }> = ({
       if (w.widgetId === 'kpi-cash' && config.showNetCashFlow === false) return false;
       if (w.widgetId === 'kpi-inventory-value' && config.showInventoryValue === false) return false;
       if (w.widgetId === 'kpi-inventory-quantity' && config.showInventoryQuantity === false) return false;
+      if (w.widgetId === 'kpi-employees' && config.showEmployees === false) return false;
+      if (w.widgetId === 'kpi-customers' && config.showCustomers === false) return false;
+      if (w.widgetId === 'kpi-customer-debt' && config.showCustomerDebt === false) return false;
       return true;
     });
   }
@@ -55,16 +58,51 @@ export const DashboardRenderer: React.FC<{ widgets: DashboardWidgetDto[] }> = ({
   // Sort widgets by order before rendering
   const sortedWidgets = visibleWidgets.sort((a, b) => a.order - b.order);
 
+  // Group widgets by type
+  const kpiWidgets = sortedWidgets.filter(w => w.type === 'Kpi');
+  const chartWidgets = sortedWidgets.filter(w => w.type === 'Chart');
+  const listWidgets = sortedWidgets.filter(w => w.type === 'List');
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 w-full">
-      {sortedWidgets.map(widget => (
-        <div 
-          key={widget.widgetId}
-          className={getColSpanClass(widget.colSpan)}
-        >
-          <WidgetFactory widget={widget} />
-        </div>
-      ))}
+    <div className="flex flex-col gap-8 w-full">
+      {/* 1. Khu vực Thẻ thông tin chung (KPI) */}
+      {kpiWidgets.length > 0 && (
+        <section className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+            {kpiWidgets.map(widget => (
+              <div key={widget.widgetId} className={getColSpanClass(widget.colSpan)}>
+                <WidgetFactory widget={widget} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 2. Khu vực Biểu đồ (Charts) */}
+      {chartWidgets.length > 0 && (
+        <section className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+            {chartWidgets.map(widget => (
+              <div key={widget.widgetId} className={getColSpanClass(widget.colSpan)}>
+                <WidgetFactory widget={widget} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Khu vực Dạng List (Top bán chạy, nợ...) */}
+      {listWidgets.length > 0 && (
+        <section className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+            {listWidgets.map(widget => (
+              <div key={widget.widgetId} className={getColSpanClass(widget.colSpan)}>
+                <WidgetFactory widget={widget} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

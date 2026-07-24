@@ -3,17 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import {
-  Search, Plus, Package, Filter, FolderTree, RefreshCw, AlertCircle
+  Search, Plus, Package, Filter, FolderTree, RefreshCw, AlertCircle, ArrowUpDown
 } from "lucide-react";
-import { Pagination } from "./ui/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 
 // Sub-components & Modals
-import ProductTable from "./Products/ProductTable";
-import ProductCardList from "./Products/ProductCardList";
-import ProductEditModal from "./Products/ProductEditModal";
-import CategoryModal from "./Products/CategoryModal";
-import ProductHistoryModal from "./Products/ProductHistoryModal";
-import UomCalculatorModal from "./Products/UomCalculatorModal";
+import ProductTable from "@/components/Products/ProductTable";
+import ProductCardList from "@/components/Products/ProductCardList";
+import ProductEditModal from "@/components/Products/ProductEditModal";
+import CategoryModal from "@/components/Products/CategoryModal";
+import ProductHistoryModal from "@/components/Products/ProductHistoryModal";
+import UomCalculatorModal from "@/components/Products/UomCalculatorModal";
 
 interface ProductUnit {
   id: number | null;
@@ -55,6 +55,17 @@ export default function ProductManagement({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<number>(0);
+  const [sortOption, setSortOption] = useState<string>("name_asc");
+
+  useEffect(() => {
+    const savedSort = localStorage.getItem("bizflow_product_sort");
+    if (savedSort) setSortOption(savedSort);
+  }, []);
+
+  const handleSortChange = (newSort: string) => {
+    setSortOption(newSort);
+    localStorage.setItem("bizflow_product_sort", newSort);
+  };
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -151,10 +162,27 @@ export default function ProductManagement({
     }
   });
 
-  // Client-side category filtering
-  const filteredProducts = products.filter((p: any) => {
-    return filterCategory === 0 || p.categoryId === filterCategory;
-  });
+  // Client-side category filtering & sorting
+  const filteredProducts = products
+    .filter((p: any) => {
+      return filterCategory === 0 || p.categoryId === filterCategory;
+    })
+    .sort((a: any, b: any) => {
+      const getPrice = (prod: any) => {
+        const defaultUnit = prod.units?.find((u: any) => u.isDefault) || prod.units?.[0];
+        return defaultUnit ? defaultUnit.price : 0;
+      };
+      
+      switch (sortOption) {
+        case "price_asc": return getPrice(a) - getPrice(b);
+        case "price_desc": return getPrice(b) - getPrice(a);
+        case "stock_asc": return (a.stockQuantity || 0) - (b.stockQuantity || 0);
+        case "stock_desc": return (b.stockQuantity || 0) - (a.stockQuantity || 0);
+        case "name_desc": return (b.name || "").localeCompare(a.name || "");
+        case "name_asc":
+        default: return (a.name || "").localeCompare(b.name || "");
+      }
+    });
 
   // Product Actions
   const handleOpenEditModal = (product?: Product) => {
@@ -333,36 +361,43 @@ export default function ProductManagement({
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header Area Buttons */}
         {!isReadOnly && (
-          <div className="flex justify-end gap-2 -mt-2">
-            <button
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
-            >
-              <FolderTree className="w-4 h-4 text-on-surface-variant" />
-              Danh mục
-            </button>
-            <button
-              onClick={handleViewGlobalHistory}
-              className="bg-white border border-surface-container-high hover:bg-surface-container-low text-on-surface-variant px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
-            >
-              <Package className="w-4 h-4 text-on-surface-variant" />
-              Lịch sử
-            </button>
-            <button
-              onClick={() => handleOpenEditModal()}
-              className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-sm transition-all text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Thêm Sản phẩm
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-4 -mt-2">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Hàng hóa & Đơn vị</h1>
+              <p className="text-sm text-slate-500 mt-1">Quản lý danh sách sản phẩm, giá bán và quy đổi đơn vị</p>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-sm transition-all text-sm group"
+              >
+                <FolderTree className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                Danh mục
+              </button>
+              <button
+                onClick={handleViewGlobalHistory}
+                className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-sm transition-all text-sm group"
+              >
+                <Package className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                Lịch sử
+              </button>
+              <button
+                onClick={() => handleOpenEditModal()}
+                className="bg-primary hover:bg-primary-container text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md shadow-primary/20 transition-all text-sm hover:-translate-y-0.5"
+              >
+                <Plus className="w-4 h-4" />
+                Thêm Sản phẩm
+              </button>
+            </div>
           </div>
         )}
 
         {/* Toolbar & Search */}
-        <div className="bg-white p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-col md:flex-row gap-4 animate-in slide-in-from-top-4 fade-in duration-500 delay-100 fill-mode-both">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-on-surface-variant" />
+        <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 animate-in slide-in-from-top-4 fade-in duration-500 delay-100 fill-mode-both items-center">
+          <div className="flex-1 relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-slate-400" />
             </div>
             <input
               type="text"
@@ -378,34 +413,56 @@ export default function ProductManagement({
                   setCurrentPage(1);
                 }
               }}
-              className="block w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary transition-colors text-on-surface"
+              className="block w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all text-slate-800 placeholder-slate-400"
             />
           </div>
-          <div className="relative md:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Filter className="h-4 w-4 text-on-surface-variant" />
+          
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-56">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Filter className="h-4 w-4 text-slate-400" />
+              </div>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(Number(e.target.value))}
+                className="block w-full pl-10 pr-8 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer text-slate-700 transition-all hover:bg-slate-50 font-medium"
+              >
+                <option value={0}>Tất cả danh mục</option>
+                {categories.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </div>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(Number(e.target.value))}
-              className="block w-full pl-9 pr-8 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer text-on-surface"
+
+            <div className="relative flex-1 md:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+              </div>
+              <select
+                value={sortOption}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="block w-full pl-10 pr-8 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer text-slate-700 transition-all hover:bg-slate-50 font-medium"
+              >
+                <option value="name_asc">Tên (A-Z)</option>
+                <option value="name_desc">Tên (Z-A)</option>
+                <option value="price_asc">Giá (Thấp đến cao)</option>
+                <option value="price_desc">Giá (Cao đến thấp)</option>
+                <option value="stock_asc">Tồn kho (Ít đến nhiều)</option>
+                <option value="stock_desc">Tồn kho (Nhiều đến ít)</option>
+              </select>
+            </div>
+            
+            <button
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["products"] });
+                showToast("Đã cập nhật tồn kho mới nhất!", "success");
+              }}
+              className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-500 hover:text-primary p-2.5 rounded-xl font-semibold flex items-center justify-center shadow-sm transition-all"
+              title="Tải lại tồn kho"
             >
-              <option value={0}>Tất cả danh mục</option>
-              {categories.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              <RefreshCw className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["products"] });
-              showToast("Đã cập nhật tồn kho mới nhất!", "success");
-            }}
-            className="bg-white border border-outline-variant hover:bg-surface-container-low text-on-surface-variant p-2.5 rounded-lg font-semibold flex items-center justify-center shadow-sm transition-all"
-            title="Tải lại tồn kho"
-          >
-            <RefreshCw className="w-5 h-5 text-on-surface-variant" />
-          </button>
         </div>
 
         {/* Main Table Area */}

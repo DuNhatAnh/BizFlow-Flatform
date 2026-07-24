@@ -34,9 +34,9 @@ const FormField = ({ label, required, info, error, children }: any) => (
   </div>
 );
 
-import { Skeleton } from "./ui/Skeleton";
-import { FadeIn } from "./ui/FadeIn";
-import { Pagination } from "./ui/Pagination";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { FadeIn } from "@/components/ui/FadeIn";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function StaffManagement() {
   const queryClient = useQueryClient();

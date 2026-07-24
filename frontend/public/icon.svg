@@ -1,0 +1,28 @@
+<svg 
+  viewBox="0 0 200 200" 
+  fill="none" 
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Background Circle: White -->
+  <circle cx="100" cy="100" r="100" fill="#ffffff" />
+  
+  <!-- Centered Blue Logo Group -->
+  <g transform="translate(15, 20) scale(0.85)">
+    <!-- Dark Blue Hexagon -->
+    <path d="M75 20 L135 55 L135 125 L75 160 L15 125 L15 55 Z" fill="#1e3a8a" />
+    
+    <!-- 3D Stack Effect for the Square -->
+    <rect x="102" y="57" width="85" height="85" rx="14" fill="#93c5fd" opacity="0.6" />
+    <rect x="96" y="51" width="85" height="85" rx="14" fill="#60a5fa" opacity="0.8" />
+    <rect x="90" y="45" width="85" height="85" rx="14" fill="#3b82f6" stroke="#ffffff" strokeWidth="6" />
+
+    <!-- White Swoosh Arrow -->
+    <path d="M 25 105
+             Q 70 130 115 80
+             L 107 65
+             L 140 60
+             L 127 93
+             L 120 85
+             Q 70 150 25 105 Z" fill="#ffffff" />
+  </g>
+</svg>

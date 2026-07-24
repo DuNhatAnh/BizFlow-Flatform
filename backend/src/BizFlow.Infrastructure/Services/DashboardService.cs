@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using BizFlow.Application.Common.Interfaces;
 using BizFlow.Application.DTOs.Dashboard;
 using BizFlow.Domain.Constants;
@@ -17,13 +18,20 @@ public class DashboardService : IDashboardService
     private readonly ICurrentTenantService _currentTenantService;
     private readonly ITenantSettingService _tenantSettingService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;
 
-    public DashboardService(IApplicationDbContext context, ICurrentTenantService currentTenantService, ITenantSettingService tenantSettingService, ICurrentUserService currentUserService)
+    public DashboardService(
+        IApplicationDbContext context, 
+        ICurrentTenantService currentTenantService, 
+        ITenantSettingService tenantSettingService, 
+        ICurrentUserService currentUserService,
+        Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory)
     {
         _context = context;
         _currentTenantService = currentTenantService;
         _tenantSettingService = tenantSettingService;
         _currentUserService = currentUserService;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<DashboardHomeDto> GetDashboardHomeAsync(DateTime fromDate, DateTime toDate, int timezoneOffsetMinutes = 0, CancellationToken cancellationToken = default)
@@ -82,33 +90,53 @@ public class DashboardService : IDashboardService
             }
         }
         
-        // 5. Revenue & Profit Trend Chart
+        // 5. Employee Count KPI
+        if (HasPerm(Permissions.StaffRead))
+        {
+            var employeesKpi = await GetEmployeesKpiAsync(tenantId.Value, cancellationToken);
+            home.Widgets.Add(employeesKpi);
+        }
+
+        // 6. Customer Count and Customer Debt KPI
+        if (HasPerm(Permissions.CustomersRead) || HasPerm(Permissions.DashboardViewCustomers))
+        {
+            var customersKpi = await GetCustomersKpiAsync(tenantId.Value, cancellationToken);
+            home.Widgets.Add(customersKpi);
+
+            var customerDebtKpi = await GetCustomerDebtKpiAsync(tenantId.Value, cancellationToken);
+            home.Widgets.Add(customerDebtKpi);
+        }
+        
+        // 7. Revenue & Profit Trend Chart
         if (HasPerm(Permissions.DashboardViewRevenue) || HasPerm(Permissions.DashboardViewProfit))
         {
             var trendChart = await GetRevenueTrendChartAsync(tenantId.Value, fromUtc, toUtc, timezoneOffsetMinutes, cancellationToken);
             home.Widgets.Add(trendChart);
         }
         
-        // 6. Cash Flow Trend Chart
+        // 8. Cash Flow Trend Chart
         if (HasPerm(Permissions.DashboardViewCash))
         {
             var cashFlowChart = await GetCashFlowChartAsync(tenantId.Value, fromUtc, toUtc, timezoneOffsetMinutes, cancellationToken);
             home.Widgets.Add(cashFlowChart);
         }
         
-        // 7. Top Selling Products
+        // 9. Top Selling Products
         if (HasPerm(Permissions.DashboardViewProducts))
         {
             var topProducts = await GetTopProductsListAsync(tenantId.Value, fromUtc, toUtc, 5, cancellationToken);
             home.Widgets.Add(topProducts);
         }
         
-        // 8. Top Debt Customers
+        // 10. Top Debt Customers
         if (HasPerm(Permissions.DashboardViewCustomers))
         {
             var topDebt = await GetTopDebtCustomersListAsync(tenantId.Value, 5, cancellationToken);
             home.Widgets.Add(topDebt);
         }
+        
+        // Sort widgets by Order to maintain consistent layout
+        home.Widgets = home.Widgets.OrderBy(w => w.Order).ToList();
         
         return home;
     }
@@ -132,6 +160,9 @@ public class DashboardService : IDashboardService
             DashboardWidgetIds.ChartCashFlowTrend => await GetCashFlowChartAsync(tenantId.Value, fromUtc, toUtc, timezoneOffsetMinutes, cancellationToken),
             DashboardWidgetIds.ListTopProducts => await GetTopProductsListAsync(tenantId.Value, fromUtc, toUtc, limit, cancellationToken),
             DashboardWidgetIds.ListTopDebtCustomers => await GetTopDebtCustomersListAsync(tenantId.Value, limit, cancellationToken),
+            DashboardWidgetIds.KpiEmployees => await GetEmployeesKpiAsync(tenantId.Value, cancellationToken),
+            DashboardWidgetIds.KpiCustomers => await GetCustomersKpiAsync(tenantId.Value, cancellationToken),
+            DashboardWidgetIds.KpiCustomerDebt => await GetCustomerDebtKpiAsync(tenantId.Value, cancellationToken),
             _ => throw new ArgumentException("Widget không hợp lệ hoặc không hỗ trợ load độc lập")
         };
 
@@ -144,6 +175,78 @@ public class DashboardService : IDashboardService
         }
 
         return widget;
+    }
+
+    private async Task<DashboardWidgetDto> GetEmployeesKpiAsync(Guid tenantId, CancellationToken ct)
+    {
+        var count = await _context.Users
+            .Where(u => u.TenantId == tenantId && u.IsActive && u.Role != UserRole.Owner)
+            .CountAsync(ct);
+
+        return new DashboardWidgetDto
+        {
+            WidgetId = DashboardWidgetIds.KpiEmployees,
+            Type = "Kpi",
+            Title = "Tổng số nhân viên",
+            Order = 61,
+            ColSpan = 3,
+            KpiData = new DashboardKpiDataDto
+            {
+                Value = count,
+                PreviousValue = 0,
+                TrendPercentage = 0,
+                Format = "number"
+            },
+            RequiredPermissions = new[] { Permissions.StaffRead }
+        };
+    }
+
+    private async Task<DashboardWidgetDto> GetCustomersKpiAsync(Guid tenantId, CancellationToken ct)
+    {
+        var count = await _context.Customers
+            .Where(c => c.TenantId == tenantId)
+            .CountAsync(ct);
+
+        return new DashboardWidgetDto
+        {
+            WidgetId = DashboardWidgetIds.KpiCustomers,
+            Type = "Kpi",
+            Title = "Tổng số khách hàng",
+            Order = 62,
+            ColSpan = 3,
+            KpiData = new DashboardKpiDataDto
+            {
+                Value = count,
+                PreviousValue = 0,
+                TrendPercentage = 0,
+                Format = "number"
+            },
+            RequiredPermissions = new[] { Permissions.CustomersRead, Permissions.DashboardViewCustomers }
+        };
+    }
+
+    private async Task<DashboardWidgetDto> GetCustomerDebtKpiAsync(Guid tenantId, CancellationToken ct)
+    {
+        var totalDebt = await _context.Customers
+            .Where(c => c.TenantId == tenantId)
+            .SumAsync(c => c.TotalDebt, ct);
+
+        return new DashboardWidgetDto
+        {
+            WidgetId = DashboardWidgetIds.KpiCustomerDebt,
+            Type = "Kpi",
+            Title = "Tổng nợ khách hàng",
+            Order = 63,
+            ColSpan = 3,
+            KpiData = new DashboardKpiDataDto
+            {
+                Value = totalDebt,
+                PreviousValue = 0,
+                TrendPercentage = 0,
+                Format = "currency"
+            },
+            RequiredPermissions = new[] { Permissions.CustomersRead, Permissions.DashboardViewCustomers }
+        };
     }
 
     private async Task<(DashboardWidgetDto revenue, DashboardWidgetDto orders)> GetRevenueAndOrdersKpiAsync(Guid tenantId, DateTime from, DateTime to, CancellationToken ct)
@@ -267,16 +370,13 @@ public class DashboardService : IDashboardService
 
     private async Task<DashboardWidgetDto> GetRevenueTrendChartAsync(Guid tenantId, DateTime from, DateTime to, int timezoneOffsetMinutes, CancellationToken ct)
     {
-        // 1. Determine granularity based on date range
         var totalDays = (to - from).TotalDays;
-        string dateFormat = "yyyy-MM-dd";
         
-        // Fetch raw data to group in memory since EF Core DateTrunc can be tricky with timezone and varying DB providers.
-        // For production with massive data, we'd use EF.Functions.DateTrunc. Since it's MVP and filtered by Tenant + Date, in-memory is acceptable.
-        // We will fetch only necessary fields.
+        // Push daily grouping to Database to massively reduce memory usage (x100 data optimization)
         var orders = await _context.Orders
             .Where(o => o.TenantId == tenantId && o.Status == OrderStatus.Completed && o.CreatedAt >= from && o.CreatedAt <= to)
-            .Select(o => new { o.Id, o.CreatedAt, o.TotalAmount })
+            .GroupBy(o => o.CreatedAt.AddMinutes(-timezoneOffsetMinutes).Date)
+            .Select(g => new { Date = g.Key, TotalAmount = g.Sum(o => o.TotalAmount) })
             .ToListAsync(ct);
 
         var cogs = await _context.Orders
@@ -285,26 +385,27 @@ public class DashboardService : IDashboardService
                   o => o.Id,
                   l => l.ReceiptId,
                   (o, l) => new { o.CreatedAt, l.ValueOut })
+            .GroupBy(x => x.CreatedAt.AddMinutes(-timezoneOffsetMinutes).Date)
+            .Select(g => new { Date = g.Key, ValueOut = g.Sum(x => x.ValueOut) })
             .ToListAsync(ct);
 
-        // Grouping logic with Timezone Offset applied
-        Func<DateTime, string> groupKeySelector = d => d.AddMinutes(-timezoneOffsetMinutes).ToString("yyyy-MM-dd");
+        // In-memory grouping for week/month if the date range is large (only operates on <= 365 daily rows)
+        Func<DateTime, string> groupKeySelector = d => d.ToString("yyyy-MM-dd");
         if (totalDays > 180)
-            groupKeySelector = d => d.AddMinutes(-timezoneOffsetMinutes).ToString("yyyy-MM"); // Group by Month
+            groupKeySelector = d => d.ToString("yyyy-MM"); // Group by Month
         else if (totalDays > 31)
             groupKeySelector = d => {
-                var localTime = d.AddMinutes(-timezoneOffsetMinutes);
                 var cal = System.Globalization.DateTimeFormatInfo.CurrentInfo.Calendar;
-                int week = cal.GetWeekOfYear(localTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-                return $"{localTime.Year}-W{week:D2}"; // Group by Week
+                int week = cal.GetWeekOfYear(d, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+                return $"{d.Year}-W{week:D2}"; // Group by Week
             };
 
         var revenueDict = orders
-            .GroupBy(o => groupKeySelector(o.CreatedAt))
+            .GroupBy(o => groupKeySelector(o.Date))
             .ToDictionary(g => g.Key, g => g.Sum(o => o.TotalAmount));
 
         var cogsDict = cogs
-            .GroupBy(c => groupKeySelector(c.CreatedAt))
+            .GroupBy(c => groupKeySelector(c.Date))
             .ToDictionary(g => g.Key, g => g.Sum(c => c.ValueOut));
 
         var allLabels = revenueDict.Keys.Union(cogsDict.Keys).OrderBy(k => k).ToList();
@@ -381,28 +482,28 @@ public class DashboardService : IDashboardService
         
         var cashTransactions = await _context.CashTransactions
             .Where(c => c.TenantId == tenantId && c.CreatedAt >= from && c.CreatedAt <= to)
-            .Select(c => new { c.Type, c.Amount, c.CreatedAt })
+            .GroupBy(c => new { c.Type, Date = c.CreatedAt.AddMinutes(-timezoneOffsetMinutes).Date })
+            .Select(g => new { g.Key.Type, g.Key.Date, Amount = g.Sum(x => x.Amount) })
             .ToListAsync(ct);
 
-        Func<DateTime, string> groupKeySelector = d => d.AddMinutes(-timezoneOffsetMinutes).ToString("yyyy-MM-dd");
+        Func<DateTime, string> groupKeySelector = d => d.ToString("yyyy-MM-dd");
         if (totalDays > 180)
-            groupKeySelector = d => d.AddMinutes(-timezoneOffsetMinutes).ToString("yyyy-MM");
+            groupKeySelector = d => d.ToString("yyyy-MM");
         else if (totalDays > 31)
             groupKeySelector = d => {
-                var localTime = d.AddMinutes(-timezoneOffsetMinutes);
                 var cal = System.Globalization.DateTimeFormatInfo.CurrentInfo.Calendar;
-                int week = cal.GetWeekOfYear(localTime, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-                return $"{localTime.Year}-W{week:D2}";
+                int week = cal.GetWeekOfYear(d, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+                return $"{d.Year}-W{week:D2}";
             };
 
         var cashInDict = cashTransactions
             .Where(c => c.Type == CashTransactionType.Receipt)
-            .GroupBy(c => groupKeySelector(c.CreatedAt))
+            .GroupBy(c => groupKeySelector(c.Date))
             .ToDictionary(g => g.Key, g => g.Sum(c => c.Amount));
 
         var cashOutDict = cashTransactions
             .Where(c => c.Type == CashTransactionType.Payment)
-            .GroupBy(c => groupKeySelector(c.CreatedAt))
+            .GroupBy(c => groupKeySelector(c.Date))
             .ToDictionary(g => g.Key, g => g.Sum(c => c.Amount));
 
         var allLabels = cashInDict.Keys.Union(cashOutDict.Keys).OrderBy(k => k).ToList();
@@ -470,37 +571,40 @@ public class DashboardService : IDashboardService
             threshold = 5;
         }
 
-        // We count products whose latest S2 balance is less than or equal to threshold
-        var lowStockCount = await _context.Products
+        // Get products with their latest balance <= threshold
+        var lowStockProductsQuery = _context.Products
             .Where(p => p.TenantId == tenantId && p.IsActive)
-            .CountAsync(p => _context.AccountingLedgerS2s
-                .Where(l => l.TenantId == tenantId && l.ProductId == p.Id)
-                .OrderByDescending(l => l.Date)
-                .Select(l => l.QuantityBalance)
-                .FirstOrDefault() <= threshold, ct);
-
-        if (lowStockCount == 0) return null;
-
-        AlertSeverity severity = AlertSeverity.Medium;
-        if (lowStockCount > 0) 
-        {
-            // We should ideally calculate severity per product, but for a high level summary:
-            // Since we know they are all <= threshold, we can set default to Warning.
-            // A more advanced approach queries MIN(QuantityBalance)
-            var minStock = await _context.Products
-                .Where(p => p.TenantId == tenantId && p.IsActive)
-                .Select(p => _context.AccountingLedgerS2s
+            .Select(p => new
+            {
+                Product = p,
+                Balance = _context.AccountingLedgerS2s
                     .Where(l => l.TenantId == tenantId && l.ProductId == p.Id)
                     .OrderByDescending(l => l.Date)
                     .Select(l => l.QuantityBalance)
-                    .FirstOrDefault())
-                .Where(q => q <= threshold)
-                .MinAsync(ct);
-                
-            if (minStock <= 0) severity = AlertSeverity.Critical;
-            else if (minStock <= threshold / 2) severity = AlertSeverity.High;
+                    .FirstOrDefault()
+            })
+            .Where(x => x.Balance <= threshold);
+
+        var lowStockCount = await lowStockProductsQuery.CountAsync(ct);
+
+        if (lowStockCount == 0) return null;
+
+        var topProducts = await lowStockProductsQuery
+            .OrderBy(x => x.Balance)
+            .Take(3)
+            .ToListAsync(ct);
+
+        AlertSeverity severity = AlertSeverity.Medium;
+        var minStock = topProducts.Min(x => x.Balance);
+        if (minStock <= 0) severity = AlertSeverity.Critical;
+        else if (minStock <= threshold / 2) severity = AlertSeverity.High;
+
+        var details = string.Join(", ", topProducts.Select(x => $"{x.Product.Name} (còn {x.Balance})"));
+        if (lowStockCount > 3)
+        {
+            details += $" và {lowStockCount - 3} sản phẩm khác";
         }
-        
+
         return new DashboardWidgetDto
         {
             WidgetId = DashboardWidgetIds.AlertLowStock,
@@ -510,7 +614,7 @@ public class DashboardService : IDashboardService
             ColSpan = 12,
             AlertData = new DashboardAlertDataDto
             {
-                Message = $"Có {lowStockCount} sản phẩm sắp hết hàng (<= {threshold} SP)",
+                Message = $"Sắp hết hàng: {details}",
                 Severity = severity,
                 ActionUrl = "/inventory"
             },

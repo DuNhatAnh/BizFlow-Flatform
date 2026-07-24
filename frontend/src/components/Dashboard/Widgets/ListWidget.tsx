@@ -5,21 +5,21 @@ import { WidgetHeader } from './WidgetHeader';
 
 export const ListWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) => {
   const [limit, setLimit] = React.useState(5);
-  const { data: updatedWidget, refetch, isFetching, dataUpdatedAt } = useWidget(widget, limit);
-  const data = updatedWidget?.data as DashboardListDataDto | undefined;
+  const { data: queryWidget, refetch, isFetching, dataUpdatedAt } = useWidget(widget, limit);
+  const displayWidget = queryWidget || widget;
+  const data = displayWidget.data as DashboardListDataDto | undefined;
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLimit(Number(e.target.value));
     setTimeout(() => refetch(), 0);
   };
 
-  if (!data) return null;
 
-  if (!data.items || data.items.length === 0) {
+  if (data && (!data.items || data.items.length === 0)) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col h-full border border-gray-100 min-h-[300px]">
         <WidgetHeader 
-          title={updatedWidget?.title || widget.title} 
+          title={displayWidget.title} 
           onRefresh={() => refetch()} 
           isFetching={isFetching}
           updatedAt={dataUpdatedAt}
@@ -43,7 +43,7 @@ export const ListWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget })
   return (
     <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col h-full border border-gray-100 min-h-[350px]">
       <WidgetHeader 
-        title={updatedWidget?.title || widget.title} 
+        title={displayWidget.title} 
         onRefresh={() => refetch()} 
         isFetching={isFetching}
         updatedAt={dataUpdatedAt}
@@ -59,24 +59,41 @@ export const ListWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget })
           <option value={20}>Top 20</option>
         </select>
       </div>
-      <div className="flex-1 overflow-auto pr-2 mt-2 space-y-4">
-        {data.items.map((item, idx) => (
-          <div key={item.id || idx} className="flex items-center justify-between group">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-sm font-semibold text-gray-500 group-hover:bg-primary group-hover:text-white transition-colors">
-                {idx + 1}
+      {!data ? (
+        <div className="flex-1 overflow-hidden pr-2 mt-2 space-y-4">
+          {Array.from({ length: limit }).map((_, idx) => (
+            <div key={`skeleton-${idx}`} className="flex items-center justify-between animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-100 shrink-0" />
+                <div>
+                  <div className="h-4 w-32 bg-gray-100 rounded mb-1" />
+                  <div className="h-3 w-24 bg-gray-100 rounded" />
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-800 line-clamp-1">{item.title}</div>
-                <div className="text-xs text-gray-500 line-clamp-1">{item.subtitle}</div>
+              <div className="h-4 w-16 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto pr-2 mt-2 space-y-4">
+          {data.items.map((item: any, idx: number) => (
+            <div key={item.id || idx} className="flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-sm font-semibold text-gray-500 group-hover:bg-primary group-hover:text-white transition-colors">
+                  {idx + 1}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-800 line-clamp-1">{item.title}</div>
+                  <div className="text-xs text-gray-500 line-clamp-1">{item.subtitle}</div>
+                </div>
+              </div>
+              <div className="text-sm font-bold text-gray-800 whitespace-nowrap ml-2">
+                {formatValue(item.value, item.format)}
               </div>
             </div>
-            <div className="text-sm font-bold text-gray-800 whitespace-nowrap ml-2">
-              {formatValue(item.value, item.format)}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

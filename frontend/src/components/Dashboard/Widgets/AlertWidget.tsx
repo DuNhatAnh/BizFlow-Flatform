@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useWidget } from '../../../hooks/useDashboard';
 import { DashboardWidgetDto, DashboardAlertDataDto, AlertSeverity } from '../../../types/dashboard';
 import { WidgetHeader } from './WidgetHeader';
@@ -8,9 +8,27 @@ import Link from 'next/link';
 export const AlertWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) => {
   const { data: updatedWidget, refetch, isFetching, dataUpdatedAt } = useWidget(widget);
   const data = updatedWidget?.data as DashboardAlertDataDto | undefined;
+  const dispatchedRef = useRef(false);
 
-  // Don't render anything if no alert data
-  if (!data) return null;
+  useEffect(() => {
+    if (data && widget.widgetId === 'alert-low-stock' && !dispatchedRef.current) {
+      dispatchedRef.current = true;
+      const notif = {
+        id: 'inventory-alert-' + Date.now(),
+        title: updatedWidget?.title || widget.title,
+        message: data.message,
+        type: 'inventory',
+        createdAt: new Date().toISOString()
+      };
+      // Give the header time to mount
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('new_notification', { detail: notif }));
+      }, 500);
+    }
+  }, [data, widget.widgetId, updatedWidget?.title]);
+
+  // Don't render anything if no alert data, or if it's the low stock alert (now moved to Bell)
+  if (!data || widget.widgetId === 'alert-low-stock') return null;
 
   const getAlertStyles = (severity: AlertSeverity) => {
     switch (severity) {

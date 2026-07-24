@@ -38,8 +38,8 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
         setUserRole(parsed.role);
         if (parsed.role === "Employee") {
           fetchTodayShift();
-          fetchNotifications();
         }
+        fetchNotifications();
       } catch (e) {
         console.error("Lỗi parse thông tin user trong Header", e);
       }
@@ -355,59 +355,67 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
           <span className="min-w-[220px] text-center">{formatDateTime(time)}</span>
         </div>
 
+        {/* Notifications Bell (Visible for all roles) */}
+        <div className="relative" ref={notificationRef}>
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2.5 rounded-xl bg-white border border-surface-container-high shadow-sm hover:shadow-md hover:border-primary/50 transition-all text-on-surface-variant hover:text-primary group"
+            title="Thông báo"
+          >
+            <Bell className="w-5 h-5 group-hover:animate-wiggle" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-white animate-pulse"></span>
+            )}
+          </button>
+
+          {/* Notifications Popover */}
+          {showNotifications && (
+            <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-xl shadow-xl border border-surface-container-high z-50 overflow-hidden flex flex-col max-h-[400px]">
+              <div className="px-4 py-3 border-b border-surface-container-high bg-surface-container-lowest flex items-center justify-between">
+                <h3 className="font-bold text-on-surface">Thông báo</h3>
+                {unreadCount > 0 && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                    {unreadCount} chưa đọc
+                  </span>
+                )}
+              </div>
+              <div className="overflow-y-auto flex-1 p-2 flex flex-col gap-1">
+                {notifications.length === 0 ? (
+                  <div className="text-center p-6 text-on-surface-variant text-sm">
+                    Chưa có thông báo nào.
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div 
+                      key={n.id} 
+                      onClick={(e) => { 
+                        if (!n.isRead) handleMarkAsRead(n.id, e); 
+                        if (n.type === 'inventory') {
+                          localStorage.setItem("bizflow_active_tab", "inventory");
+                          window.location.reload();
+                        }
+                      }}
+                      className={`p-3 rounded-lg flex flex-col gap-1 transition-colors cursor-pointer ${n.isRead ? 'opacity-70 hover:bg-surface-container-lowest' : 'bg-primary/5 hover:bg-primary/10 border-l-2 border-primary'}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <span className={`text-sm ${n.isRead ? 'font-medium' : 'font-bold'} text-on-surface leading-tight`}>{n.title}</span>
+                        {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1"></span>}
+                      </div>
+                      <p className="text-xs text-on-surface-variant leading-relaxed">{n.message}</p>
+                      <span className="text-[10px] text-on-surface-variant/70 mt-1">
+                        {new Date(n.createdAt).toLocaleString('vi-VN')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Check-in Actions (Employee only) */}
         {userRole === "Employee" && (
           <div className="flex items-center gap-3">
-            <div className="relative" ref={notificationRef}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2.5 rounded-xl bg-white border border-surface-container-high shadow-sm hover:shadow-md hover:border-primary/50 transition-all text-on-surface-variant hover:text-primary group"
-                title="Thông báo"
-              >
-                <Bell className="w-5 h-5 group-hover:animate-wiggle" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-white animate-pulse"></span>
-                )}
-              </button>
-
-              {/* Notifications Popover */}
-              {showNotifications && (
-                <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-xl shadow-xl border border-surface-container-high z-50 overflow-hidden flex flex-col max-h-[400px]">
-                  <div className="px-4 py-3 border-b border-surface-container-high bg-surface-container-lowest flex items-center justify-between">
-                    <h3 className="font-bold text-on-surface">Thông báo</h3>
-                    {unreadCount > 0 && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
-                        {unreadCount} chưa đọc
-                      </span>
-                    )}
-                  </div>
-                  <div className="overflow-y-auto flex-1 p-2 flex flex-col gap-1">
-                    {notifications.length === 0 ? (
-                      <div className="text-center p-6 text-on-surface-variant text-sm">
-                        Chưa có thông báo nào.
-                      </div>
-                    ) : (
-                      notifications.map(n => (
-                        <div 
-                          key={n.id} 
-                          onClick={(e) => { if (!n.isRead) handleMarkAsRead(n.id, e); }}
-                          className={`p-3 rounded-lg flex flex-col gap-1 transition-colors cursor-pointer ${n.isRead ? 'opacity-70 hover:bg-surface-container-lowest' : 'bg-primary/5 hover:bg-primary/10 border-l-2 border-primary'}`}
-                        >
-                          <div className="flex justify-between items-start gap-2">
-                            <span className={`text-sm ${n.isRead ? 'font-medium' : 'font-bold'} text-on-surface leading-tight`}>{n.title}</span>
-                            {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1"></span>}
-                          </div>
-                          <p className="text-xs text-on-surface-variant leading-relaxed">{n.message}</p>
-                          <span className="text-[10px] text-on-surface-variant/70 mt-1">
-                            {new Date(n.createdAt).toLocaleString('vi-VN')}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {!isCheckedIn ? (
             <button 
               onClick={() => setShowCheckIn(true)}

@@ -82,9 +82,9 @@ export default function ProductRow({
 
   return (
     <tr
-      className="even:bg-slate-50/50 odd:bg-white hover:bg-slate-50 transition-colors"
+      className="bg-white hover:bg-slate-50/80 transition-colors group border-l-2 border-transparent hover:border-primary"
     >
-      <td className="py-2 px-4 text-center text-on-surface-variant font-medium">
+      <td className="py-3 px-4 text-center text-slate-400 font-medium group-hover:text-slate-600 transition-colors">
         {(currentPage - 1) * itemsPerPage + index + 1}
       </td>
       <td className="py-2 px-4">
@@ -101,7 +101,7 @@ export default function ProductRow({
           </div>
           <div>
             <div
-              className="font-semibold text-slate-800 hover:text-primary cursor-pointer transition-colors select-none text-[13.5px]"
+              className="font-bold text-slate-800 group-hover:text-primary cursor-pointer transition-colors select-none text-[14px]"
               onClick={() => onSelectCalcProduct(product)}
               title="Click để tính toán quy đổi giá bán"
             >
@@ -158,7 +158,7 @@ export default function ProductRow({
                 setOpenDropdownId(true);
               }
             }}
-            className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -166,7 +166,7 @@ export default function ProductRow({
             <>
               <div className="fixed inset-0 z-[100]" onClick={(e) => { e.stopPropagation(); setOpenDropdownId(false); }}></div>
               <div
-                className="fixed w-48 bg-white rounded-xl shadow-lg border border-surface-container-high z-[101] overflow-hidden text-left animate-in fade-in zoom-in-95 duration-100"
+                className="fixed w-48 bg-white rounded-xl shadow-xl border border-slate-200 z-[101] overflow-hidden text-left animate-in fade-in zoom-in-95 duration-100"
                 style={{ top: dropdownPos.top, right: dropdownPos.right }}
               >
                 <button
@@ -174,7 +174,7 @@ export default function ProductRow({
                     onEdit(product);
                     setOpenDropdownId(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary flex items-center gap-2 transition-colors font-medium"
                 >
                   <Edit2 className="w-4 h-4 text-primary" /> Sửa sản phẩm
                 </button>
@@ -183,7 +183,7 @@ export default function ProductRow({
                     onDelete(product.id);
                     setOpenDropdownId(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 flex items-center gap-2 border-t border-surface-container-low transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100 transition-colors font-medium"
                 >
                   <Trash2 className="w-4 h-4" /> Xóa sản phẩm
                 </button>

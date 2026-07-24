@@ -21,15 +21,15 @@ import {
   MoreHorizontal,
   Edit3
 } from "lucide-react";
-import { Skeleton } from "./ui/Skeleton";
-import { FadeIn } from "./ui/FadeIn";
-import { Pagination } from "./ui/Pagination";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { FadeIn } from "@/components/ui/FadeIn";
+import { Pagination } from "@/components/ui/Pagination";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
-import StockTab from "./Inventory/InventoryTabs/StockTab";
-import ReceiptHistoryTab from "./Inventory/InventoryTabs/ReceiptHistoryTab";
-import LedgerS2HKDTab from "./Inventory/InventoryTabs/LedgerS2HKDTab";
-import InventorySettingsTab from "./Inventory/InventoryTabs/InventorySettingsTab";
-import CreateReceiptModal from "./Inventory/CreateReceiptModal";
+import StockTab from "@/components/Inventory/InventoryTabs/StockTab";
+import ReceiptHistoryTab from "@/components/Inventory/InventoryTabs/ReceiptHistoryTab";
+import LedgerS2HKDTab from "@/components/Inventory/InventoryTabs/LedgerS2HKDTab";
+import InventorySettingsTab from "@/components/Inventory/InventoryTabs/InventorySettingsTab";
+import CreateReceiptModal from "@/components/Inventory/CreateReceiptModal";
 
 const API_URL = "http://localhost:5178/api";
 
@@ -637,7 +637,7 @@ export default function InventoryManagement() {
           <ReceiptHistoryTab 
             activeSubTab={activeSubTab}
             exportFilterTab={exportFilterTab}
-            setExportFilterTab={(val) => {
+            setExportFilterTab={(val: any) => {
               setExportFilterTab(val);
               setReceiptPage(1); // Reset page on filter change
             }}

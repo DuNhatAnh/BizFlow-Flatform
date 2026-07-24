@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<BizFlow.Application.Interfaces.ICategoryService, BizFlow.Infrastructure.Services.CategoryService>();
         services.AddScoped<IInventoryService, BizFlow.Infrastructure.Services.InventoryService>();
         services.AddScoped<IStaffService, BizFlow.Infrastructure.Services.StaffService>();
+        services.AddScoped<IReportsService, BizFlow.Infrastructure.Services.ReportsService>();
         services.AddScoped<ICashService, BizFlow.Infrastructure.Services.CashService>();
         services.AddScoped<IPayrollService, BizFlow.Infrastructure.Services.PayrollService>();
         services.AddScoped<IStoreService, BizFlow.Infrastructure.Services.StoreService>();

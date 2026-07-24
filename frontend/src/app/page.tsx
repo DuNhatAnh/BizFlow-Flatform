@@ -2,34 +2,35 @@
 
 import React, { useState, useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-import ProductManagement from "@/components/ProductManagement";
-import InventoryManagement from "@/components/InventoryManagement";
-import StaffManagement from "@/components/StaffManagement";
-import UserProfile from "@/components/UserProfile";
-import MyOrders from "@/components/MyOrders";
+import Sidebar from "@/components/Layout/Sidebar";
+import Header from "@/components/Layout/Header";
+import ProductManagement from "@/components/Products/ProductManagement";
+import InventoryManagement from "@/components/Inventory/InventoryManagement";
+import StaffManagement from "@/components/Staff/StaffManagement";
+import UserProfile from "@/components/Settings/UserProfile";
+import MyOrders from "@/components/Orders/MyOrders";
 import CashBook from "@/components/CashBook";
 
 // Micro-components
-import OwnerOverview from "@/components/OwnerOverview";
-import AdminOverview from "@/components/AdminOverview";
+import OwnerOverview from "@/components/Dashboard/Widgets/OwnerOverview";
+import AdminOverview from "@/components/Dashboard/Widgets/AdminOverview";
 import AIDrafts from "@/components/AIDrafts";
 import POS from "@/components/POS";
-import ToastNotification from "@/components/ToastNotification";
-import DebtManagement from "@/components/DebtManagement";
-import StoreSettings from "@/components/StoreSettings";
-import { ShiftManagement } from "@/components/ShiftManagement";
-import EmployeeSchedule from "@/components/EmployeeSchedule";
-import AttendanceReport from "@/components/AttendanceReport";
+import ToastNotification from "@/components/ui/ToastNotification";
+import DebtManagement from "@/components/Debts/DebtManagement";
+import StoreSettings from "@/components/Settings/StoreSettings";
+import { ShiftManagement } from "@/components/Staff/ShiftManagement";
+import EmployeeSchedule from "@/components/Staff/EmployeeSchedule";
+import AttendanceReport from "@/components/Staff/AttendanceReport";
+import TaxReportsTT88 from "@/components/Reports/TT88";
 import { parseDescriptionMetadata } from "@/utils/metadata";
 // Admin components
 import TenantsManagement from "@/components/Admin/TenantsManagement";
 import SubscriptionPlansManagement from "@/components/Admin/SubscriptionPlansManagement";
 import PlatformAnalytics from "@/components/Admin/PlatformAnalytics";
 import SystemConfigManager from "@/components/Admin/SystemConfigManager";
-import AiChatbotWidget from "@/components/AiChatbotWidget";
-import OwnerSubscription from "@/components/OwnerSubscription";
+import AiChatbotWidget from "@/components/Dashboard/Widgets/AiChatbotWidget";
+import OwnerSubscription from "@/components/Settings/OwnerSubscription";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -885,7 +886,10 @@ export default function Home() {
     }
 
     if (activeTab === "settings") {
-      return <StoreSettings />;
+      return <StoreSettings onNavigate={(tab) => {
+        setActiveTab(tab);
+        localStorage.setItem("bizflow_active_tab", tab);
+      }} />;
     }
 
     if (activeTab === "cashbook") {
@@ -896,11 +900,15 @@ export default function Home() {
       return <OwnerSubscription />;
     }
 
+    if (activeTab === "reports") {
+      return <TaxReportsTT88 />;
+    }
+
     return (
       <div className="bg-white p-12 rounded-xl border border-surface-container-high text-center shadow-card">
         <h2 className="text-xl font-bold text-on-surface">Tính năng đang phát triển</h2>
         <p className="text-sm text-on-surface-variant mt-2">
-          Phân hệ quản trị sổ sách thuế Thông tư 88/2021/TT-BTC, báo cáo tài chính kho bãi và danh mục hàng hóa chi tiết.
+          Tính năng này sắp ra mắt.
         </p>
       </div>
     );
@@ -926,8 +934,8 @@ export default function Home() {
         };
       case "products":
         return {
-          title: "Danh mục Sản phẩm & Đơn vị tính",
-          subtitle: "Quản lý hàng hóa, tỷ lệ quy đổi và giá bán theo đơn vị"
+          title: "",
+          subtitle: ""
         };
       case "inventory":
         return {

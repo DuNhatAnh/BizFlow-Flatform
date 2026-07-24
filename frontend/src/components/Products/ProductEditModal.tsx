@@ -212,87 +212,88 @@ export default function ProductEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 text-on-surface">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800 border border-slate-200/50">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-surface-container-high flex justify-between items-center bg-surface-container-low/50">
-          <h3 className="text-xl font-bold text-on-surface flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 tracking-tight">
             <Package className="w-5 h-5 text-primary" />
             {editingProduct.id ? "Cập nhật Sản phẩm" : "Thêm Sản phẩm Mới"}
           </h3>
-          <button onClick={onClose} className="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto flex-1 bg-surface-container-low/20">
+        <div className="p-6 overflow-y-auto flex-1 bg-slate-50/30 custom-scrollbar">
 
           {/* Section 1: Basic Info */}
-          <div className="bg-white p-5 rounded-xl border border-surface-container-high mb-6 shadow-sm">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-4 border-b pb-2 border-surface-container-low">
-              1. Thông tin chung
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 mb-6 shadow-sm">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-5 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">1</span>
+              Thông tin chung
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Tên sản phẩm *</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Tên sản phẩm *</label>
                 <input
                   type="text"
                   value={editingProduct.name}
                   onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all placeholder-slate-400"
                   placeholder="VD: Xi măng Hà Tiên"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mã vạch / SKU</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Mã vạch / SKU</label>
                 <input
                   type="text"
                   value={editingProduct.code}
                   onChange={(e) => setEditingProduct({ ...editingProduct, code: e.target.value })}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm font-mono focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all placeholder-slate-400"
                   placeholder="VD: XM-HT-01"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Danh mục</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Danh mục</label>
                 <select
                   value={editingProduct.categoryId || 0}
                   onChange={(e) => setEditingProduct({ ...editingProduct, categoryId: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface cursor-pointer"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 cursor-pointer transition-all hover:bg-slate-50"
                 >
                   {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Đơn vị cơ bản (Base Unit) *</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Đơn vị cơ bản (Base Unit) *</label>
                 <input
                   type="text"
                   value={editingProduct.baseUnit}
                   onChange={(e) => setEditingProduct({ ...editingProduct, baseUnit: e.target.value })}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all placeholder-slate-400"
                   placeholder="VD: Bao, Cái, Lon..."
                 />
-                <p className="text-[10px] text-on-surface-variant mt-1 italic">Đơn vị nhỏ nhất để kiểm kho.</p>
+                <p className="text-[10px] text-slate-400 mt-1.5 italic font-medium">Đơn vị nhỏ nhất để kiểm kho.</p>
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mức cảnh báo tồn kho tối thiểu</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Mức cảnh báo tồn kho tối thiểu</label>
                 <input
                   type="number"
                   min="0"
                   value={customMinStock}
                   onChange={(e) => setCustomMinStock(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all placeholder-slate-400"
                   placeholder="Mặc định: 10"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Vị trí lưu kho</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Vị trí lưu kho</label>
                 <input
                   type="text"
                   value={customLocation}
                   onChange={(e) => setCustomLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all placeholder-slate-400"
                   placeholder="VD: Kho A - Kệ 2, Bãi 1..."
                 />
               </div>
@@ -375,35 +376,36 @@ export default function ProductEditModal({
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">Mô tả thêm</label>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Mô tả thêm</label>
                 <textarea
                   value={descText}
                   onChange={(e) => setDescText(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-on-surface"
+                  className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white text-slate-800 transition-all custom-scrollbar"
                 ></textarea>
               </div>
             </div>
           </div>
 
           {/* Section 2: Units Config */}
-          <div className="bg-white p-5 rounded-xl border border-surface-container-high shadow-sm">
-            <div className="flex justify-between items-center mb-4 border-b pb-2 border-surface-container-low">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-2">
-                2. Thiết lập Đơn vị & Giá bán
-                <div className="group relative cursor-help">
-                  <AlertCircle className="w-4 h-4 text-primary" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs p-2 rounded hidden group-hover:block z-10 font-normal">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center mb-5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">2</span>
+                Thiết lập Đơn vị & Giá bán
+                <div className="group relative cursor-help inline-flex ml-1">
+                  <AlertCircle className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-800 text-white text-[11px] p-3 rounded-xl hidden group-hover:block z-10 font-normal leading-relaxed shadow-lg">
                     1 Sản phẩm có thể có nhiều đơn vị. Tỷ lệ quy đổi tính theo Đơn vị cơ bản. <br />
-                    Ví dụ: Base = Lon. Lốc = 6 Lon (Tỷ lệ: 6).
+                    <span className="text-slate-300">Ví dụ: Base = Lon. Lốc = 6 Lon (Tỷ lệ: 6).</span>
                   </div>
                 </div>
               </h4>
               <button
                 onClick={handleAddUnit}
-                className="text-primary hover:text-primary-container text-xs font-bold flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-primary hover:text-white text-xs font-bold flex items-center gap-1.5 bg-primary/10 hover:bg-primary px-3 py-2 rounded-xl transition-all"
               >
-                <Plus className="w-3 h-3" /> Thêm đơn vị
+                <Plus className="w-4 h-4" /> Thêm đơn vị
               </button>
             </div>
 
@@ -435,18 +437,18 @@ export default function ProductEditModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-surface-container-high bg-surface-container-low/50 flex justify-end gap-3 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex justify-end gap-3 rounded-b-2xl">
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-5 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
           >
             Hủy bỏ
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-5 py-2 text-sm font-bold bg-primary hover:bg-primary-container text-white rounded-lg flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-bold bg-primary hover:bg-primary-container text-white rounded-xl flex items-center gap-2 shadow-md shadow-primary/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
           >
             <Save className="w-4 h-4" />
             {isSaving ? "Đang lưu..." : "Lưu Sản phẩm"}

@@ -68,7 +68,7 @@ export default function CategoryItem({
   return (
     <React.Fragment>
       <li 
-        className="p-3 flex justify-between items-center hover:bg-surface-container-low/50 transition-colors border-b border-surface-container-low last:border-0" 
+        className="p-3 flex justify-between items-center hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group" 
         style={{ paddingLeft: `${Math.max(12, level * 24 + 12)}px` }}
       >
         {isEditing ? (
@@ -78,13 +78,13 @@ export default function CategoryItem({
                 type="text" 
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="flex-1 px-2 py-1 border rounded text-sm text-on-surface min-w-[100px]"
+                className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 min-w-[100px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 autoFocus
               />
               <select
                 value={editParentId}
                 onChange={e => setEditParentId(e.target.value === "" ? "" : Number(e.target.value))}
-                className="px-2 py-1 border rounded text-sm max-w-[130px] text-on-surface shrink-0"
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm max-w-[130px] text-slate-800 shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
               >
                 <option value="">- Không có cha -</option>
                 {categories.filter((c: any) => c.id !== node.id).map((c: any) => (
@@ -98,7 +98,7 @@ export default function CategoryItem({
                   <button
                     key={color}
                     onClick={() => setEditColor(color)}
-                    className={`w-5 h-5 rounded-full transition-transform shrink-0 ${editColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}`}
+                    className={`w-5 h-5 rounded-full transition-transform shrink-0 shadow-sm ${editColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
                     style={{ backgroundColor: color }}
                     title="Chọn màu"
                   />
@@ -107,10 +107,10 @@ export default function CategoryItem({
               <div className="flex gap-1 shrink-0">
                 <button
                   onClick={handleSave}
-                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                  className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                   title="Lưu"
                 >
-                  <Check className="w-5 h-5" />
+                  <Check className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => {
@@ -119,38 +119,38 @@ export default function CategoryItem({
                     setEditParentId(node.parentId || "");
                     setEditColor(node.color || sortedColors[0]);
                   }} 
-                  className="p-1 text-slate-400 hover:bg-slate-100 rounded"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                   title="Hủy"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         ) : (
           <>
-            <span className="text-sm font-medium text-on-surface flex items-center gap-2">
-              {level > 0 && <span className="w-3 border-b border-l h-4 inline-block -mt-4 border-slate-300"></span>}
+            <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              {level > 0 && <span className="w-3 border-b border-l h-4 inline-block -mt-4 border-slate-300 rounded-bl-sm"></span>}
               {node.color && (
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: node.color }}></span>
+                <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: node.color }}></span>
               )}
               {node.name}
             </span>
-            <div className="flex gap-1">
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={() => {
                   setEditingCategoryId(node.id);
                   setEditName(node.name);
                   setEditParentId(node.parentId || "");
                 }}
-                className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                 title="Sửa danh mục"
               >
                 <Edit2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => onDeleteCategory(node.id, node.name)}
-                className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
+                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 title="Xóa danh mục"
               >
                 <Trash2 className="w-4 h-4" />

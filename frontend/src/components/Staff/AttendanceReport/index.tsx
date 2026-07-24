@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Clock, CheckCircle2, AlertCircle, XCircle, Search, Calendar, MapPin, Wifi, Camera, Users } from "lucide-react";
-import MetricCard from "@/components/MetricCard";
+import MetricCard from "@/components/Dashboard/Widgets/MetricCard";
 
 export default function AttendanceReport() {
   const [searchTerm, setSearchTerm] = useState("");

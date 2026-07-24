@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { CreditCard, Info, AlertCircle, CheckCircle2 } from "lucide-react";
-import DebtCustomerList from "./Debts/DebtCustomerList";
-import DebtCustomerDetail from "./Debts/DebtCustomerDetail";
-import DebtHistory from "./Debts/DebtHistory";
-import CollectDebtModal from "./Debts/CollectDebtModal";
-import DebtCustomerModal from "./Debts/DebtCustomerModal";
-import DebtInvoiceModal from "./Debts/DebtInvoiceModal";
-import BankConfigModal from "./Debts/BankConfigModal";
+import DebtCustomerList from "@/components/Debts/DebtCustomerList";
+import DebtCustomerDetail from "@/components/Debts/DebtCustomerDetail";
+import DebtHistory from "@/components/Debts/DebtHistory";
+import CollectDebtModal from "@/components/Debts/CollectDebtModal";
+import DebtCustomerModal from "@/components/Debts/DebtCustomerModal";
+import DebtInvoiceModal from "@/components/Debts/DebtInvoiceModal";
+import BankConfigModal from "@/components/Debts/BankConfigModal";
 
 interface DebtTransaction {
   id: string;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Store, Settings2, PackageCheck, Save, CheckCircle2, AlertCircle, Building2, HelpCircle, Pencil, X, LayoutDashboard } from "lucide-react";
 
-export default function StoreSettings() {
+export default function StoreSettings({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [activeTab, setActiveTab] = useState("profile");
   const [user, setUser] = useState<{ tenantId: string; token: string } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -33,7 +33,10 @@ export default function StoreSettings() {
     showOrderCount: true,
     showNetCashFlow: true,
     showInventoryValue: true,
-    showInventoryQuantity: true
+    showInventoryQuantity: true,
+    showEmployees: true,
+    showCustomers: true,
+    showCustomerDebt: true
   });
 
   useEffect(() => {
@@ -52,11 +55,21 @@ export default function StoreSettings() {
     
     // Check if we should jump to a specific tab
     const jumpTab = localStorage.getItem("jumpToSettingsTab");
+    const savedTab = localStorage.getItem("bizflow_settings_tab");
+    
     if (jumpTab) {
       setActiveTab(jumpTab);
+      localStorage.setItem("bizflow_settings_tab", jumpTab);
       localStorage.removeItem("jumpToSettingsTab");
+    } else if (savedTab) {
+      setActiveTab(savedTab);
     }
   }, []);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    localStorage.setItem("bizflow_settings_tab", tab);
+  };
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -152,6 +165,9 @@ export default function StoreSettings() {
     localStorage.setItem("bizflow_dashboard_config", JSON.stringify(dashboardConfig));
     window.dispatchEvent(new Event("dashboard-config-updated"));
     showToast("Đã lưu cấu hình Dashboard!", "success");
+    if (onNavigate) {
+      setTimeout(() => onNavigate("overview"), 800); // Wait a bit to show the toast
+    }
   };
 
   return (
@@ -178,28 +194,28 @@ export default function StoreSettings() {
         <div className="w-full md:w-64 shrink-0">
           <div className="bg-white rounded-2xl border border-surface-container-high shadow-sm overflow-hidden flex flex-col">
             <button
-              onClick={() => setActiveTab("profile")}
+              onClick={() => handleTabChange("profile")}
               className={`flex items-center gap-3 px-4 py-4 text-sm font-bold transition-colors border-l-4 ${activeTab === "profile" ? "border-primary bg-primary/5 text-primary" : "border-transparent text-on-surface-variant hover:bg-surface-container-low"
                 }`}
             >
               <Building2 className="w-5 h-5" /> Thông tin chung
             </button>
             <button
-              onClick={() => setActiveTab("tax")}
+              onClick={() => handleTabChange("tax")}
               className={`flex items-center gap-3 px-4 py-4 text-sm font-bold transition-colors border-l-4 border-t border-surface-container-low ${activeTab === "tax" ? "border-primary bg-primary/5 text-primary" : "border-transparent text-on-surface-variant hover:bg-surface-container-low"
                 }`}
             >
               <Settings2 className="w-5 h-5" /> Thiết lập Thuế VAT
             </button>
             <button
-              onClick={() => setActiveTab("inventory")}
+              onClick={() => handleTabChange("inventory")}
               className={`flex items-center gap-3 px-4 py-4 text-sm font-bold transition-colors border-l-4 border-t border-surface-container-low ${activeTab === "inventory" ? "border-primary bg-primary/5 text-primary" : "border-transparent text-on-surface-variant hover:bg-surface-container-low"
                 }`}
             >
               <PackageCheck className="w-5 h-5" /> Thiết lập Kho & Giá vốn
             </button>
             <button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => handleTabChange("dashboard")}
               className={`flex items-center gap-3 px-4 py-4 text-sm font-bold transition-colors border-l-4 border-t border-surface-container-low ${activeTab === "dashboard" ? "border-primary bg-primary/5 text-primary" : "border-transparent text-on-surface-variant hover:bg-surface-container-low"
                 }`}
             >
@@ -560,7 +576,10 @@ export default function StoreSettings() {
                       { id: 'showOrderCount', label: 'Số đơn hàng' },
                       { id: 'showNetCashFlow', label: 'Dòng tiền thuần' },
                       { id: 'showInventoryValue', label: 'Giá trị tồn kho' },
-                      { id: 'showInventoryQuantity', label: 'Số lượng tồn kho' }
+                      { id: 'showInventoryQuantity', label: 'Số lượng tồn kho' },
+                      { id: 'showEmployees', label: 'Tổng số nhân viên' },
+                      { id: 'showCustomers', label: 'Tổng số khách hàng' },
+                      { id: 'showCustomerDebt', label: 'Tổng nợ khách hàng' }
                     ].map(widget => (
                       <label key={widget.id} className="flex items-center justify-between p-4 border border-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container-lowest transition-colors">
                         <span className="font-medium text-sm text-on-surface">{widget.label}</span>

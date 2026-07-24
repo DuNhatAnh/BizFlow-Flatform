@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import MetricCard from "@/components/MetricCard";
+import MetricCard from "@/components/Dashboard/Widgets/MetricCard";
 import { Building2, UserCheck, DollarSign, Sparkles, Loader2, Clock, CheckCircle, XCircle } from "lucide-react";
 
 interface PlatformStats {

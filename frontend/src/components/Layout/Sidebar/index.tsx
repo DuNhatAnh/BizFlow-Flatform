@@ -24,7 +24,7 @@ import {
   Clock,
   Calendar
 } from "lucide-react";
-import { BizFlowLogo } from "./BizFlowLogo";
+import { BizFlowLogo } from "@/components/Layout/BizFlowLogo";
 
 
 interface SidebarProps {

@@ -8,6 +8,9 @@ public static class DashboardWidgetIds
     public const string KpiCash = "kpi-cash";
     public const string KpiInventoryValue = "kpi-inventory-value";
     public const string KpiInventoryQuantity = "kpi-inventory-quantity";
+    public const string KpiEmployees = "kpi-employees";
+    public const string KpiCustomers = "kpi-customers";
+    public const string KpiCustomerDebt = "kpi-customer-debt";
     
     public const string ChartRevenueTrend = "chart-revenue-trend";
     public const string ChartCashFlowTrend = "chart-cash-flow-trend";
