@@ -26,6 +26,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [address, setAddress] = useState("");
   const [referenceDocument, setReferenceDocument] = useState("");
   const [attachedDocuments, setAttachedDocuments] = useState("");
+  const [isExpense, setIsExpense] = useState(true);
+  const [expenseCategory, setExpenseCategory] = useState(1); // Default to LaborCost (1)
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -53,7 +55,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           payerReceiverName,
           address,
           referenceDocument,
-          attachedDocuments
+          attachedDocuments,
+          isExpense: transactionType === 'Payment' ? isExpense : false,
+          expenseCategory: (transactionType === 'Payment' && isExpense) ? expenseCategory : null
         })
       });
 
@@ -173,6 +177,37 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 placeholder={`Nhập lý do ${transactionType === 'Receipt' ? 'thu' : 'chi'} tiền...`}
               />
             </div>
+
+            {transactionType === 'Payment' && (
+              <div className="p-5 rounded-2xl border border-rose-100 bg-rose-50/30 space-y-4">
+                <div className="pt-2">
+                  <label className="text-sm font-bold text-gray-700 block mb-2">Phân loại chi phí (Hạch toán Sổ S3) <span className="text-rose-500">*</span></label>
+                  <p className="text-xs font-medium text-gray-500 mb-3">Vui lòng chọn đúng hạng mục để hệ thống tự động ghi nhận vào Sổ báo cáo thuế.</p>
+                  <div className="relative group">
+                    <select
+                      value={expenseCategory}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setExpenseCategory(val);
+                        setIsExpense(val !== -1);
+                      }}
+                      className="w-full px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 focus:bg-white rounded-xl focus:ring-4 focus:ring-rose-50 focus:border-rose-300 transition-all font-semibold text-gray-900 appearance-none"
+                    >
+                      <option value={1}>Chi phí nhân công (Lương, thưởng...)</option>
+                      <option value={2}>Chi phí điện, nước, viễn thông</option>
+                      <option value={3}>Chi phí thuê kho bãi, mặt bằng</option>
+                      <option value={4}>Chi phí quản lý (Văn phòng phẩm...)</option>
+                      <option value={0}>Chi phí vật tư</option>
+                      <option value={5}>Chi phí khác (Tính vào hạch toán S3)</option>
+                      <option value={-1}>Chi tiêu cá nhân (Không hạch toán S3)</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-2xl border border-gray-100 bg-gray-50/30">
               <div className="space-y-2.5">

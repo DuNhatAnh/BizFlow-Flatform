@@ -303,7 +303,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasIndex(e => new { e.TenantId, e.TransactionDate });
             entity.Property(e => e.Amount).HasPrecision(15, 2);
             entity.Property(e => e.Type).HasConversion<string>();
-            entity.Property(e => e.PaymentMethod).HasConversion<string>().HasDefaultValue(PaymentMethod.Cash);
+            entity.Property(e => e.PaymentMethod).HasConversion<string>();
         });
 
         // 17. ExpenseRecord configurations

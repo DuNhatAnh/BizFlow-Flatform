@@ -43,6 +43,7 @@ export default function LoginPage() {
           token: data.accessToken || data.token
         };
         localStorage.setItem("bizflow_user", JSON.stringify(userSession));
+        localStorage.removeItem("bizflow_active_tab");
         
         // Redirect to dashboard
         window.location.href = "/";
@@ -72,7 +73,7 @@ export default function LoginPage() {
             {!logoError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img 
-                src="/logo.png" 
+                src="/icon.svg" 
                 alt="BizFlow Logo" 
                 className="object-contain w-full h-full"
                 onError={() => setLogoError(true)}

@@ -32,4 +32,8 @@ public class CreateCashTransactionRequest
     public string? PayerReceiverName { get; set; }
     public string? Address { get; set; }
     public string? AttachedDocuments { get; set; }
+    
+    // New fields for double-entry bookkeeping (Expense linking)
+    public bool IsExpense { get; set; }
+    public ExpenseCategory? ExpenseCategory { get; set; }
 }

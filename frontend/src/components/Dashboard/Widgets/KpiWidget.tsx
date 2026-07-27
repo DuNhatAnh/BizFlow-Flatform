@@ -46,7 +46,7 @@ export const KpiWidget: React.FC<{ widget: DashboardWidgetDto }> = ({ widget }) 
     if (widget.widgetId === 'kpi-orders') {
       navigateToTab('orders');
     } else if (widget.widgetId === 'kpi-revenue') {
-      navigateToTab('orders'); // Doanh thu cũng đến từ đơn hàng
+      navigateToTab('cashbook'); 
     } else if (widget.widgetId === 'kpi-cash') {
       navigateToTab('cashbook');
     } else if (widget.widgetId === 'kpi-inventory-value' || widget.widgetId === 'kpi-inventory-quantity') {

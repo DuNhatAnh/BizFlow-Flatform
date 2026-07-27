@@ -360,7 +360,31 @@ public class InventoryService : IInventoryService
         if (startDate.HasValue) query = query.Where(l => l.Date >= startDate.Value);
         if (endDate.HasValue) query = query.Where(l => l.Date <= endDate.Value);
 
-        var ledgers = await query.OrderBy(l => l.Date).ToListAsync();
+        var aggregates = await query
+            .GroupBy(l => 1)
+            .Select(g => new {
+                Count = g.Count(),
+                TotalQuantityIn = g.Sum(l => l.QuantityIn),
+                TotalValueIn = g.Sum(l => l.ValueIn),
+                TotalQuantityOut = g.Sum(l => l.QuantityOut),
+                TotalValueOut = g.Sum(l => l.ValueOut)
+            })
+            .FirstOrDefaultAsync();
+
+        var totalCount = aggregates?.Count ?? 0;
+        var totalQuantityIn = aggregates?.TotalQuantityIn ?? 0;
+        var totalValueIn = aggregates?.TotalValueIn ?? 0;
+        var totalQuantityOut = aggregates?.TotalQuantityOut ?? 0;
+        var totalValueOut = aggregates?.TotalValueOut ?? 0;
+
+        var closingRecord = await query.OrderByDescending(l => l.Date).FirstOrDefaultAsync();
+        var closingQuantity = closingRecord?.QuantityBalance ?? openingQuantity;
+        var closingValue = closingRecord?.ValueBalance ?? openingValue;
+
+        var ledgers = await query.OrderBy(l => l.Date)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
         
         var missingReceiptIds = ledgers
             .Where(l => l.Receipt == null && l.ReceiptId.HasValue)
@@ -372,7 +396,7 @@ public class InventoryService : IInventoryService
             .Where(o => missingReceiptIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, o => o.Code);
 
-        var records = ledgers.Select(l => new LedgerS2Dto
+        var pagedRecords = ledgers.Select(l => new LedgerS2Dto
         {
             Id = l.Id,
             ProductId = l.ProductId,
@@ -390,20 +414,17 @@ public class InventoryService : IInventoryService
             QuantityBalance = l.QuantityBalance,
             ValueBalance = l.ValueBalance
         }).ToList();
-        
-        var totalCount = records.Count;
-        var pagedRecords = records.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
         return new S2LedgerReportDto
         {
             OpeningQuantity = openingQuantity,
             OpeningValue = openingValue,
-            TotalQuantityIn = records.Sum(r => r.QuantityIn),
-            TotalValueIn = records.Sum(r => r.ValueIn),
-            TotalQuantityOut = records.Sum(r => r.QuantityOut),
-            TotalValueOut = records.Sum(r => r.ValueOut),
-            ClosingQuantity = records.LastOrDefault()?.QuantityBalance ?? openingQuantity,
-            ClosingValue = records.LastOrDefault()?.ValueBalance ?? openingValue,
+            TotalQuantityIn = totalQuantityIn,
+            TotalValueIn = totalValueIn,
+            TotalQuantityOut = totalQuantityOut,
+            TotalValueOut = totalValueOut,
+            ClosingQuantity = closingQuantity,
+            ClosingValue = closingValue,
             Records = new PagedResult<LedgerS2Dto>
             {
                 Items = pagedRecords,

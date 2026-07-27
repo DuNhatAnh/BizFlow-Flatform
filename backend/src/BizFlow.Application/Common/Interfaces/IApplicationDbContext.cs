@@ -28,6 +28,7 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<PayrollRecord> PayrollRecords { get; }
     DbSet<CashTransaction> CashTransactions { get; }
+    DbSet<ExpenseRecord> ExpenseRecords { get; }
     DbSet<SystemConfig> SystemConfigs { get; }
     DbSet<AiRequestLog> AiRequestLogs { get; }
     DbSet<AttendanceRecord> AttendanceRecords { get; }

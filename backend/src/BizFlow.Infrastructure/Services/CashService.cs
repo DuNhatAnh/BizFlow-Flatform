@@ -118,6 +118,24 @@ public class CashService : ICashService
         };
 
         _context.CashTransactions.Add(transaction);
+
+        // Double-entry bookkeeping: If it's a payment and marked as an expense, create an ExpenseRecord for Sổ S3
+        if (request.IsExpense && request.Type == CashTransactionType.Payment && request.ExpenseCategory.HasValue)
+        {
+            var expense = new ExpenseRecord
+            {
+                TenantId = tenantId,
+                Category = request.ExpenseCategory.Value,
+                Amount = request.Amount,
+                ExpenseDate = DateTime.UtcNow,
+                Description = request.Reason ?? "Chi phí kinh doanh",
+                ReferenceDocument = txCode, // Link back to the payment voucher code
+                RelatedUserId = request.RelatedUserId ?? userId,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.ExpenseRecords.Add(expense);
+        }
+
         await _context.SaveChangesAsync();
 
         return new CashTransactionDto

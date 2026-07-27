@@ -7,5 +7,6 @@ namespace BizFlow.Application.Interfaces;
 
 public interface IReportsService
 {
-    Task<List<S1LedgerRowDto>> GetS1LedgerAsync(DateTime startDate, DateTime endDate);
+    Task<S1LedgerReportDto> GetS1LedgerAsync(DateTime startDate, DateTime endDate, int pageNumber = 1, int pageSize = 20);
+    Task<S3LedgerReportDto> GetS3LedgerAsync(DateTime startDate, DateTime endDate, int pageNumber = 1, int pageSize = 20);
 }

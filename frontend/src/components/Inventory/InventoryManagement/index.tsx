@@ -27,7 +27,6 @@ import { Pagination } from "@/components/ui/Pagination";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import StockTab from "@/components/Inventory/InventoryTabs/StockTab";
 import ReceiptHistoryTab from "@/components/Inventory/InventoryTabs/ReceiptHistoryTab";
-import LedgerS2HKDTab from "@/components/Inventory/InventoryTabs/LedgerS2HKDTab";
 import InventorySettingsTab from "@/components/Inventory/InventoryTabs/InventorySettingsTab";
 import CreateReceiptModal from "@/components/Inventory/CreateReceiptModal";
 
@@ -606,10 +605,10 @@ export default function InventoryManagement() {
           <ArrowUpFromLine className="w-4 h-4" /> Phiếu Xuất Kho
         </button>
         <button
-          onClick={() => setActiveSubTab("ledger")}
-          className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeSubTab === "ledger" ? "bg-primary text-white" : "bg-transparent text-on-surface hover:bg-surface-container-low"}`}
+          onClick={() => window.dispatchEvent(new CustomEvent("navigate", { detail: "reports" }))}
+          className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors bg-transparent text-primary hover:bg-surface-container-low`}
         >
-          <FileText className="w-4 h-4" /> Sổ S2-HKD (TT88)
+          <FileText className="w-4 h-4" /> Đi đến sổ S2-HKD (Thuế TT88)
         </button>
       </div>
 
@@ -659,23 +658,6 @@ export default function InventoryManagement() {
           />
         )}
 
-        {/* SỔ S2-HKD */}
-        {activeSubTab === "ledger" && (
-          <LedgerS2HKDTab 
-            selectedLedgerProduct={selectedLedgerProduct}
-            setSelectedLedgerProduct={setSelectedLedgerProduct}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            products={products}
-            handleExportExcel={handleExportExcel}
-            ledger={ledger}
-            isLedgerLoading={isLedgerLoading}
-            ledgerPage={ledgerPage}
-            setLedgerPage={setLedgerPage}
-          />
-        )}
       </div>
       </div>
 

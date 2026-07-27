@@ -437,6 +437,16 @@ export default function Home() {
   ]);
 
   useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener("navigate", handleNavigate);
+    return () => {
+      window.removeEventListener("navigate", handleNavigate);
+    };
+  }, []);
+
+  useEffect(() => {
     if (cart.length > 0) {
       setValidationErrors((prev) => ({ ...prev, cart: undefined }));
     }
