@@ -279,13 +279,16 @@ export default function ReceiptHistoryTab({
                                   referenceDocumentNo: r.code ? r.code : (r.id ? r.id.substring(0, 8).toUpperCase() : "N/A"),
                                   note: `Bán hàng cho ${r.customer?.name || "Khách lẻ"}`,
                                   totalAmount: r.totalAmount,
+                                  totalVatAmount: r.totalVatAmount,
                                   details: r.orderItems?.map((oi:any) => ({
                                     productId: oi.productId,
                                     productName: oi.product?.name,
                                     documentQuantity: oi.quantity,
                                     quantity: oi.quantity,
                                     unitPrice: oi.unitPrice,
-                                    totalPrice: oi.totalPrice
+                                    totalPrice: oi.totalPrice,
+                                    vatRate: oi.vatRate,
+                                    vatAmount: oi.vatAmount
                                   })) || []
                                 });
                               } else {

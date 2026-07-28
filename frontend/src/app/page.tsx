@@ -23,6 +23,7 @@ import { ShiftManagement } from "@/components/Staff/ShiftManagement";
 import EmployeeSchedule from "@/components/Staff/EmployeeSchedule";
 import AttendanceReport from "@/components/Staff/AttendanceReport";
 import TaxReportsTT88 from "@/components/Reports/TT88";
+import { LedgerS4HKDTab } from "@/components/Taxes/LedgerS4HKDTab";
 import { parseDescriptionMetadata } from "@/utils/metadata";
 // Admin components
 import TenantsManagement from "@/components/Admin/TenantsManagement";

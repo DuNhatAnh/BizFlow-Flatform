@@ -27,6 +27,7 @@ public interface IApplicationDbContext
     DbSet<ShiftAssignment> ShiftAssignments { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<PayrollRecord> PayrollRecords { get; }
+    DbSet<TaxLedgerEntry> TaxLedgerEntries { get; }
     DbSet<CashTransaction> CashTransactions { get; }
     DbSet<ExpenseRecord> ExpenseRecords { get; }
     DbSet<SystemConfig> SystemConfigs { get; }

@@ -6,6 +6,7 @@ public static class DashboardWidgetIds
     public const string KpiProfit = "kpi-profit";
     public const string KpiOrders = "kpi-orders";
     public const string KpiCash = "kpi-cash";
+    public const string KpiExpenses = "kpi-expenses";
     public const string KpiInventoryValue = "kpi-inventory-value";
     public const string KpiInventoryQuantity = "kpi-inventory-quantity";
     public const string KpiEmployees = "kpi-employees";

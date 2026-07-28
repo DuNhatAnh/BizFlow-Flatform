@@ -72,6 +72,9 @@ public class DashboardService : IDashboardService
         {
             var cashKpi = await GetCashKpiAsync(tenantId.Value, fromUtc, toUtc, cancellationToken);
             home.Widgets.Add(cashKpi);
+            
+            var expensesKpi = await GetExpensesKpiAsync(tenantId.Value, fromUtc, toUtc, cancellationToken);
+            home.Widgets.Add(expensesKpi);
         }
         
         // 4. Get Inventory Value KPI
@@ -163,6 +166,7 @@ public class DashboardService : IDashboardService
             DashboardWidgetIds.KpiEmployees => await GetEmployeesKpiAsync(tenantId.Value, cancellationToken),
             DashboardWidgetIds.KpiCustomers => await GetCustomersKpiAsync(tenantId.Value, cancellationToken),
             DashboardWidgetIds.KpiCustomerDebt => await GetCustomerDebtKpiAsync(tenantId.Value, cancellationToken),
+            DashboardWidgetIds.KpiExpenses => await GetExpensesKpiAsync(tenantId.Value, fromUtc, toUtc, cancellationToken),
             _ => throw new ArgumentException("Widget không hợp lệ hoặc không hỗ trợ load độc lập")
         };
 
@@ -339,11 +343,11 @@ public class DashboardService : IDashboardService
     private async Task<DashboardWidgetDto> GetCashKpiAsync(Guid tenantId, DateTime from, DateTime to, CancellationToken ct)
     {
         var cashIn = await _context.CashTransactions
-            .Where(c => c.TenantId == tenantId && c.Type == CashTransactionType.Receipt && c.CreatedAt >= from && c.CreatedAt <= to)
+            .Where(c => c.TenantId == tenantId && c.Type == CashTransactionType.Receipt && c.TransactionDate >= from && c.TransactionDate <= to)
             .SumAsync(c => c.Amount, ct);
 
         var cashOut = await _context.CashTransactions
-            .Where(c => c.TenantId == tenantId && c.Type == CashTransactionType.Payment && c.CreatedAt >= from && c.CreatedAt <= to)
+            .Where(c => c.TenantId == tenantId && c.Type == CashTransactionType.Payment && c.TransactionDate >= from && c.TransactionDate <= to)
             .SumAsync(c => c.Amount, ct);
 
         return new DashboardWidgetDto
@@ -363,6 +367,44 @@ public class DashboardService : IDashboardService
                     { "Tổng tiền Thu", cashIn }, 
                     { "Tổng tiền Chi", cashOut } 
                 }
+            },
+            RequiredPermissions = new[] { Permissions.DashboardViewCash }
+        };
+    }
+
+    private async Task<DashboardWidgetDto> GetExpensesKpiAsync(Guid tenantId, DateTime from, DateTime to, CancellationToken ct)
+    {
+        var cashOut = await _context.CashTransactions
+            .Where(c => c.TenantId == tenantId && c.Type == CashTransactionType.Payment && c.TransactionDate >= from && c.TransactionDate <= to)
+            .SumAsync(c => c.Amount, ct);
+
+        var topExpenses = await _context.ExpenseRecords
+            .Where(e => e.TenantId == tenantId && e.ExpenseDate >= from && e.ExpenseDate <= to)
+            .GroupBy(e => e.Category)
+            .Select(g => new { Category = g.Key.ToString(), Amount = g.Sum(e => e.Amount) })
+            .OrderByDescending(x => x.Amount)
+            .Take(3)
+            .ToListAsync(ct);
+
+        var breakdown = new Dictionary<string, decimal>();
+        foreach (var expense in topExpenses)
+        {
+            breakdown.Add(expense.Category, expense.Amount);
+        }
+
+        return new DashboardWidgetDto
+        {
+            WidgetId = DashboardWidgetIds.KpiExpenses,
+            Type = "Kpi",
+            Title = "Tổng chi phí",
+            Order = 45,
+            ColSpan = 3,
+            KpiData = new DashboardKpiDataDto
+            {
+                Value = cashOut,
+                PreviousValue = 0,
+                TrendPercentage = 0,
+                BreakdownValues = breakdown
             },
             RequiredPermissions = new[] { Permissions.DashboardViewCash }
         };
@@ -481,8 +523,8 @@ public class DashboardService : IDashboardService
         var totalDays = (to - from).TotalDays;
         
         var cashTransactions = await _context.CashTransactions
-            .Where(c => c.TenantId == tenantId && c.CreatedAt >= from && c.CreatedAt <= to)
-            .GroupBy(c => new { c.Type, Date = c.CreatedAt.AddMinutes(-timezoneOffsetMinutes).Date })
+            .Where(c => c.TenantId == tenantId && c.TransactionDate >= from && c.TransactionDate <= to)
+            .GroupBy(c => new { c.Type, Date = c.TransactionDate.AddMinutes(-timezoneOffsetMinutes).Date })
             .Select(g => new { g.Key.Type, g.Key.Date, Amount = g.Sum(x => x.Amount) })
             .ToListAsync(ct);
 

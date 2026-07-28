@@ -46,6 +46,7 @@ export const DashboardRenderer: React.FC<{ widgets: DashboardWidgetDto[] }> = ({
       if (w.widgetId === 'kpi-profit' && config.showGrossProfit === false) return false;
       if (w.widgetId === 'kpi-orders' && config.showOrderCount === false) return false;
       if (w.widgetId === 'kpi-cash' && config.showNetCashFlow === false) return false;
+      if (w.widgetId === 'kpi-expenses' && config.showTotalExpenses === false) return false;
       if (w.widgetId === 'kpi-inventory-value' && config.showInventoryValue === false) return false;
       if (w.widgetId === 'kpi-inventory-quantity' && config.showInventoryQuantity === false) return false;
       if (w.widgetId === 'kpi-employees' && config.showEmployees === false) return false;

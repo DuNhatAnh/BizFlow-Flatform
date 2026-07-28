@@ -37,7 +37,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AccountingLedgerS2> AccountingLedgerS2s => Set<AccountingLedgerS2>();
     public DbSet<CashTransaction> CashTransactions => Set<CashTransaction>();
     public DbSet<ExpenseRecord> ExpenseRecords => Set<ExpenseRecord>();
-    public DbSet<TaxObligation> TaxObligations => Set<TaxObligation>();
+    public DbSet<TaxLedgerEntry> TaxLedgerEntries => Set<TaxLedgerEntry>();
     public DbSet<PayrollRecord> PayrollRecords => Set<PayrollRecord>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
@@ -314,13 +314,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Category).HasConversion<string>();
         });
 
-        // 18. TaxObligation configurations
-        modelBuilder.Entity<TaxObligation>(entity =>
+        // 18. TaxLedgerEntry configurations
+        modelBuilder.Entity<TaxLedgerEntry>(entity =>
         {
-            entity.ToTable("tax_obligations");
-            entity.Property(e => e.AmountDue).HasPrecision(15, 2);
-            entity.Property(e => e.AmountPaid).HasPrecision(15, 2);
+            entity.ToTable("tax_ledger_entries");
+            entity.Property(e => e.Amount).HasPrecision(15, 2);
             entity.Property(e => e.TaxType).HasConversion<string>();
+            entity.Property(e => e.EntryType).HasConversion<string>();
         });
 
         // 19. PayrollRecord configurations
@@ -436,7 +436,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<AccountingLedgerS2>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<CashTransaction>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<ExpenseRecord>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<TaxObligation>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TaxLedgerEntry>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<PayrollRecord>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AiRequestLog>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);

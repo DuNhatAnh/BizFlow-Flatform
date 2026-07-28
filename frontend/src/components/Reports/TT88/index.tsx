@@ -5,6 +5,7 @@ import { Download, Search, RefreshCw, Calendar as CalendarIcon, FileText, Packag
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import LedgerS2HKDTab from "@/components/Inventory/InventoryTabs/LedgerS2HKDTab";
 import S3LedgerTab from "./S3LedgerTab";
+import { LedgerS4HKDTab } from "@/components/Taxes/LedgerS4HKDTab";
 
 const API_URL = "http://localhost:5178/api";
 
@@ -213,10 +214,10 @@ export default function TaxReportsTT88() {
             { id: "s1", icon: FileText, label: "Sổ S1-HKD (Doanh Thu)" },
             { id: "s2", icon: Package, label: "Sổ S2-HKD (Tồn Kho)" },
             { id: "s3", icon: FileText, label: "Sổ S3-HKD (Chi Phí)" },
-            { id: "s4", icon: FileText, label: "Sổ S4-HKD (Lương)" },
-            { id: "s5", icon: FileText, label: "Sổ S5-HKD (Ngân Hàng)" },
+            { id: "s4", icon: FileText, label: "Sổ S4-HKD (Thuế)" },
+            { id: "s5", icon: FileText, label: "Sổ S5-HKD (Lương)" },
             { id: "s6", icon: FileText, label: "Sổ S6-HKD (Tiền Mặt)" },
-            { id: "s7", icon: FileText, label: "Sổ S7-HKD (Thuế)" }
+            { id: "s7", icon: FileText, label: "Sổ S7-HKD (Ngân Hàng)" }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -429,7 +430,13 @@ export default function TaxReportsTT88() {
         </div>
       )}
 
-      {["s4", "s5", "s6", "s7"].includes(activeTab) && (
+      {activeTab === "s4" && (
+        <div className="flex-1 p-6 overflow-auto">
+          <LedgerS4HKDTab />
+        </div>
+      )}
+
+      {["s5", "s6", "s7"].includes(activeTab) && (
         <div className="flex-1 flex flex-col items-center justify-center bg-surface-container-lowest p-6 animate-in fade-in zoom-in-95 duration-300">
           <div className="w-24 h-24 bg-surface-container-low rounded-full flex items-center justify-center mb-6 shadow-sm border border-surface-container">
             <FileText size={40} className="text-on-surface-variant opacity-60" />
