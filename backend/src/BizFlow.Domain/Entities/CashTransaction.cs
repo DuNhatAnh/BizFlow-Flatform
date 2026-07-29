@@ -18,7 +18,17 @@ public class CashTransaction
     public string? PayerReceiverName { get; set; } // Name of payer/receiver if not a user
     public string? Address { get; set; } // Địa chỉ (TT88)
     public string? AttachedDocuments { get; set; } // Kèm theo chứng từ gốc (TT88)
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Approved;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Guid? OrderId { get; set; }
+    public Order? Order { get; set; }
+
+    public Guid? InventoryReceiptId { get; set; }
+    public InventoryReceipt? InventoryReceipt { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 
     public Tenant Tenant { get; set; } = null!;
 }

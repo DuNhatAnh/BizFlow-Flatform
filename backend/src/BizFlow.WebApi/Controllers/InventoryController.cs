@@ -16,6 +16,7 @@ public class InventoryController : ApiControllerBase
     }
 
     [HttpPost("receipts")]
+    [BizFlow.WebApi.Filters.Idempotent]
     public async Task<IActionResult> CreateReceipt([FromHeader(Name = "X-Tenant-Id")] Guid tenantId, [FromBody] CreateReceiptRequest request)
     {
         // Validation will be handled by Model State automatically thanks to [ApiController]

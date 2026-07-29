@@ -23,6 +23,7 @@ public class InventoryReceipt
     public string? WarehouseLocation { get; set; } // Địa điểm nhập/xuất kho
 
     // Status and Cancel properties
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Approved;
     public DocumentStatus Status { get; set; } = DocumentStatus.Completed; // Mặc định là Completed vì ghi sổ ngay
     public DateTime? CancelledAt { get; set; }
     public Guid? CancelledBy { get; set; }
@@ -34,4 +35,7 @@ public class InventoryReceipt
     public Tenant Tenant { get; set; } = null!;
     public User? Creator { get; set; }
     public ICollection<InventoryReceiptDetail> Details { get; set; } = new List<InventoryReceiptDetail>();
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 }

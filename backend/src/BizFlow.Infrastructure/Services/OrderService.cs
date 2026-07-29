@@ -11,12 +11,18 @@ public class OrderService : IOrderService
     private readonly IApplicationDbContext _context;
     private readonly INotificationService _notificationService;
     private readonly IInventoryService _inventoryService;
+    private readonly INumberSequenceService _sequenceService;
 
-    public OrderService(IApplicationDbContext context, INotificationService notificationService, IInventoryService inventoryService)
+    public OrderService(
+        IApplicationDbContext context, 
+        INotificationService notificationService, 
+        IInventoryService inventoryService,
+        INumberSequenceService sequenceService)
     {
         _context = context;
         _notificationService = notificationService;
         _inventoryService = inventoryService;
+        _sequenceService = sequenceService;
     }
 
     public async Task<Order> CreateOrderAsync(Order order, CancellationToken cancellationToken = default)
@@ -132,34 +138,12 @@ public class OrderService : IOrderService
                 _context.DebtTransactions.Add(debtTx);
             }
 
-            // 4. Create accounting entry (Circular 88)
-            var accountingEntry = new AccountingEntry
-            {
-                Id = Guid.NewGuid(),
-                TenantId = order.TenantId,
-                TransactionDate = DateTime.UtcNow,
-                DocumentType = DocumentType.Sales,
-                DocumentRefId = order.Id.ToString(),
-                AccountCategory = AccountCategory.Revenue_Goods,
-                Amount = order.TotalAmount,
-                Description = $"Doanh thu bán hàng - Đơn hàng #{order.Id.ToString().Substring(0, 8)}"
-            };
-            _context.AccountingEntries.Add(accountingEntry);
 
             // 5. If PaymentMethod is Cash or Transfer, create CashTransaction
             if (order.PaymentMethod == PaymentMethod.Cash || order.PaymentMethod == PaymentMethod.Transfer)
             {
                 var prefix = "PT";
-                var dateStr = DateTime.UtcNow.ToString("yyMMdd");
-                
-                // Need to count today's transactions for seq (simplified since we're in a transaction)
-                var today = DateTime.UtcNow.Date;
-                var countToday = await _context.CashTransactions
-                    .Where(c => c.TenantId == order.TenantId && c.Type == CashTransactionType.Receipt && c.CreatedAt >= today)
-                    .CountAsync(cancellationToken);
-                    
-                var seq = (countToday + 1).ToString("D3");
-                var txCode = $"{prefix}-{dateStr}-{seq}";
+                var txCode = await _sequenceService.GetNextSequenceAsync(order.TenantId, prefix);
 
                 var cashTx = new CashTransaction
                 {
@@ -180,6 +164,19 @@ public class OrderService : IOrderService
             }
 
             _context.Orders.Add(order);
+
+            var log = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TenantId = order.TenantId,
+                UserId = order.CreatedBy ?? Guid.Empty,
+                Action = "Create",
+                EntityName = "Order",
+                EntityId = order.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Created order #{order.Code} with total amount {order.TotalAmount:N0}"
+            };
+            _context.AuditLogs.Add(log);
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -210,6 +207,11 @@ public class OrderService : IOrderService
             if (order.Status == OrderStatus.Cancelled)
             {
                 throw new InvalidOperationException("Đơn hàng này đã được hủy trước đó");
+            }
+
+            if (order.Status == OrderStatus.Completed || order.Status == OrderStatus.Refunded)
+            {
+                throw new InvalidOperationException("Không thể hủy hóa đơn đã ghi sổ. Vui lòng sử dụng nghiệp vụ Hoàn trả (Return).");
             }
 
             order.Status = OrderStatus.Cancelled;
@@ -270,19 +272,18 @@ public class OrderService : IOrderService
                 }
             }
 
-            // 3. Create reversing accounting entry (Negative amount)
-            var accountingEntry = new AccountingEntry
+            var log = new AuditLog
             {
                 Id = Guid.NewGuid(),
                 TenantId = order.TenantId,
-                TransactionDate = DateTime.UtcNow,
-                DocumentType = DocumentType.Sales,
-                DocumentRefId = order.Id.ToString(),
-                AccountCategory = AccountCategory.Revenue_Goods,
-                Amount = -order.TotalAmount,
-                Description = $"Hủy doanh thu - Hủy đơn hàng #{order.Id.ToString().Substring(0, 8)}"
+                UserId = order.CreatedBy ?? Guid.Empty, // Default since there is no performedBy parameter
+                Action = "Cancel",
+                EntityName = "Order",
+                EntityId = order.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Cancelled order #{order.Code}"
             };
-            _context.AccountingEntries.Add(accountingEntry);
+            _context.AuditLogs.Add(log);
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -417,33 +418,12 @@ public class OrderService : IOrderService
                 _context.DebtTransactions.Add(debtTx);
             }
 
-            // Create accounting entry
-            var accountingEntry = new AccountingEntry
-            {
-                Id = Guid.NewGuid(),
-                TenantId = draftOrder.TenantId,
-                TransactionDate = DateTime.UtcNow,
-                DocumentType = DocumentType.Sales,
-                DocumentRefId = draftOrder.Id.ToString(),
-                AccountCategory = AccountCategory.Revenue_Goods,
-                Amount = draftOrder.TotalAmount,
-                Description = $"Doanh thu bán hàng - Duyệt đơn nháp #{draftOrder.Id.ToString().Substring(0, 8)}"
-            };
-            _context.AccountingEntries.Add(accountingEntry);
 
             // 5. If PaymentMethod is Cash or Transfer, create CashTransaction
             if (draftOrder.PaymentMethod == PaymentMethod.Cash || draftOrder.PaymentMethod == PaymentMethod.Transfer)
             {
                 var prefix = "PT";
-                var dateStr = DateTime.UtcNow.ToString("yyMMdd");
-                
-                var today = DateTime.UtcNow.Date;
-                var countToday = await _context.CashTransactions
-                    .Where(c => c.TenantId == draftOrder.TenantId && c.Type == CashTransactionType.Receipt && c.CreatedAt >= today)
-                    .CountAsync(cancellationToken);
-                    
-                var seq = (countToday + 1).ToString("D3");
-                var txCode = $"{prefix}-{dateStr}-{seq}";
+                var txCode = await _sequenceService.GetNextSequenceAsync(draftOrder.TenantId, prefix);
 
                 var cashTx = new CashTransaction
                 {
@@ -462,6 +442,19 @@ public class OrderService : IOrderService
                 };
                 _context.CashTransactions.Add(cashTx);
             }
+
+            var log = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TenantId = draftOrder.TenantId,
+                UserId = draftOrder.CreatedBy ?? Guid.Empty, // Alternatively, you can take a userId parameter, but we'll use CreatedBy or Guid.Empty for now since we're auditing the action.
+                Action = "Confirm",
+                EntityName = "Order",
+                EntityId = draftOrder.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Confirmed draft order #{draftOrder.Code} with total amount {draftOrder.TotalAmount:N0}"
+            };
+            _context.AuditLogs.Add(log);
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -489,12 +482,13 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException("Không tìm thấy đơn hàng");
             }
 
-            if (order.Status == OrderStatus.Cancelled)
+            if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Refunded)
             {
                 throw new InvalidOperationException("Đơn hàng đã bị hủy hoặc đã được trả lại hoàn toàn trước đó");
             }
 
             decimal refundAmount = 0;
+            var returnOrderItems = new List<OrderItem>();
 
             foreach (var returnItem in returnItems)
             {
@@ -542,9 +536,15 @@ public class OrderService : IOrderService
 
                 refundAmount += returnItem.ReturnQuantity * orderItem.UnitPrice;
 
-                // 4. Update order item quantity and total price
-                orderItem.Quantity -= returnItem.ReturnQuantity;
-                orderItem.TotalPrice = orderItem.UnitPrice * orderItem.Quantity;
+                // Create negative order item for return order
+                returnOrderItems.Add(new OrderItem
+                {
+                    ProductId = orderItem.ProductId,
+                    ProductUnitId = orderItem.ProductUnitId,
+                    Quantity = -returnItem.ReturnQuantity,
+                    UnitPrice = orderItem.UnitPrice,
+                    TotalPrice = -(returnItem.ReturnQuantity * orderItem.UnitPrice)
+                });
             }
 
             if (refundAmount <= 0)
@@ -552,16 +552,36 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException("Không có hàng hóa nào được chọn để trả lại");
             }
 
-            // 5. Update order total amount
-            order.TotalAmount -= refundAmount;
-
-            // If all items are returned (all quantities are 0), mark order as Cancelled
-            if (order.OrderItems.All(oi => oi.Quantity == 0))
+            // 4. Create Return Order (Immutability: Original order is unchanged)
+            var returnOrder = new Order
             {
-                order.Status = OrderStatus.Cancelled;
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                CustomerId = order.CustomerId,
+                CreatedBy = performedBy,
+                TotalAmount = -refundAmount,
+                TotalVatAmount = 0,
+                PaymentMethod = order.PaymentMethod,
+                Status = OrderStatus.Completed,
+                Type = OrderType.Return,
+                ParentOrderId = order.Id,
+                OrderSource = order.OrderSource,
+                CustomerName = order.CustomerName,
+                CreatedAt = DateTime.UtcNow,
+                OrderItems = returnOrderItems
+            };
+
+            returnOrder.Code = $"RET-{order.Code ?? order.Id.ToString().Substring(0, 8)}";
+            _context.Orders.Add(returnOrder);
+
+            // Change original order status to Refunded if fully returned
+            bool isFullReturn = order.OrderItems.Sum(oi => oi.Quantity) == returnItems.Sum(ri => ri.ReturnQuantity);
+            if (isFullReturn)
+            {
+                order.Status = OrderStatus.Refunded;
             }
 
-            // 6. Customer debt reduction (if debt order)
+            // 5. Customer debt reduction (if debt order)
             if (order.PaymentMethod == PaymentMethod.Debt && order.CustomerId != null)
             {
                 var customer = await _context.Customers
@@ -576,7 +596,7 @@ public class OrderService : IOrderService
                         Id = Guid.NewGuid(),
                         TenantId = tenantId,
                         CustomerId = customer.Id,
-                        OrderId = order.Id,
+                        OrderId = returnOrder.Id,
                         Type = DebtTransactionType.Decrease,
                         Amount = refundAmount,
                         CreatedAt = DateTime.UtcNow
@@ -584,47 +604,43 @@ public class OrderService : IOrderService
                     _context.DebtTransactions.Add(debtTx);
                 }
             }
-
-            // 7. Create reversing accounting entry (Negative amount) for Circular 88
-            var accountingEntry = new AccountingEntry
+            else 
             {
-                Id = Guid.NewGuid(),
-                TenantId = tenantId,
-                TransactionDate = DateTime.UtcNow,
-                DocumentType = DocumentType.Sales,
-                DocumentRefId = order.Id.ToString(),
-                AccountCategory = AccountCategory.Revenue_Goods,
-                Amount = -refundAmount,
-                Description = $"Giảm trừ doanh thu trả hàng - Đơn hàng #{order.Id.ToString().Substring(0, 8)}"
-            };
-            _context.AccountingEntries.Add(accountingEntry);
+                // Refund cash for Cash/Transfer
+                var refundCashTx = new CashTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    Type = CashTransactionType.Payment,
+                    PaymentMethod = order.PaymentMethod,
+                    Amount = refundAmount,
+                    TransactionDate = DateTime.UtcNow,
+                    TransactionCode = $"RF-{DateTime.UtcNow:yyMMdd}-{new Random().Next(100, 999)}",
+                    Reason = $"Hoàn tiền đơn hàng {order.Code}",
+                    ReferenceDocument = returnOrder.Id.ToString(),
+                    PayerReceiverName = order.CustomerName ?? "Khách lẻ",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.CashTransactions.Add(refundCashTx);
+            }
 
-            // 8. Log audit action
+
+            // 7. Log audit action
             var log = new AuditLog
             {
                 TenantId = tenantId,
                 UserId = performedBy,
                 Action = "RETURN_ORDER",
                 EntityName = "Order",
-                EntityId = order.Id.ToString(),
-                Details = $"Trả hàng nhanh tại quầy cho đơn hàng #{order.Id.ToString().Substring(0, 8)}. Tổng tiền hoàn trả: {refundAmount:N0}đ."
+                EntityId = returnOrder.Id.ToString(),
+                Details = $"Tạo đơn trả hàng {returnOrder.Code}. Tổng tiền hoàn trả: {refundAmount:N0}đ."
             };
             _context.AuditLogs.Add(log);
-
-            // 9. Dispatch owner notification
-            try
-            {
-                await _notificationService.SendToTenantAsync(tenantId, $"Đơn hàng #{order.Id.ToString().Substring(0, 8)} đã được đổi trả một phần/toàn bộ hàng hóa bởi nhân viên. Số tiền hoàn trả: {refundAmount:N0}đ.");
-            }
-            catch
-            {
-                // Soft fail on notification to avoid blocking business transaction
-            }
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return order;
+            return returnOrder;
         }
         catch (Exception)
         {

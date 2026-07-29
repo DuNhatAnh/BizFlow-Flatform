@@ -100,8 +100,7 @@ public class TaxService : ITaxService
 
     public async Task<TaxObligationDto> PayTaxAsync(Guid tenantId, Guid taxId, Guid userId, PayTaxRequestDto request, CancellationToken cancellationToken)
     {
-        // Ideally use a transaction, but IApplicationDbContext doesn't expose it directly.
-        // Can be refactored to use IUnitOfWork pattern.
+        using var transaction = await _context.BeginTransactionAsync(cancellationToken);
         
         try
         {
@@ -142,9 +141,21 @@ public class TaxService : ITaxService
             };
 
             _context.TaxLedgerEntries.Add(paymentEntry);
+            var log = new BizFlow.Domain.Entities.AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                UserId = userId,
+                Action = "PayTax",
+                EntityName = "TaxLedgerEntry",
+                EntityId = paymentEntry.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Paid tax {incurredEntry.TaxType} amount {request.AmountToPay:N0}"
+            };
+            _context.AuditLogs.Add(log);
+
             await _context.SaveChangesAsync(cancellationToken);
-            
-            // No manual transaction commit needed as SaveChanges is handled or should be refactored to IUnitOfWork
+            await transaction.CommitAsync(cancellationToken);
             
             // Re-calculate the balance to return
             var allRelatedEntries = await _context.TaxLedgerEntries

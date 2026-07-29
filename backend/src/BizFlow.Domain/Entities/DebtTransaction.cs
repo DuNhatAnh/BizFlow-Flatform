@@ -9,12 +9,17 @@ public class DebtTransaction
     public Guid TenantId { get; set; }
     public Guid CustomerId { get; set; }
     public Guid? OrderId { get; set; }
+    public Guid? InventoryReceiptId { get; set; }
     public DebtTransactionType Type { get; set; }
     public decimal Amount { get; set; } = 0.00m;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Customer Customer { get; set; } = null!;
     public Order? Order { get; set; }
+    public InventoryReceipt? InventoryReceipt { get; set; }
 }

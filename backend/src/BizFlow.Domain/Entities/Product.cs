@@ -28,4 +28,7 @@ public class Product
     public ICollection<ProductUnit> ProductUnits { get; set; } = new List<ProductUnit>();
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 }

@@ -71,6 +71,8 @@ public class CashController : ControllerBase
     }
 
     [HttpPost]
+    [BizFlow.WebApi.Filters.Idempotent]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.CashEdit)]
     public async Task<ActionResult<CashTransactionDto>> CreateTransaction([FromBody] CreateCashTransactionRequest request)
     {
         var tenantId = GetTenantId();

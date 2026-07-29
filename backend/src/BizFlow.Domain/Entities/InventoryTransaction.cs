@@ -17,8 +17,16 @@ public class InventoryTransaction
     public string? Note { get; set; }
 
 
+    public Guid? OrderId { get; set; }
+    public Guid? InventoryReceiptId { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Product Product { get; set; } = null!;
     public User? Creator { get; set; }
+    public Order? Order { get; set; }
+    public InventoryReceipt? InventoryReceipt { get; set; }
 }

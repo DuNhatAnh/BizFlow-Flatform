@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantSettingService, BizFlow.Infrastructure.Services.TenantSettingService>();
         services.AddScoped<IDashboardService, BizFlow.Infrastructure.Services.DashboardService>();
         services.AddScoped<ITaxService, BizFlow.Application.Services.TaxService>();
+        services.AddScoped<INumberSequenceService, BizFlow.Infrastructure.Services.NumberSequenceService>();
 
 
         // Register Redis Cache

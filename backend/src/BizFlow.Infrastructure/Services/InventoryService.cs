@@ -16,10 +16,12 @@ namespace BizFlow.Infrastructure.Services;
 public class InventoryService : IInventoryService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INumberSequenceService _sequenceService;
 
-    public InventoryService(IApplicationDbContext context)
+    public InventoryService(IApplicationDbContext context, INumberSequenceService sequenceService)
     {
         _context = context;
+        _sequenceService = sequenceService;
     }
     private async Task<AccountingLedgerS2?> GetLastLedgerAsync(Guid tenantId, Guid productId, CancellationToken ct)
     {
@@ -142,15 +144,9 @@ public class InventoryService : IInventoryService
 
                     ledgerEntry.QuantityOut = itemReq.Quantity;
                     
-                    // COGS Calculation
+                    // COGS Calculation (Weighted Average only)
                     if (tenant.CogsMethod == CogsMethod.WeightedAverage)
                     {
-                        var unitCost = prevQty > 0 ? prevVal / prevQty : itemReq.UnitPrice;
-                        ledgerEntry.ValueOut = itemReq.Quantity * unitCost;
-                    }
-                    else if (tenant.CogsMethod == CogsMethod.FIFO)
-                    {
-                        // TODO: Implement FIFO properly. Fallback to Weighted Average for now.
                         var unitCost = prevQty > 0 ? prevVal / prevQty : itemReq.UnitPrice;
                         ledgerEntry.ValueOut = itemReq.Quantity * unitCost;
                     }
@@ -181,14 +177,7 @@ public class InventoryService : IInventoryService
             var cashPrefix = request.Type == ReceiptType.Import ? "PC" : "PT";
             var cashTxType = request.Type == ReceiptType.Import ? CashTransactionType.Payment : CashTransactionType.Receipt;
             
-            var dateStr = DateTime.UtcNow.ToString("yyMMdd");
-            var today = DateTime.UtcNow.Date;
-            var countToday = await _context.CashTransactions
-                .Where(c => c.TenantId == tenantId && c.Type == cashTxType && c.CreatedAt >= today)
-                .CountAsync();
-                
-            var seq = (countToday + 1).ToString("D3");
-            var txCode = $"{cashPrefix}-{dateStr}-{seq}";
+            var txCode = await _sequenceService.GetNextSequenceAsync(tenantId, cashPrefix);
             
             var cashTx = new CashTransaction
             {
@@ -208,6 +197,19 @@ public class InventoryService : IInventoryService
                 CreatedAt = DateTime.UtcNow
             };
             _context.CashTransactions.Add(cashTx);
+
+            var log = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                UserId = userId ?? Guid.Empty,
+                Action = "Create",
+                EntityName = "InventoryReceipt",
+                EntityId = receipt.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Created receipt #{receipt.ReceiptCode} type {receipt.Type}"
+            };
+            _context.AuditLogs.Add(log);
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -293,6 +295,19 @@ public class InventoryService : IInventoryService
                 _context.AccountingLedgerS2s.Add(ledgerEntry);
             }
 
+            var log = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                UserId = userId ?? Guid.Empty,
+                Action = "Cancel",
+                EntityName = "InventoryReceipt",
+                EntityId = receipt.Id.ToString(),
+                Timestamp = DateTime.UtcNow,
+                Details = $"Cancelled receipt #{receipt.ReceiptCode}. Reason: {request.CancelReason}"
+            };
+            _context.AuditLogs.Add(log);
+
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
         }
@@ -308,7 +323,8 @@ public class InventoryService : IInventoryService
         var query = _context.InventoryReceipts
             .Include(r => r.Details)
                 .ThenInclude(d => d.Product)
-            .Where(r => r.TenantId == tenantId);
+            .Where(r => r.TenantId == tenantId)
+            .AsNoTracking();
 
         if (type != -1)
         {
@@ -355,7 +371,8 @@ public class InventoryService : IInventoryService
         var query = _context.AccountingLedgerS2s
             .Include(l => l.Product)
             .Include(l => l.Receipt)
-            .Where(l => l.TenantId == tenantId && l.ProductId == productId);
+            .Where(l => l.TenantId == tenantId && l.ProductId == productId)
+            .AsNoTracking();
 
         if (startDate.HasValue) query = query.Where(l => l.Date >= startDate.Value);
         if (endDate.HasValue) query = query.Where(l => l.Date <= endDate.Value);
@@ -460,12 +477,6 @@ public class InventoryService : IInventoryService
 
         if (tenant.CogsMethod == CogsMethod.WeightedAverage)
         {
-            var unitCost = prevQty > 0 ? prevVal / prevQty : 0;
-            ledgerEntry.ValueOut = quantity * unitCost;
-        }
-        else
-        {
-            // Fallback for FIFO currently
             var unitCost = prevQty > 0 ? prevVal / prevQty : 0;
             ledgerEntry.ValueOut = quantity * unitCost;
         }

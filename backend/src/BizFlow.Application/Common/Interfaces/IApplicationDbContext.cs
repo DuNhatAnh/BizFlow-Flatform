@@ -19,7 +19,6 @@ public interface IApplicationDbContext
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
     DbSet<DebtTransaction> DebtTransactions { get; }
-    DbSet<AccountingEntry> AccountingEntries { get; }
     DbSet<InventoryReceipt> InventoryReceipts { get; }
     DbSet<InventoryReceiptDetail> InventoryReceiptDetails { get; }
     DbSet<AccountingLedgerS2> AccountingLedgerS2s { get; }
@@ -35,6 +34,8 @@ public interface IApplicationDbContext
     DbSet<AttendanceRecord> AttendanceRecords { get; }
     DbSet<Notification> Notifications { get; }
     DbSet<TenantSetting> TenantSettings { get; }
+    DbSet<IdempotentRequest> IdempotentRequests { get; }
+    DbSet<NumberSequence> NumberSequences { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

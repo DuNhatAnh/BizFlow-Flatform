@@ -15,6 +15,8 @@ public class Order
     public decimal TotalVatAmount { get; set; } = 0.00m;
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
+    public OrderType Type { get; set; } = OrderType.Standard;
+    public Guid? ParentOrderId { get; set; }
     public OrderSource OrderSource { get; set; } = OrderSource.Manual;
     public string? RawTranscript { get; set; }
     public string? CustomerName { get; set; }
@@ -30,4 +32,9 @@ public class Order
     public User? Creator { get; set; }
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     public ICollection<DebtTransaction> DebtTransactions { get; set; } = new List<DebtTransaction>();
+    public ICollection<CashTransaction> CashTransactions { get; set; } = new List<CashTransaction>();
+    public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 }

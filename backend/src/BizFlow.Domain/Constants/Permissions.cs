@@ -18,7 +18,10 @@ public static class Permissions
     public const string CustomersRead = "Customers.Read";
     
     public const string SystemManage = "System.Manage";
-
+    public const string CashManage = "Cash.Manage";
+    public const string CashEdit = "Cash.Edit";
+    public const string CashRead = "Cash.Read";
+    public const string CustomersEdit = "Customers.Edit";
     public const string DashboardViewRevenue = "Dashboard.ViewRevenue";
     public const string DashboardViewOrders = "Dashboard.ViewOrders";
     public const string DashboardViewProfit = "Dashboard.ViewProfit";

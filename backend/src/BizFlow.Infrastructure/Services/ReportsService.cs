@@ -121,31 +121,19 @@ public class ReportsService : IReportsService
             endDate = endDate.AddDays(1).AddTicks(-1);
         }
 
-        var query = _context.ExpenseRecords
+        var expenseQuery = _context.ExpenseRecords
             .Where(e => e.ExpenseDate >= startDate && e.ExpenseDate <= endDate);
 
-        var totalCount = await query.CountAsync();
+        var cogsQuery = _context.AccountingLedgerS2s
+            .Where(e => e.Type == Domain.Enums.ReceiptType.Export && e.Date >= startDate && e.Date <= endDate);
 
-        var aggregates = await query
-            .GroupBy(e => 1)
-            .Select(g => new {
-                TotalLabor = g.Where(e => e.Category == Domain.Enums.ExpenseCategory.LaborCost).Sum(e => e.Amount),
-                TotalUtilities = g.Where(e => e.Category == Domain.Enums.ExpenseCategory.UtilityCost).Sum(e => e.Amount),
-                TotalRent = g.Where(e => e.Category == Domain.Enums.ExpenseCategory.RentCost).Sum(e => e.Amount),
-                TotalManagement = g.Where(e => e.Category == Domain.Enums.ExpenseCategory.ManagementCost).Sum(e => e.Amount),
-                TotalOther = g.Where(e => e.Category == Domain.Enums.ExpenseCategory.MaterialCost || e.Category == Domain.Enums.ExpenseCategory.OtherCost).Sum(e => e.Amount)
-            })
-            .FirstOrDefaultAsync();
-
-        var pagedExpenses = await query
-            .OrderBy(e => e.ExpenseDate)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        // Fetch into memory since we'll merge them
+        var expenses = await expenseQuery.ToListAsync();
+        var cogs = await cogsQuery.ToListAsync();
 
         var result = new List<S3LedgerRowDto>();
 
-        foreach (var expense in pagedExpenses)
+        foreach (var expense in expenses)
         {
             var row = new S3LedgerRowDto
             {
@@ -176,24 +164,96 @@ public class ReportsService : IReportsService
                     row.Col5_Other += expense.Amount;
                     break;
             }
-
             result.Add(row);
         }
 
-        return new S3LedgerReportDto
+        foreach (var cog in cogs)
         {
-            TotalCol1_Labor = aggregates?.TotalLabor ?? 0,
-            TotalCol2_Utilities = aggregates?.TotalUtilities ?? 0,
-            TotalCol3_Rent = aggregates?.TotalRent ?? 0,
-            TotalCol4_Management = aggregates?.TotalManagement ?? 0,
-            TotalCol5_Other = aggregates?.TotalOther ?? 0,
+            var amount = cog.ValueOut;
+            var row = new S3LedgerRowDto
+            {
+                Date = cog.Date,
+                ReceiptNo = cog.Receipt?.ReceiptCode ?? $"XK-{cog.Id.ToString().Substring(0, 8)}",
+                ReceiptDate = cog.Date,
+                Description = $"Giá vốn hàng xuất bán - {cog.Product?.Name}",
+                Notes = string.Empty
+            };
+            row.Col5_Other += amount;
+            result.Add(row);
+        }
+
+        // Paging and sorting
+        var sortedAndPaged = result
+            .OrderBy(r => r.Date)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var dto = new S3LedgerReportDto
+        {
+            TotalCol1_Labor = result.Sum(r => r.Col1_Labor),
+            TotalCol2_Utilities = result.Sum(r => r.Col2_Utilities),
+            TotalCol3_Rent = result.Sum(r => r.Col3_Rent),
+            TotalCol4_Management = result.Sum(r => r.Col4_Management),
+            TotalCol5_Other = result.Sum(r => r.Col5_Other),
             Records = new BizFlow.Application.DTOs.Common.PagedResult<S3LedgerRowDto>
             {
-                Items = result,
-                TotalCount = totalCount,
+                Items = sortedAndPaged,
+                TotalCount = result.Count,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             }
         };
+
+        return dto;
+    }
+
+    public async Task<bool> RebuildS2LedgerValidationAsync(Guid tenantId)
+    {
+        var products = await _context.Products.Where(p => p.TenantId == tenantId).ToListAsync();
+        
+        var receipts = await _context.InventoryReceiptDetails
+            .Include(d => d.Receipt)
+            .Include(d => d.Product)
+            .Where(d => d.Receipt.TenantId == tenantId && d.Receipt.Type == Domain.Enums.ReceiptType.Import)
+            .ToListAsync();
+            
+        var orderItems = await _context.OrderItems
+            .Include(oi => oi.Order)
+            .Include(oi => oi.ProductUnit)
+            .Where(oi => oi.Order.TenantId == tenantId && (oi.Order.Status == Domain.Enums.OrderStatus.Completed || oi.Order.Status == Domain.Enums.OrderStatus.Refunded))
+            .ToListAsync();
+            
+        var adjustments = await _context.InventoryTransactions
+            .Where(t => t.TenantId == tenantId && t.Type == Domain.Enums.InventoryTransactionType.Adjustment)
+            .ToListAsync();
+
+        bool isValid = true;
+        
+        foreach (var product in products)
+        {
+            decimal calculatedQty = 0;
+            
+            var productImports = receipts.Where(r => r.ProductId == product.Id).Sum(r => r.Quantity);
+            calculatedQty += productImports;
+            
+            var productSales = orderItems.Where(oi => oi.ProductId == product.Id);
+            foreach (var sale in productSales)
+            {
+                var conversion = sale.ProductUnit?.ConversionRate ?? 1;
+                calculatedQty -= (sale.Quantity * conversion); // Quantity is negative for Return orders, so this adds it back
+            }
+            
+            var productAdjustments = adjustments.Where(a => a.ProductId == product.Id).Sum(a => a.Quantity);
+            calculatedQty += productAdjustments;
+            
+            if (Math.Round(calculatedQty, 4) != Math.Round(product.StockQuantity, 4))
+            {
+                isValid = false;
+                Console.WriteLine($"Mismatch for Product {product.Id}: Calculated {calculatedQty}, Actual {product.StockQuantity}");
+            }
+        }
+        
+        return isValid;
     }
 }

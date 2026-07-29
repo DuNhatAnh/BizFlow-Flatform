@@ -17,4 +17,7 @@ public class Customer
     public Tenant Tenant { get; set; } = null!;
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<DebtTransaction> DebtTransactions { get; set; } = new List<DebtTransaction>();
+
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[]? RowVersion { get; set; }
 }

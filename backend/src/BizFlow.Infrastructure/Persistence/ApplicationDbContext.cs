@@ -31,7 +31,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<DebtTransaction> DebtTransactions => Set<DebtTransaction>();
-    public DbSet<AccountingEntry> AccountingEntries => Set<AccountingEntry>();
     public DbSet<InventoryReceipt> InventoryReceipts => Set<InventoryReceipt>();
     public DbSet<InventoryReceiptDetail> InventoryReceiptDetails => Set<InventoryReceiptDetail>();
     public DbSet<AccountingLedgerS2> AccountingLedgerS2s => Set<AccountingLedgerS2>();
@@ -47,6 +46,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<TenantSetting> TenantSettings => Set<TenantSetting>();
+    public DbSet<IdempotentRequest> IdempotentRequests => Set<IdempotentRequest>();
+    public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 
@@ -245,14 +246,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Type).HasConversion<string>();
         });
 
-        // 12. AccountingEntry configurations
-        modelBuilder.Entity<AccountingEntry>(entity =>
-        {
-            entity.ToTable("accounting_entries");
-            entity.Property(e => e.Amount).HasPrecision(15, 2);
-            entity.Property(e => e.DocumentType).HasConversion<string>();
-            entity.Property(e => e.AccountCategory).HasConversion<string>();
-        });
+
 
         // 13. InventoryReceipt configurations
         modelBuilder.Entity<InventoryReceipt>(entity =>
@@ -430,7 +424,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Order>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         // OrderItem does not have TenantId
         modelBuilder.Entity<DebtTransaction>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
-        modelBuilder.Entity<AccountingEntry>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
+
         modelBuilder.Entity<InventoryReceipt>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
         // InventoryReceiptDetail does not have TenantId
         modelBuilder.Entity<AccountingLedgerS2>().HasQueryFilter(e => CurrentTenantId != null && e.TenantId == CurrentTenantId);
@@ -449,7 +443,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
 
 
+        modelBuilder.Entity<IdempotentRequest>(entity =>
+        {
+            entity.HasIndex(e => e.IdempotencyKey).IsUnique();
+        });
 
+        modelBuilder.Entity<NumberSequence>(entity =>
+        {
+            entity.HasIndex(e => new { e.TenantId, e.Prefix }).IsUnique();
+            entity.Property(e => e.RowVersion).IsRowVersion();
+        });
     }
 
     public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)

@@ -24,7 +24,14 @@ public enum OrderStatus
 {
     Draft,
     Completed,
-    Cancelled
+    Cancelled,
+    Refunded
+}
+
+public enum OrderType
+{
+    Standard = 0,
+    Return = 1
 }
 
 public enum OrderSource
@@ -58,8 +65,7 @@ public enum AccountCategory
 
 public enum CogsMethod
 {
-    WeightedAverage,
-    FIFO
+    WeightedAverage
 }
 
 public enum ReceiptType
@@ -90,4 +96,12 @@ public enum TaxType
     PIT, // Thuế TNCN
     BusinessLicenseTax, // Thuế môn bài
     Other // Thuế khác
+}
+
+public enum ApprovalStatus
+{
+    Draft,
+    PendingApproval,
+    Approved,
+    Rejected
 }

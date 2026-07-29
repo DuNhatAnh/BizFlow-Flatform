@@ -15,16 +15,19 @@ namespace BizFlow.Infrastructure.Services;
 public class CashService : ICashService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INumberSequenceService _sequenceService;
 
-    public CashService(IApplicationDbContext context)
+    public CashService(IApplicationDbContext context, INumberSequenceService sequenceService)
     {
         _context = context;
+        _sequenceService = sequenceService;
     }
 
     public async Task<PagedResult<CashTransactionDto>> GetTransactionsAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10)
     {
         var query = _context.CashTransactions
             .Where(c => c.TenantId == tenantId)
+            .AsNoTracking()
             .OrderByDescending(c => c.CreatedAt);
 
         var totalCount = await query.CountAsync();
@@ -87,18 +90,19 @@ public class CashService : ICashService
 
     public async Task<CashTransactionDto> CreateTransactionAsync(Guid tenantId, CreateCashTransactionRequest request, Guid userId)
     {
+        // Business Validation: Không cho phép âm quỹ
+        if (request.Type == CashTransactionType.Payment)
+        {
+            var currentBalance = await GetCashBalanceAsync(tenantId);
+            if (currentBalance < request.Amount)
+            {
+                throw new InvalidOperationException($"Không thể chi số tiền ({request.Amount:N0}). Số dư quỹ hiện tại ({currentBalance:N0}) không đủ.");
+            }
+        }
+
         // Generate TransactionCode according to TT88
         var prefix = request.Type == CashTransactionType.Receipt ? "PT" : "PC";
-        var dateStr = DateTime.UtcNow.ToString("yyMMdd");
-        
-        // Count today's transactions to generate sequential number
-        var today = DateTime.UtcNow.Date;
-        var countToday = await _context.CashTransactions
-            .Where(c => c.TenantId == tenantId && c.Type == request.Type && c.CreatedAt >= today)
-            .CountAsync();
-            
-        var seq = (countToday + 1).ToString("D3");
-        var txCode = $"{prefix}-{dateStr}-{seq}";
+        var txCode = await _sequenceService.GetNextSequenceAsync(tenantId, prefix);
 
         var transaction = new CashTransaction
         {
@@ -136,7 +140,20 @@ public class CashService : ICashService
             _context.ExpenseRecords.Add(expense);
         }
 
-        await _context.SaveChangesAsync();
+        var log = new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            UserId = userId,
+            Action = "Create",
+            EntityName = "CashTransaction",
+            EntityId = transaction.Id.ToString(),
+            Timestamp = DateTime.UtcNow,
+            Details = $"Created cash transaction #{transaction.TransactionCode} for {transaction.Amount:N0}"
+        };
+        _context.AuditLogs.Add(log);
+
+        // Removed SaveChangesAsync to allow caller to handle transaction boundary
 
         return new CashTransactionDto
         {

@@ -49,6 +49,7 @@ public class OrdersController : ApiControllerBase
             .ThenInclude(oi => oi.Product)
             .Include(o => o.OrderItems)
             .ThenInclude(oi => oi.ProductUnit)
+            .AsNoTracking()
             .AsQueryable();
 
         if (createdBy.HasValue && createdBy.Value != Guid.Empty)
@@ -234,6 +235,7 @@ public class OrdersController : ApiControllerBase
     }
 
     [HttpPost("{id}/confirm")]
+    [BizFlow.WebApi.Filters.Idempotent]
     public async Task<IActionResult> ConfirmDraft(Guid id, [FromBody] ConfirmDraftOrderRequest request)
     {
         try

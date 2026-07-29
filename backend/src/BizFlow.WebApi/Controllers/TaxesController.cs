@@ -62,6 +62,7 @@ public class TaxesController : ApiControllerBase
     /// Đóng thuế (Nộp tiền thuế)
     /// </summary>
     [HttpPost("{id}/pay")]
+    [BizFlow.WebApi.Filters.Idempotent]
     [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PayTax([FromRoute] Guid id, [FromBody] PayTaxRequestDto request, CancellationToken cancellationToken)
     {

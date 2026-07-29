@@ -102,6 +102,8 @@ public class CustomersController : ApiControllerBase
     }
 
     [HttpPost("debt-pay")]
+    [BizFlow.WebApi.Filters.Idempotent]
+    [Authorize(Policy = BizFlow.Domain.Constants.Permissions.CustomersEdit)]
     public async Task<IActionResult> CollectDebt([FromBody] CollectDebtRequest request)
     {
         if (request.Amount <= 0)
@@ -120,6 +122,11 @@ public class CustomersController : ApiControllerBase
                 return NotFound(new { Message = "Không tìm thấy khách hàng" });
             }
 
+            if (request.Amount > customer.TotalDebt)
+            {
+                return BadRequest(new { Message = $"Số tiền thu nợ ({request.Amount:N0}) không được vượt quá tổng công nợ hiện tại ({customer.TotalDebt:N0})" });
+            }
+
             // 1. Create debt transaction (Decrease)
             var debtTx = new DebtTransaction
             {
@@ -136,19 +143,7 @@ public class CustomersController : ApiControllerBase
             // 2. Decrement customer's total debt
             customer.TotalDebt -= request.Amount;
 
-            // 3. Create accounting journal entry
-            var accountingEntry = new AccountingEntry
-            {
-                Id = Guid.NewGuid(),
-                TenantId = request.TenantId,
-                TransactionDate = DateTime.UtcNow,
-                DocumentType = DocumentType.Sales,
-                DocumentRefId = debtTx.Id.ToString(),
-                AccountCategory = AccountCategory.Revenue_Services,
-                Amount = request.Amount,
-                Description = $"Thu nợ từ khách hàng {customer.Fullname}, Số tiền: {request.Amount:N0} VND"
-            };
-            _context.AccountingEntries.Add(accountingEntry);
+
 
             // 4. Create CashTransaction
             var prefix = "PT";
@@ -173,7 +168,7 @@ public class CustomersController : ApiControllerBase
                 TransactionDate = DateTime.UtcNow,
                 TransactionCode = txCode,
                 Reason = $"Thu tiền nợ từ khách hàng {customer.Fullname}",
-                ReferenceDocument = null,
+                ReferenceDocument = debtTx.Id.ToString(),
                 RelatedUserId = null,
                 PayerReceiverName = customer.Fullname,
                 CreatedAt = DateTime.UtcNow
