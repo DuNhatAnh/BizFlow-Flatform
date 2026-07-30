@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, Search, RefreshCw, Calendar as CalendarIcon, FileText, Package } from "lucide-react";
+import { Download, Search, RefreshCw, Calendar as CalendarIcon, FileText, Package, HelpCircle } from "lucide-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import LedgerS2HKDTab from "@/components/Inventory/InventoryTabs/LedgerS2HKDTab";
 import S3LedgerTab from "./S3LedgerTab";
 import { LedgerS4HKDTab } from "@/components/Taxes/LedgerS4HKDTab";
+import ExportDropdown from "@/components/ui/ExportDropdown";
+import { PrintHeaderTT88, PrintFooterTT88 } from "./PrintHelpersTT88";
+import { TT88HelpModal } from './TT88HelpModal';
 
 const API_URL = "http://localhost:5178/api";
 
@@ -34,6 +37,7 @@ interface S1LedgerRow {
 
 export default function TaxReportsTT88() {
   const [activeTab, setActiveTab] = useState("s1");
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   // --- S1 STATE ---
   const [data, setData] = useState<S1LedgerRow[]>([]);
@@ -202,9 +206,9 @@ export default function TaxReportsTT88() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-surface-container-high shadow-sm overflow-hidden flex flex-col h-[calc(100vh-140px)] animate-in fade-in duration-300">
+    <div className="bg-white rounded-2xl border border-surface-container-high shadow-sm overflow-hidden flex flex-col min-h-[calc(100vh-140px)] animate-in fade-in duration-300 print:overflow-visible print:border-none print:shadow-none print:min-h-0 print:h-auto print:block">
       {/* Header & Tabs */}
-      <div className="border-b border-surface-container bg-surface-container-lowest pt-6 px-6">
+      <div className="border-b border-surface-container bg-surface-container-lowest pt-6 px-6 print:hidden">
         <h2 className="text-2xl font-bold text-on-surface mb-2 font-mono tracking-tight">HỆ THỐNG SỔ SÁCH KẾ TOÁN (TT88)</h2>
         <p className="text-sm text-on-surface-variant mb-6">Quản lý toàn bộ sổ sách kế toán hộ kinh doanh theo chuẩn Thông tư 88/2021/TT-BTC</p>
         
@@ -225,7 +229,7 @@ export default function TaxReportsTT88() {
               className={`pb-4 px-2 border-b-2 font-semibold text-sm flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === tab.id 
                   ? "border-primary text-primary" 
-                  : "border-transparent text-on-surface-variant hover:text-on-surface hover:border-surface-container-high"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline"
               }`}
             >
               <tab.icon size={16} className={activeTab === tab.id ? "text-primary" : "opacity-70"} />
@@ -233,12 +237,36 @@ export default function TaxReportsTT88() {
             </button>
           ))}
         </div>
+
+        <TT88HelpModal 
+          isOpen={showHelpModal} 
+          onClose={() => setShowHelpModal(false)} 
+          formId="s1" 
+        />
       </div>
       
       {activeTab === "s1" && (
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible print:h-auto print:block">
+          {/* Title S1 */}
+          <div className="px-6 py-4 border-b border-surface-container bg-surface-container-lowest shrink-0 print:hidden flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-on-surface">Sổ Chi Tiết Doanh Thu Bán Hàng Hóa, Dịch Vụ</h3>
+                <button 
+                  onClick={() => setShowHelpModal(true)}
+                  className="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors flex items-center justify-center"
+                  title="Hướng dẫn điền sổ TT88"
+                >
+                  <HelpCircle size={18} />
+                </button>
+              </div>
+              <p className="text-sm text-on-surface-variant mt-1">Mẫu số S1-HKD (Ban hành kèm theo Thông tư số 88/2021/TT-BTC)</p>
+            </div>
+          </div>
+
           {/* Controls S1 */}
-          <div className="p-4 border-b border-surface-container bg-surface-container-lowest flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+          <div className="px-6 py-4 border-b border-surface-container bg-surface-container-lowest flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 print:hidden">
+            {/* Left: Filters */}
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               <div className="bg-surface-container-low rounded-lg border border-surface-container overflow-hidden">
                 <select 
@@ -289,16 +317,19 @@ export default function TaxReportsTT88() {
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                 Lọc
               </button>
-              
-              <button className="px-4 py-2 bg-primary text-on-primary hover:bg-primary/90 rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2 ml-auto md:ml-0">
-                <Download size={16} />
-                Xuất Excel
-              </button>
+            </div>
+            
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+              <ExportDropdown 
+                onExportExcel={() => alert("Tính năng xuất excel sổ S1 đang phát triển")}
+                onPrintTT88={() => window.print()}
+              />
             </div>
           </div>
           
           {/* KPI Summary S1 */}
-          <div className="px-4 py-4 grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0">
+          <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0 print:hidden">
             <div className="bg-surface-container-lowest border border-surface-container p-4 rounded-xl shadow-sm">
               <p className="text-xs text-on-surface-variant font-medium uppercase mb-1">Tổng Doanh Thu</p>
               <p className="text-xl font-bold text-primary">{new Intl.NumberFormat("vi-VN").format(totals.revenue)} đ</p>
@@ -322,7 +353,8 @@ export default function TaxReportsTT88() {
           </div>
 
           {/* Table Content S1 */}
-          <div className="flex-1 overflow-auto bg-surface-container-lowest">
+          <div id="print-area" className="flex-1 overflow-auto bg-surface-container-lowest print:overflow-visible print:h-auto print:block">
+            <PrintHeaderTT88 formId="S1-HKD" title="Sổ Chi Tiết Doanh Thu Bán Hàng Hóa, Dịch Vụ" showTaxCode={false} />
             {loading ? (
               <div className="flex justify-center items-center h-full">
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -333,56 +365,102 @@ export default function TaxReportsTT88() {
                 <p>Không có giao dịch nào trong khoảng thời gian này</p>
               </div>
             ) : (
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-left border-collapse border border-outline print:border-none">
                 <thead className="text-xs text-on-surface-variant uppercase bg-surface-container sticky top-0 z-10">
-                  <tr>
-                    <th rowSpan={2} className="px-4 py-3 border-r border-b border-surface-container-high w-24 text-center">Ngày, tháng ghi sổ</th>
-                    <th colSpan={2} className="px-4 py-2 border-r border-b border-surface-container-high text-center">Chứng từ</th>
-                    <th rowSpan={2} className="px-4 py-3 border-r border-b border-surface-container-high min-w-[200px] text-center">Diễn giải</th>
-                    <th colSpan={4} className="px-4 py-2 border-r border-b border-surface-container-high text-center">Doanh thu bán hàng hóa, dịch vụ</th>
-                    <th rowSpan={2} className="px-4 py-3 border-b border-surface-container-high min-w-[120px] text-center">Ghi chú</th>
+                  <tr className="print:text-[8px] print:leading-tight">
+                    <th rowSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Ngày, tháng ghi sổ</th>
+                    <th colSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Chứng từ</th>
+                    <th rowSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Diễn giải</th>
+                    <th colSpan={4} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Doanh thu bán hàng hóa, dịch vụ</th>
+                    <th rowSpan={2} className="px-2 py-2 border-b border-outline text-center font-bold">Ghi chú</th>
                   </tr>
-                  <tr>
-                    <th className="px-4 py-2 border-r border-b border-surface-container-high text-center w-24">Số hiệu</th>
-                    <th className="px-4 py-2 border-r border-b border-surface-container-high text-center w-24">Ngày tháng</th>
-                    <th className="px-2 py-2 border-r border-b border-surface-container-high text-center w-28 text-[10px]">PP, CC HH (1.5%)</th>
-                    <th className="px-2 py-2 border-r border-b border-surface-container-high text-center w-28 text-[10px]">Dịch vụ (7%)</th>
-                    <th className="px-2 py-2 border-r border-b border-surface-container-high text-center w-28 text-[10px]">Sản xuất, VT (4.5%)</th>
-                    <th className="px-2 py-2 border-r border-b border-surface-container-high text-center w-28 text-[10px]">Khác (3%)</th>
+                  <tr className="print:text-[10px] print:leading-tight">
+                    <th className="px-2 py-2 border-r border-b border-outline text-center font-bold">Số hiệu</th>
+                    <th className="px-2 py-2 border-r border-b border-outline text-center font-bold">Ngày, tháng</th>
+                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-32 text-[10px] whitespace-normal">
+                      <span className="print:hidden">Phân phối, cung cấp hàng hóa</span>
+                      <span className="hidden print:inline">(1)</span>
+                    </th>
+                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-32 text-[10px] whitespace-normal">
+                      <span className="print:hidden">Dịch vụ, xây dựng không bao thầu nguyên vật liệu</span>
+                      <span className="hidden print:inline">(2)</span>
+                    </th>
+                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-32 text-[10px] whitespace-normal">
+                      <span className="print:hidden">Sản xuất, vận tải, dịch vụ có gắn với hàng hóa, xây dựng có bao thầu NVL</span>
+                      <span className="hidden print:inline">(3)</span>
+                    </th>
+                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-32 text-[10px] whitespace-normal">
+                      <span className="print:hidden">Hoạt động kinh doanh khác</span>
+                      <span className="hidden print:inline">(4)</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((row, idx) => (
-                    <tr key={idx} className="border-b border-surface-container hover:bg-surface-container-low transition-colors">
-                      <td className="px-4 py-3 border-r border-surface-container text-center">{formatDateDisplay(row.date)}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center font-medium">{row.receiptNo}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center">{formatDateDisplay(row.receiptDate)}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center">{row.description}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center font-medium text-primary">{formatCurrency(row.col1_Distribution)}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center font-medium text-primary">{formatCurrency(row.col2_Services)}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center font-medium text-primary">{formatCurrency(row.col3_Production)}</td>
-                      <td className="px-4 py-3 border-r border-surface-container text-center font-medium text-primary">{formatCurrency(row.col4_Other)}</td>
-                      <td className="px-4 py-3 text-center">{row.notes}</td>
+                    <tr key={idx} className="border-b border-outline even:bg-slate-50 odd:bg-white hover:bg-surface-container-low transition-colors">
+                      <td className="px-4 py-3 border-r border-b border-outline text-center">{formatDateDisplay(row.date)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-center font-medium">{row.receiptNo}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-center">{formatDateDisplay(row.receiptDate)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-left pl-4">{row.description}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums font-medium text-primary">{formatCurrency(row.col1_Distribution)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums font-medium text-primary">{formatCurrency(row.col2_Services)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums font-medium text-primary">{formatCurrency(row.col3_Production)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums font-medium text-primary">{formatCurrency(row.col4_Other)}</td>
+                      <td className="px-4 py-3 text-left pl-4">{row.notes}</td>
                     </tr>
                   ))}
-                  <tr className="font-bold bg-surface-container sticky bottom-0 border-t border-surface-container-high">
-                    <td colSpan={4} className="px-4 py-3 text-center border-r border-surface-container-high">Tổng cộng:</td>
-                    <td className="px-4 py-3 border-r border-surface-container-high text-center">{formatCurrency(totals.col1)}</td>
-                    <td className="px-4 py-3 border-r border-surface-container-high text-center">{formatCurrency(totals.col2)}</td>
-                    <td className="px-4 py-3 border-r border-surface-container-high text-center">{formatCurrency(totals.col3)}</td>
-                    <td className="px-4 py-3 border-r border-surface-container-high text-center">{formatCurrency(totals.col4)}</td>
-                    <td className="px-4 py-3 text-center"></td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-          </div>
+                  </tbody>
+                  <tbody className="break-inside-avoid print:break-inside-avoid">
+                    <tr className="font-bold bg-surface-container sticky bottom-0 border-t border-outline total-row">
+                      <td colSpan={4} className="px-4 py-3 text-right pr-6 border-r border-b border-outline">Tổng cộng:</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums">{formatCurrency(totals.col1)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums">{formatCurrency(totals.col2)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums">{formatCurrency(totals.col3)}</td>
+                      <td className="px-4 py-3 border-r border-b border-outline text-right tabular-nums">{formatCurrency(totals.col4)}</td>
+                      <td className="px-4 py-3 text-center border-r border-b border-outline"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+              {/* Footer is moved OUTSIDE the table to strictly prevent table borders from wrapping it */}
+              {!loading && data.length > 0 && (
+                <div className="print:block break-before-avoid print:break-before-avoid page-break-before-avoid mt-2">
+                  <style>{`
+                    @media print {
+                      .page-break-before-avoid {
+                        page-break-before: avoid !important;
+                        break-before: avoid !important;
+                      }
+                      /* Fix WebKit print bug for rowSpan/colSpan borders by avoiding border-collapse: collapse */
+                      #print-area table {
+                        border-collapse: separate !important;
+                        border-spacing: 0 !important;
+                        border-left: 0.5pt solid black !important;
+                        border-top: 0.5pt solid black !important;
+                        border-right: none !important;
+                        border-bottom: none !important;
+                      }
+                      #print-area table th, #print-area table td {
+                        border-right: 0.5pt solid black !important;
+                        border-bottom: 0.5pt solid black !important;
+                        border-left: none !important;
+                        border-top: none !important;
+                      }
+                      #print-area table tr.total-row td {
+                        border-bottom: 0.5pt solid black !important;
+                      }
+                    }
+                  `}</style>
+                  <PrintFooterTT88 totalRows={data.length} openDate={startDate ? new Date(startDate).toLocaleDateString('vi-VN') : ""} />
+                </div>
+              )}
+            </div>
           
           {/* Pagination S1 */}
           {!loading && data.length > 0 && (
-            <div className="p-4 border-t border-surface-container bg-surface-container-lowest flex items-center justify-between shrink-0">
+            <div className="p-4 border-t border-surface-container bg-surface-container-lowest flex items-center justify-between shrink-0 print:hidden">
               <span className="text-sm text-on-surface-variant">
-                Hiển thị {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalCount)} trong số {totalCount}
+                Hiển thị bản ghi {((page - 1) * pageSize) + 1} đến {Math.min(page * pageSize, totalCount)} (Tổng số: {totalCount} bản ghi)
               </span>
               <div className="flex gap-2">
                 <button

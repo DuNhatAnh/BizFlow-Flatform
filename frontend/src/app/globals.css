@@ -44,8 +44,19 @@ body {
 }
 
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
   body * {
     visibility: hidden;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
   }
   #print-area, #print-area * {
     visibility: visible;
@@ -54,11 +65,17 @@ body {
     position: absolute !important;
     left: 0;
     top: 0;
-    width: 100vw;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
     margin: 0;
-    padding: 20px;
+    padding: 0;
     background: white;
   }
+}
+
+.print-only {
+  display: none;
 }
 
 /* Custom Scrollbar for Tables */

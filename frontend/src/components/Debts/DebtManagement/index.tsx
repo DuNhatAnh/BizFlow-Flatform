@@ -330,7 +330,7 @@ export default function DebtManagement({
     }
   };
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)] min-h-[500px] animate-in fade-in duration-500">
+    <div className="flex gap-6 min-h-[calc(100vh-140px)] animate-in fade-in duration-500">
       
       {/* 1. CUSTOMERS LIST COLUMN */}
       <DebtCustomerList

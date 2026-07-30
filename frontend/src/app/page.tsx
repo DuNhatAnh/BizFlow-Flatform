@@ -1006,14 +1006,16 @@ export default function Home() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} draftCount={aiDrafts.length} />
 
       {/* Main dashboard body */}
-      <div className="pl-[260px] min-h-screen flex flex-col">
-        <main className="flex-1 p-8 max-w-[1440px] mx-auto w-full">
+      <div className="pl-[260px] print:pl-0 min-h-screen flex flex-col print:block">
+        <main className="flex-1 p-8 print:p-0 max-w-[1440px] print:max-w-none mx-auto w-full print:block">
           {/* Header section */}
-          <Header
-            showGreeting={activeTab === "overview"}
-            title={headerInfo.title}
-            subtitle={headerInfo.subtitle}
-          />
+          <div className="print:hidden">
+            <Header
+              showGreeting={activeTab === "overview"}
+              title={headerInfo.title}
+              subtitle={headerInfo.subtitle}
+            />
+          </div>
 
           {/* Render content based on dynamic calculations */}
           <div className={activeTab === "overview" ? "mt-6" : "mt-2"}>

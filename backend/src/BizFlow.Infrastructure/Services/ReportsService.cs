@@ -150,18 +150,30 @@ public class ReportsService : IReportsService
                     row.Col1_Labor += expense.Amount;
                     break;
                 case Domain.Enums.ExpenseCategory.UtilityCost:
-                    row.Col2_Utilities += expense.Amount;
+                    var desc = expense.Description?.ToLower() ?? "";
+                    if (desc.Contains("nước"))
+                    {
+                        row.Col3_Water += expense.Amount;
+                    }
+                    else if (desc.Contains("viễn thông") || desc.Contains("internet") || desc.Contains("mạng") || desc.Contains("điện thoại") || desc.Contains("wifi"))
+                    {
+                        row.Col4_Telecom += expense.Amount;
+                    }
+                    else
+                    {
+                        row.Col2_Electricity += expense.Amount; // Default to electricity if "điện" or ambiguous
+                    }
                     break;
                 case Domain.Enums.ExpenseCategory.RentCost:
-                    row.Col3_Rent += expense.Amount;
+                    row.Col5_Rent += expense.Amount;
                     break;
                 case Domain.Enums.ExpenseCategory.ManagementCost:
-                    row.Col4_Management += expense.Amount;
+                    row.Col6_Management += expense.Amount;
                     break;
                 case Domain.Enums.ExpenseCategory.MaterialCost:
                 case Domain.Enums.ExpenseCategory.OtherCost:
                 default:
-                    row.Col5_Other += expense.Amount;
+                    row.Col7_Other += expense.Amount;
                     break;
             }
             result.Add(row);
@@ -178,7 +190,7 @@ public class ReportsService : IReportsService
                 Description = $"Giá vốn hàng xuất bán - {cog.Product?.Name}",
                 Notes = string.Empty
             };
-            row.Col5_Other += amount;
+            row.Col7_Other += amount;
             result.Add(row);
         }
 
@@ -192,10 +204,12 @@ public class ReportsService : IReportsService
         var dto = new S3LedgerReportDto
         {
             TotalCol1_Labor = result.Sum(r => r.Col1_Labor),
-            TotalCol2_Utilities = result.Sum(r => r.Col2_Utilities),
-            TotalCol3_Rent = result.Sum(r => r.Col3_Rent),
-            TotalCol4_Management = result.Sum(r => r.Col4_Management),
-            TotalCol5_Other = result.Sum(r => r.Col5_Other),
+            TotalCol2_Electricity = result.Sum(r => r.Col2_Electricity),
+            TotalCol3_Water = result.Sum(r => r.Col3_Water),
+            TotalCol4_Telecom = result.Sum(r => r.Col4_Telecom),
+            TotalCol5_Rent = result.Sum(r => r.Col5_Rent),
+            TotalCol6_Management = result.Sum(r => r.Col6_Management),
+            TotalCol7_Other = result.Sum(r => r.Col7_Other),
             Records = new BizFlow.Application.DTOs.Common.PagedResult<S3LedgerRowDto>
             {
                 Items = sortedAndPaged,

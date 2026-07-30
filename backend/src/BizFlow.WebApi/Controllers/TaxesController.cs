@@ -66,10 +66,17 @@ public class TaxesController : ApiControllerBase
     [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PayTax([FromRoute] Guid id, [FromBody] PayTaxRequestDto request, CancellationToken cancellationToken)
     {
-        var tenantId = GetTenantId();
-        var userId = User.GetUserId();
-        var result = await _taxService.PayTaxAsync(tenantId, id, userId, request, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var tenantId = GetTenantId();
+            var userId = User.GetUserId();
+            var result = await _taxService.PayTaxAsync(tenantId, id, userId, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>
