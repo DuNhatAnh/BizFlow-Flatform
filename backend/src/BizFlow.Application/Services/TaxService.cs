@@ -24,7 +24,7 @@ public class TaxService : ITaxService
         _cashService = cashService;
     }
 
-    public async Task<IEnumerable<TaxObligationDto>> GetS4LedgerAsync(Guid tenantId, int? year, int? month, CancellationToken cancellationToken)
+    public async Task<BizFlow.Application.DTOs.Common.PagedResult<TaxObligationDto>> GetS4LedgerAsync(Guid tenantId, int? year, int? month, int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
         var query = _context.TaxLedgerEntries.Where(t => t.TenantId == tenantId);
         
@@ -63,7 +63,19 @@ public class TaxService : ITaxService
             .ThenByDescending(o => o.CreatedAt)
             .ToList();
 
-        return obligations;
+        var totalCount = obligations.Count;
+        var pagedItems = obligations
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return new BizFlow.Application.DTOs.Common.PagedResult<TaxObligationDto>
+        {
+            Items = pagedItems,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
     }
 
     public async Task<TaxObligationDto> CreateTaxObligationAsync(Guid tenantId, CreateTaxObligationDto request, CancellationToken cancellationToken)

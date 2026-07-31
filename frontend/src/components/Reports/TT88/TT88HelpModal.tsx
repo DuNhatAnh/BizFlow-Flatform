@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Info } from 'lucide-react';
 
 interface TT88HelpModalProps {
-  formId: 's1' | 's2' | 's3' | 's4';
+  formId: 's1' | 's2' | 's3' | 's4' | 's6' | 's7';
   isOpen: boolean;
   onClose: () => void;
 }
@@ -49,8 +49,30 @@ export const TT88HelpModal: React.FC<TT88HelpModalProps> = ({ formId, isOpen, on
         { name: "Cột (1) - Loại thuế", detail: "Ghi tên loại thuế phát sinh (Thuế GTGT, Thuế TNCN, Thuế TTĐB...)." },
         { name: "Cột (2) - Kỳ tính thuế", detail: "Ghi tháng, năm hoặc năm tính thuế." },
         { name: "Cột (3) - Phải nộp", detail: "Ghi số tiền thuế phát sinh phải nộp trong kỳ (dựa trên doanh thu S1)." },
-        { name: "Cột (4) - Đã nộp", detail: "Ghi số tiền thuế thực tế đã nộp vào Kho bạc/Ngân hàng." },
-        { name: "Cột (5) - Còn nợ", detail: "Bằng Cột (3) - Cột (4). Là số tiền thuế chưa nộp." },
+        { name: "Cột (4) - Số thuế đã nộp", detail: "Ghi số thuế thực tế đã nộp vào NSNN theo chứng từ nộp tiền (Giấy nộp tiền, Biên lai...)." },
+        { name: "Cột (5) - Số thuế còn nợ/nộp thừa", detail: "Cột (5) = Cột (3) - Cột (4). Nếu âm (-) là nộp thừa, dương (+) là còn nợ." },
+      ]
+    },
+    s6: {
+      title: "Hướng dẫn điền Sổ S6-HKD (Tiền Mặt)",
+      desc: "Sổ quỹ tiền mặt dùng để theo dõi tình hình thu, chi và tồn quỹ tiền mặt bằng tiền Việt Nam của hộ kinh doanh.",
+      columns: [
+        { name: "Cột A, B - Ngày tháng", detail: "Cột A ghi ngày tháng ghi sổ, Cột B ghi ngày tháng của Phiếu Thu/Phiếu Chi." },
+        { name: "Cột C, D - Số hiệu chứng từ", detail: "Ghi số hiệu Phiếu Thu (cột C) hoặc Phiếu Chi (cột D)." },
+        { name: "Cột E - Diễn giải", detail: "Ghi tóm tắt nội dung nghiệp vụ thu, chi tiền mặt." },
+        { name: "Cột 1, 2 - Số tiền", detail: "Ghi số tiền thực tế nhập quỹ (Thu) vào Cột 1 hoặc xuất quỹ (Chi) vào Cột 2." },
+        { name: "Cột 3 - Số dư", detail: "Số dư tồn quỹ tính lũy kế sau mỗi nghiệp vụ thu, chi." }
+      ]
+    },
+    s7: {
+      title: "Hướng dẫn điền Sổ S7-HKD (Tiền Gửi Ngân Hàng)",
+      desc: "Sổ tiền gửi ngân hàng dùng để theo dõi tình hình gửi vào, rút ra và số dư tại các ngân hàng mà hộ kinh doanh mở tài khoản.",
+      columns: [
+        { name: "Cột A, B - Ngày tháng", detail: "Cột A ghi ngày tháng ghi sổ, Cột B ghi ngày tháng của chứng từ (Giấy báo Có, Giấy báo Nợ...)." },
+        { name: "Cột C - Số hiệu chứng từ", detail: "Ghi số hiệu của chứng từ giao dịch với ngân hàng." },
+        { name: "Cột D - Diễn giải", detail: "Ghi tóm tắt nội dung nghiệp vụ gửi tiền vào hoặc rút tiền ra." },
+        { name: "Cột 1, 2 - Số tiền", detail: "Ghi số tiền gửi vào (Cột 1) hoặc rút ra (Cột 2)." },
+        { name: "Cột 3 - Số dư", detail: "Số dư tiền gửi tính lũy kế sau mỗi nghiệp vụ gửi vào, rút ra." }
       ]
     }
   };
@@ -91,7 +113,7 @@ export const TT88HelpModal: React.FC<TT88HelpModalProps> = ({ formId, isOpen, on
         <div className="p-4 border-t border-surface-container flex justify-end bg-surface-container-lowest">
           <button 
             onClick={onClose}
-            className="px-6 py-2 bg-primary text-on-primary rounded-xl font-medium text-sm hover:bg-primary/90 transition-colors"
+            className="px-6 py-2 bg-primary text-white rounded-xl font-medium text-sm hover:bg-primary/90 transition-colors"
           >
             Đã hiểu
           </button>

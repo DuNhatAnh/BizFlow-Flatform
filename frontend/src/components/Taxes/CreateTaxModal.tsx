@@ -123,7 +123,7 @@ export const CreateTaxModal: React.FC<CreateTaxModalProps> = ({ onClose, onSucce
             <button type="button" onClick={onClose} className="px-5 py-2.5 text-on-surface border border-outline-variant rounded-full font-medium hover:bg-surface-container-lowest transition-colors">
               Hủy
             </button>
-            <button type="submit" disabled={isLoading} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+            <button type="submit" disabled={isLoading} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
               <Save className="w-4 h-4" />
               {isLoading ? 'Đang xử lý...' : 'Lưu'}
             </button>

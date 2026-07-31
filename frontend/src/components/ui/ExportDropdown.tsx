@@ -26,7 +26,7 @@ export default function ExportDropdown({ onExportExcel, onPrintTT88 }: ExportDro
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-2 bg-primary text-on-primary hover:bg-primary/90 rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2"
+        className="px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2"
       >
         <Download size={16} />
         <span>Xuất dữ liệu</span>

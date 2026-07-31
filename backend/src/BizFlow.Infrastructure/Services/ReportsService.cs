@@ -270,4 +270,110 @@ public class ReportsService : IReportsService
         
         return isValid;
     }
+    
+    public async Task<CashLedgerReportDto> GetCashLedgerAsync(DateTime startDate, DateTime endDate, BizFlow.Domain.Enums.PaymentMethod paymentMethod, Guid? bankAccountId = null, int pageNumber = 1, int pageSize = 20)
+    {
+        // Adjust end date to cover the entire day if time is exactly midnight
+        if (endDate.TimeOfDay == TimeSpan.Zero)
+        {
+            endDate = endDate.AddDays(1).AddTicks(-1);
+        }
+
+        var query = _context.CashTransactions.Where(t => t.PaymentMethod == paymentMethod);
+        if (paymentMethod == BizFlow.Domain.Enums.PaymentMethod.Transfer && bankAccountId.HasValue)
+        {
+            query = query.Where(t => t.BankAccountId == bankAccountId);
+        }
+
+        // Calculate opening balance
+        var pastTransactions = await query
+            .Where(t => t.TransactionDate < startDate)
+            .Select(t => new { t.Type, t.Amount })
+            .ToListAsync();
+            
+        decimal openingBalance = 0;
+        foreach (var t in pastTransactions)
+        {
+            if (t.Type == Domain.Enums.CashTransactionType.Receipt) openingBalance += t.Amount;
+            else if (t.Type == Domain.Enums.CashTransactionType.Payment) openingBalance -= t.Amount;
+        }
+
+        // Get transactions for the period
+        var transactions = await query
+            .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endDate)
+            .OrderBy(t => t.TransactionDate)
+            .ThenBy(t => t.CreatedAt)
+            .ToListAsync();
+
+        var result = new CashLedgerReportDto
+        {
+            OpeningBalance = openingBalance
+        };
+
+        decimal currentBalance = openingBalance;
+        decimal totalReceipt = 0;
+        decimal totalPayment = 0;
+
+        var allRows = new List<CashLedgerRowDto>();
+
+        foreach (var t in transactions)
+        {
+            var row = new CashLedgerRowDto
+            {
+                Id = t.Id,
+                TransactionDate = t.CreatedAt,
+                DocumentDate = t.TransactionDate,
+                DocumentCode = t.TransactionCode,
+                Description = t.Reason ?? string.Empty
+            };
+
+            if (t.Type == Domain.Enums.CashTransactionType.Receipt)
+            {
+                row.ReceiptAmount = t.Amount;
+                currentBalance += t.Amount;
+                totalReceipt += t.Amount;
+            }
+            else if (t.Type == Domain.Enums.CashTransactionType.Payment)
+            {
+                row.PaymentAmount = t.Amount;
+                currentBalance -= t.Amount;
+                totalPayment += t.Amount;
+            }
+
+            row.RunningBalance = currentBalance;
+            allRows.Add(row);
+        }
+
+        result.TotalReceipt = totalReceipt;
+        result.TotalPayment = totalPayment;
+        result.ClosingBalance = currentBalance;
+        
+        var totalCount = allRows.Count;
+        var pagedItems = allRows
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        result.Transactions = new BizFlow.Application.DTOs.Common.PagedResult<CashLedgerRowDto>
+        {
+            Items = pagedItems,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        // Fetch bank info if it's S7 and bank account is selected
+        if (paymentMethod == BizFlow.Domain.Enums.PaymentMethod.Transfer && bankAccountId.HasValue)
+        {
+            var bankAccount = await _context.BankAccounts.FindAsync(bankAccountId);
+            if (bankAccount != null)
+            {
+                result.BankName = bankAccount.BankName;
+                result.BranchName = bankAccount.BranchName;
+                result.AccountNumber = bankAccount.AccountNumber;
+            }
+        }
+
+        return result;
+    }
 }

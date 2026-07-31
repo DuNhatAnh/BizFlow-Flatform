@@ -51,11 +51,11 @@ export const PrintHeaderTT88 = ({ formId, title, showTaxCode = true, showStoreNa
           // API returns either array directly or object with items
           const store = Array.isArray(json) ? json[0] : (json.items ? json.items[0] : null);
           if (store) {
-            setStoreInfo({
-              name: store.name || ".......................................",
-              taxCode: store.taxCode || ".......................................",
-              address: store.address || "......................................................................."
-            });
+            setStoreInfo(prev => ({
+              name: store.name || prev.name || ".......................................",
+              taxCode: store.taxCode || prev.taxCode || ".......................................",
+              address: store.address || prev.address || "......................................................................."
+            }));
           }
         }
       } catch (err) {
@@ -66,16 +66,16 @@ export const PrintHeaderTT88 = ({ formId, title, showTaxCode = true, showStoreNa
   }, []);
 
   return (
-    <div className="print-only font-serif text-black p-0 bg-white w-full">
+    <div className="hidden print:block font-serif text-black p-0 bg-white w-full">
       <div className="flex justify-between items-start mb-6 w-full">
         <div>
-          <div className="font-bold text-lg uppercase">HỘ KINH DOANH: {ownerName}</div>
+          <div className="font-bold text-lg uppercase">HỘ, CÁ NHÂN KINH DOANH: {ownerName}</div>
           {showTaxCode && <div>Mã số thuế: {storeInfo.taxCode}</div>}
           <div>Địa chỉ: {storeInfo.address}</div>
         </div>
-        <div className="text-right">
-          <div className="font-bold">Mẫu số {formId}</div>
-          <div className="text-sm italic">(Ban hành kèm theo Thông tư số 88/2021/TT-BTC<br/>ngày 11/10/2021 của Bộ Tài chính)</div>
+        <div className="text-right text-sm">
+          <div className="font-bold text-base">Mẫu số {formId}</div>
+          <div className="italic">(Ban hành kèm theo Thông tư số 88/2021/TT-BTC<br/>ngày 11 tháng 10 năm 2021 của Bộ trưởng<br/>Bộ Tài chính)</div>
         </div>
       </div>
 
@@ -137,11 +137,11 @@ export const PrintFooterTT88 = ({ totalRows = 0, openDate = "", hideNotes = fals
     <div className="print-only font-serif text-black p-0 pt-2 bg-transparent w-full">
       {!hideNotes && (
         <div className="mb-4 text-[10px] italic">
-          * Ghi chú cột doanh thu:<br/>
-          (1): Phân phối, cung cấp hàng hóa<br/>
-          (2): Dịch vụ, xây dựng không bao thầu nguyên vật liệu<br/>
-          (3): Sản xuất, vận tải, dịch vụ có gắn với hàng hóa, xây dựng có bao thầu NVL<br/>
-          (4): Hoạt động kinh doanh khác
+          * Ghi chú doanh thu:<br/>
+          (1) Phân phối, cung cấp hàng hóa<br/>
+          (2) Dịch vụ, xây dựng không bao thầu nguyên vật liệu<br/>
+          (3) Sản xuất, vận tải, dịch vụ có gắn với hàng hóa, xây dựng có bao thầu NVL<br/>
+          (4) Hoạt động kinh doanh khác
         </div>
       )}
       <div className="mb-4">

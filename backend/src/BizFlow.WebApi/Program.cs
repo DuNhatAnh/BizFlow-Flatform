@@ -100,6 +100,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(BizFlow.Domain.Constants.Permissions.CustomersManage, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Owner.ToString(), BizFlow.Domain.Enums.UserRole.Manager.ToString()));
     options.AddPolicy(BizFlow.Domain.Constants.Permissions.CustomersRead, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Owner.ToString(), BizFlow.Domain.Enums.UserRole.Manager.ToString(), BizFlow.Domain.Enums.UserRole.Employee.ToString()));
     options.AddPolicy(BizFlow.Domain.Constants.Permissions.SystemManage, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Admin.ToString()));
+    options.AddPolicy(BizFlow.Domain.Constants.Permissions.CashEdit, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Owner.ToString(), BizFlow.Domain.Enums.UserRole.Manager.ToString()));
+    options.AddPolicy(BizFlow.Domain.Constants.Permissions.CashRead, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Owner.ToString(), BizFlow.Domain.Enums.UserRole.Manager.ToString(), BizFlow.Domain.Enums.UserRole.Employee.ToString()));
+    options.AddPolicy(BizFlow.Domain.Constants.Permissions.CashManage, policy => policy.RequireRole(BizFlow.Domain.Enums.UserRole.Owner.ToString()));
 });
 
 var app = builder.Build();
@@ -131,6 +134,27 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        if (exceptionHandlerPathFeature?.Error != null)
+        {
+            Console.WriteLine($"[GLOBAL EXCEPTION] {exceptionHandlerPathFeature.Error}");
+            await context.Response.WriteAsJsonAsync(new 
+            {
+                message = "Internal Server Error",
+                detail = exceptionHandlerPathFeature.Error.Message,
+                stackTrace = exceptionHandlerPathFeature.Error.StackTrace
+            });
+        }
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

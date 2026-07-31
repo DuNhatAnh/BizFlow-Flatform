@@ -8,6 +8,7 @@ public class ExpenseRecord
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid TenantId { get; set; }
     public ExpenseCategory Category { get; set; }
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
     public decimal Amount { get; set; }
     public DateTime ExpenseDate { get; set; }
     public string? Description { get; set; }

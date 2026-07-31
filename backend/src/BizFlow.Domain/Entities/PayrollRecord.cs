@@ -14,6 +14,7 @@ public class PayrollRecord
     public decimal Deductions { get; set; }
     public decimal NetPay { get; set; } // Base + Allowances - Deductions
     public bool IsPaid { get; set; }
+    public BizFlow.Domain.Enums.PaymentMethod PaymentMethod { get; set; } = BizFlow.Domain.Enums.PaymentMethod.Transfer;
     public DateTime? PaymentDate { get; set; }
     public string? Note { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

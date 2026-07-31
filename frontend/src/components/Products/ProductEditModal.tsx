@@ -350,7 +350,7 @@ export default function ProductEditModal({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-secondary text-on-secondary rounded-lg font-bold text-sm hover:bg-secondary-container hover:text-on-secondary-container transition-colors disabled:opacity-50 h-[38px] whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg font-bold text-sm hover:bg-secondary-container hover:text-on-secondary-container transition-colors disabled:opacity-50 h-[38px] whitespace-nowrap"
                     >
                       {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                       {isUploading ? "Đang xử lý..." : "Chọn ảnh"}

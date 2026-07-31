@@ -48,6 +48,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TenantSetting> TenantSettings => Set<TenantSetting>();
     public DbSet<IdempotentRequest> IdempotentRequests => Set<IdempotentRequest>();
     public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 

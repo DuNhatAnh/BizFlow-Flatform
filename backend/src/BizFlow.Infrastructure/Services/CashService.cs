@@ -153,7 +153,7 @@ public class CashService : ICashService
         };
         _context.AuditLogs.Add(log);
 
-        // Removed SaveChangesAsync to allow caller to handle transaction boundary
+        await _context.SaveChangesAsync();
 
         return new CashTransactionDto
         {

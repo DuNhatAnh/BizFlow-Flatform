@@ -79,7 +79,7 @@ export const AutoCalculateTaxModal: React.FC<AutoCalculateTaxModalProps> = ({ on
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-3 px-4 bg-primary hover:bg-primary/90 text-on-primary font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />

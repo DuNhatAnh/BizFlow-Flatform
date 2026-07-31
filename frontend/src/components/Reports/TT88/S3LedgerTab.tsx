@@ -269,91 +269,78 @@ export default function S3LedgerTab() {
             <p>Không có chi phí nào trong khoảng thời gian này</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse border border-outline text-sm">
-            <thead className="text-xs text-on-surface-variant uppercase bg-surface-container sticky top-0 z-10">
+          <table className="w-full text-left border-collapse border border-outline text-sm print:border-black">
+            <thead className="text-xs text-on-surface-variant uppercase bg-surface-container print:bg-[#f0f4f8] sticky print:static top-0 z-10">
                   <tr className="print:text-[8px] print:leading-tight">
-                    <th rowSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Ngày, tháng ghi sổ</th>
-                    <th colSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Chứng từ</th>
-                    <th rowSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Diễn giải</th>
-                    <th rowSpan={2} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Tổng số tiền</th>
-                    <th colSpan={7} className="px-2 py-2 border-r border-b border-outline text-center font-bold">Tập hợp chi phí theo các yếu tố sản xuất, kinh doanh</th>
+                    <th rowSpan={2} className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Ngày, tháng ghi sổ</th>
+                    <th colSpan={2} className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Chứng từ</th>
+                    <th rowSpan={2} className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Diễn giải</th>
+                    <th rowSpan={2} className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Tổng số tiền</th>
+                    <th colSpan={7} className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Tập hợp chi phí theo các yếu tố sản xuất, kinh doanh</th>
                   </tr>
                   <tr className="print:text-[10px] print:leading-tight">
-                    <th className="px-2 py-2 border-r border-b border-outline text-center font-bold">Số hiệu</th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center font-bold">Ngày, tháng</th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Số hiệu</th>
+                    <th className="px-2 py-2 border border-outline text-center font-bold print:border-black print:static">Ngày, tháng</th>
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí nhân công</span>
                       <span className="hidden print:inline">Chi phí nhân công</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí điện</span>
                       <span className="hidden print:inline">Chi phí điện</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí nước</span>
                       <span className="hidden print:inline">Chi phí nước</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí viễn thông</span>
                       <span className="hidden print:inline">Chi phí viễn thông</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-24 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí thuê kho bãi, mặt bằng KD</span>
                       <span className="hidden print:inline">Chi phí thuê kho bãi, mặt bằng KD</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-28 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-28 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí quản lý (chi phí văn phòng phẩm, công cụ...)</span>
                       <span className="hidden print:inline">Chi phí quản lý (chi phí văn phòng phẩm, công cụ...)</span>
                     </th>
-                    <th className="px-2 py-2 border-r border-b border-outline text-center print:w-auto w-28 text-[10px] whitespace-normal">
+                    <th className="px-2 py-2 border border-outline text-center print:w-auto w-28 text-[10px] whitespace-normal print:border-black print:static">
                       <span className="print:hidden">Chi phí khác (hội nghị, công tác phí, thanh lý, TSCD...)</span>
                       <span className="hidden print:inline">Chi phí khác (hội nghị, công tác phí, thanh lý, TSCD...)</span>
                     </th>
                   </tr>
-                  <tr className="hidden">
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">A</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">B</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">C</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">D</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">1</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">2</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">3</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">4</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">5</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">6</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">7</th>
-                    <th className="px-2 py-1 border-r border-b border-outline text-center">8</th>
-                  </tr>
+
             </thead>
             <tbody>
                   {data.map((row, idx) => (
-                    <tr key={idx} className="border-b border-outline even:bg-slate-50 odd:bg-white hover:bg-surface-container-low transition-colors">
-                      <td className="px-4 py-3 border-r border-b border-outline text-center">{formatDateDisplay(row.date)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center font-medium">{row.receiptNo}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center">{formatDateDisplay(row.receiptDate)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-left pl-4">{row.description}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col1_Labor + row.col2_Electricity + row.col3_Water + row.col4_Telecom + row.col5_Rent + row.col6_Management + row.col7_Other)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col1_Labor)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col2_Electricity)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col3_Water)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col4_Telecom)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col5_Rent)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col6_Management)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums font-medium text-primary">{formatCurrency(row.col7_Other)}</td>
+                    <tr key={idx} className="border-b border-outline even:bg-slate-50 odd:bg-white hover:bg-surface-container-low transition-colors print:border-black">
+                      <td className="px-4 py-3 border border-outline text-center print:border-black">{formatDateDisplay(row.date)}</td>
+                      <td className="px-4 py-3 border border-outline text-center font-medium print:border-black">{row.receiptNo}</td>
+                      <td className="px-4 py-3 border border-outline text-center print:border-black">{formatDateDisplay(row.receiptDate)}</td>
+                      <td className="px-4 py-3 border border-outline text-left pl-4 print:border-black">{row.description}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col1_Labor + row.col2_Electricity + row.col3_Water + row.col4_Telecom + row.col5_Rent + row.col6_Management + row.col7_Other)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col1_Labor)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col2_Electricity)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col3_Water)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col4_Telecom)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col5_Rent)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col6_Management)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums font-medium text-primary print:border-black">{formatCurrency(row.col7_Other)}</td>
                     </tr>
                   ))}
                   </tbody>
                   <tbody className="break-inside-avoid print:break-inside-avoid">
-                    <tr className="font-bold bg-surface-container sticky bottom-0 border-t border-outline total-row">
-                      <td colSpan={4} className="px-4 py-3 text-center pr-6 border-r border-b border-outline">Tổng cộng:</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.expense)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col1)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col2)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col3)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col4)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col5)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col6)}</td>
-                      <td className="px-4 py-3 border-r border-b border-outline text-center tabular-nums">{formatCurrency(totals.col7)}</td>
+                    <tr className="font-bold bg-surface-container print:bg-[#f0f4f8] sticky print:static bottom-0 border border-outline total-row print:border-black">
+                      <td colSpan={4} className="px-4 py-3 text-center pr-6 border border-outline print:border-black print:static">Tổng cộng:</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.expense)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col1)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col2)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col3)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col4)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col5)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col6)}</td>
+                      <td className="px-4 py-3 border border-outline text-center tabular-nums print:border-black print:static">{formatCurrency(totals.col7)}</td>
                     </tr>
                   </tbody>
           </table>

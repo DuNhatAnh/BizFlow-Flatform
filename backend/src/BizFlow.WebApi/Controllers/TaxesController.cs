@@ -39,10 +39,10 @@ public class TaxesController : ApiControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Owner,Admin")]
-    public async Task<IActionResult> GetS4Ledger([FromQuery] int? year, [FromQuery] int? month, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetS4Ledger([FromQuery] int? year, [FromQuery] int? month, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var tenantId = GetTenantId();
-        var result = await _taxService.GetS4LedgerAsync(tenantId, year, month, cancellationToken);
+        var result = await _taxService.GetS4LedgerAsync(tenantId, year, month, page, pageSize, cancellationToken);
         return Ok(result);
     }
 

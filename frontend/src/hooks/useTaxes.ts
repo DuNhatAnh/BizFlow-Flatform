@@ -18,6 +18,7 @@ export interface TaxObligation {
 
 export function useTaxes() {
   const [taxes, setTaxes] = useState<TaxObligation[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ export function useTaxes() {
     };
   };
 
-  const fetchTaxes = useCallback(async (year?: number, month?: number) => {
+  const fetchTaxes = useCallback(async (year?: number, month?: number, page: number = 1, pageSize: number = 20) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -38,6 +39,8 @@ export function useTaxes() {
       const params = new URLSearchParams();
       if (year) params.append('year', year.toString());
       if (month) params.append('month', month.toString());
+      params.append('page', page.toString());
+      params.append('pageSize', pageSize.toString());
       
       const query = params.toString();
       if (query) url += `?${query}`;
@@ -46,7 +49,8 @@ export function useTaxes() {
       if (!res.ok) throw new Error('Không thể tải dữ liệu thuế');
       
       const data = await res.json();
-      setTaxes(data);
+      setTaxes(data.items || []);
+      setTotalCount(data.totalCount || 0);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -110,6 +114,7 @@ export function useTaxes() {
 
   return {
     taxes,
+    totalCount,
     isLoading,
     error,
     fetchTaxes,

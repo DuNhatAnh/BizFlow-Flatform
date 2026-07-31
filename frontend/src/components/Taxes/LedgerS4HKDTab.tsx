@@ -10,10 +10,12 @@ import { AutoCalculateTaxModal } from './AutoCalculateTaxModal';
 import { TT88HelpModal } from '../Reports/TT88/TT88HelpModal';
 
 export const LedgerS4HKDTab: React.FC = () => {
-  const { taxes, isLoading, error, fetchTaxes, createTax, payTax, calculateMonthlyTax } = useTaxes();
+  const { taxes, totalCount, isLoading, error, fetchTaxes, createTax, payTax, calculateMonthlyTax } = useTaxes();
   
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(0); // 0 = All year
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAutoCalcModal, setShowAutoCalcModal] = useState(false);
@@ -21,8 +23,8 @@ export const LedgerS4HKDTab: React.FC = () => {
   const [taxToPay, setTaxToPay] = useState<any>(null);
 
   useEffect(() => {
-    fetchTaxes(selectedYear, selectedMonth > 0 ? selectedMonth : undefined);
-  }, [selectedYear, selectedMonth, fetchTaxes]);
+    fetchTaxes(selectedYear, selectedMonth > 0 ? selectedMonth : undefined, page, pageSize);
+  }, [selectedYear, selectedMonth, page, fetchTaxes]);
 
   const handleCreateTax = async (data: any) => {
     return await createTax(data);
@@ -65,7 +67,10 @@ export const LedgerS4HKDTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <select
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            onChange={(e) => {
+              setSelectedMonth(Number(e.target.value));
+              setPage(1);
+            }}
             className="px-4 py-2 bg-surface border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           >
             <option value={0}>Cả năm</option>
@@ -75,7 +80,10 @@ export const LedgerS4HKDTab: React.FC = () => {
           </select>
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            onChange={(e) => {
+              setSelectedYear(Number(e.target.value));
+              setPage(1);
+            }}
             className="px-4 py-2 bg-surface border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           >
             {[...Array(5)].map((_, i) => {
@@ -89,14 +97,14 @@ export const LedgerS4HKDTab: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
           <button
             onClick={() => setShowAutoCalcModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary text-on-secondary rounded-xl font-medium hover:bg-secondary/90 transition-colors shadow-sm text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-xl font-medium hover:bg-secondary/90 transition-colors shadow-sm text-sm"
           >
             <Calculator className="w-4 h-4" />
             <span className="hidden sm:inline">Tự động tính thuế</span>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm text-sm"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Ghi nhận thủ công</span>
@@ -132,7 +140,7 @@ export const LedgerS4HKDTab: React.FC = () => {
 
       <div className="flex-1 overflow-auto bg-surface-container-lowest">
         <div id="print-area">
-          <PrintHeaderTT88 formId="S4-HKD" title="SỔ THEO DÕI TÌNH HÌNH THỰC HIỆN NGHĨA VỤ THUẾ VỚI NSNN" />
+          <PrintHeaderTT88 formId="S4-HKD" title="SỔ THEO DÕI TÌNH HÌNH THỰC HIỆN NGHĨA VỤ THUẾ VỚI NSNN" showTaxCode={false} />
           
           <div className="hidden print:flex flex-col items-center justify-center mb-6 text-black">
             <div className="flex gap-4">
@@ -177,10 +185,10 @@ export const LedgerS4HKDTab: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                taxes.map((t) => (
+                taxes.map((t, index) => (
                   <tr key={t.id} className="border-b border-outline even:bg-slate-50 odd:bg-white hover:bg-surface-container-low transition-colors group">
                     <td className="p-4 text-sm text-center border-r border-b border-outline-variant text-on-surface-variant">
-                      -
+                      {String(index + 1).padStart(3, '0')}
                     </td>
                     <td className="p-4 text-sm text-center border-r border-b border-outline-variant">
                       {t.month > 0 ? `${t.month}/${t.year}` : `Năm ${t.year}`}
@@ -188,10 +196,10 @@ export const LedgerS4HKDTab: React.FC = () => {
                     <td className="p-4 text-sm font-medium border-r border-b border-outline-variant pl-4">
                       {t.taxTypeName}
                     </td>
-                    <td className="p-4 text-sm text-right font-medium tabular-nums border-r border-b border-outline-variant">
+                    <td className="p-4 text-sm text-center font-medium tabular-nums border-r border-b border-outline-variant">
                       {t.amountDue > 0 ? t.amountDue.toLocaleString() : "-"}
                     </td>
-                    <td className="p-4 text-sm text-right text-primary font-medium tabular-nums border-r border-b border-outline-variant">
+                    <td className="p-4 text-sm text-center text-primary font-medium tabular-nums border-r border-b border-outline-variant">
                       {t.amountPaid > 0 ? t.amountPaid.toLocaleString() : "-"}
                     </td>
                     <td className="p-4 text-sm border-r border-b border-outline-variant text-on-surface-variant text-xs italic text-center">
@@ -216,7 +224,7 @@ export const LedgerS4HKDTab: React.FC = () => {
                       {t.remainingAmount > 0 && (
                         <button
                           onClick={() => setTaxToPay(t)}
-                          className="px-3 py-1.5 text-xs font-medium bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+                          className="px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
                         >
                           Nộp thuế
                         </button>
@@ -227,9 +235,34 @@ export const LedgerS4HKDTab: React.FC = () => {
               )}
             </tbody>
           </table>
-          <PrintFooterTT88 />
+          <PrintFooterTT88 hideNotes={true} />
         </div>
       </div>
+
+      {/* Pagination S4 */}
+      {!isLoading && taxes && taxes.length > 0 && (
+        <div className="p-4 border-t border-surface-container bg-surface-container-lowest flex items-center justify-between shrink-0 print:hidden">
+          <span className="text-sm text-on-surface-variant">
+            Hiển thị bản ghi {((page - 1) * pageSize) + 1} đến {Math.min(page * pageSize, totalCount || taxes.length)} (Tổng số: {totalCount || taxes.length} bản ghi)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 bg-surface-container text-on-surface rounded disabled:opacity-50 hover:bg-surface-container-high transition-colors"
+            >
+              Trước
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page * pageSize >= (totalCount || taxes.length)}
+              className="px-3 py-1 bg-surface-container text-on-surface rounded disabled:opacity-50 hover:bg-surface-container-high transition-colors"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
 
       {showCreateModal && (
         <CreateTaxModal

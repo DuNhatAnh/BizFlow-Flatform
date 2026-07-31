@@ -3,6 +3,7 @@ using System;
 using BizFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BizFlow.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260731045643_Phase6_CashBankRefactor")]
+    partial class Phase6_CashBankRefactor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -278,7 +281,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("BankAccounts", (string)null);
+                    b.ToTable("BankAccounts");
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.CashTransaction", b =>
@@ -604,7 +607,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("IdempotencyKey")
                         .IsUnique();
 
-                    b.ToTable("IdempotentRequests", (string)null);
+                    b.ToTable("IdempotentRequests");
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.InventoryReceipt", b =>
@@ -845,7 +848,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("notifications", (string)null);
+                    b.ToTable("notifications");
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.NumberSequence", b =>
@@ -874,7 +877,7 @@ namespace BizFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "Prefix")
                         .IsUnique();
 
-                    b.ToTable("NumberSequences", (string)null);
+                    b.ToTable("NumberSequences");
                 });
 
             modelBuilder.Entity("BizFlow.Domain.Entities.Order", b =>

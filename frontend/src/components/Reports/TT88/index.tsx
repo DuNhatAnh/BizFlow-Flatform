@@ -6,6 +6,8 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import LedgerS2HKDTab from "@/components/Inventory/InventoryTabs/LedgerS2HKDTab";
 import S3LedgerTab from "./S3LedgerTab";
 import { LedgerS4HKDTab } from "@/components/Taxes/LedgerS4HKDTab";
+import S6LedgerTab from "./S6LedgerTab";
+import S7LedgerTab from "./S7LedgerTab";
 import ExportDropdown from "@/components/ui/ExportDropdown";
 import { PrintHeaderTT88, PrintFooterTT88 } from "./PrintHelpersTT88";
 import { TT88HelpModal } from './TT88HelpModal';
@@ -38,6 +40,18 @@ interface S1LedgerRow {
 export default function TaxReportsTT88() {
   const [activeTab, setActiveTab] = useState("s1");
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("tt88_active_tab");
+    if (saved) {
+      setActiveTab(saved);
+    }
+  }, []);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    sessionStorage.setItem("tt88_active_tab", tab);
+  };
 
   // --- S1 STATE ---
   const [data, setData] = useState<S1LedgerRow[]>([]);
@@ -225,7 +239,7 @@ export default function TaxReportsTT88() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`pb-4 px-2 border-b-2 font-semibold text-sm flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === tab.id 
                   ? "border-primary text-primary" 
@@ -514,7 +528,19 @@ export default function TaxReportsTT88() {
         </div>
       )}
 
-      {["s5", "s6", "s7"].includes(activeTab) && (
+      {activeTab === "s6" && (
+        <div className="flex-1 overflow-auto bg-surface-container-lowest">
+          <S6LedgerTab />
+        </div>
+      )}
+
+      {activeTab === "s7" && (
+        <div className="flex-1 overflow-auto bg-surface-container-lowest">
+          <S7LedgerTab />
+        </div>
+      )}
+
+      {["s5"].includes(activeTab) && (
         <div className="flex-1 flex flex-col items-center justify-center bg-surface-container-lowest p-6 animate-in fade-in zoom-in-95 duration-300">
           <div className="w-24 h-24 bg-surface-container-low rounded-full flex items-center justify-center mb-6 shadow-sm border border-surface-container">
             <FileText size={40} className="text-on-surface-variant opacity-60" />

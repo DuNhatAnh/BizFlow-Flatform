@@ -27,6 +27,15 @@ public class CashTransaction
     public Guid? InventoryReceiptId { get; set; }
     public InventoryReceipt? InventoryReceipt { get; set; }
 
+    public Guid? BankAccountId { get; set; }
+    public BankAccount? BankAccount { get; set; }
+
+    public Guid? ExpenseRecordId { get; set; }
+    public ExpenseRecord? ExpenseRecord { get; set; }
+
+    public Guid? PayrollRecordId { get; set; }
+    public PayrollRecord? PayrollRecord { get; set; }
+
     [System.ComponentModel.DataAnnotations.Timestamp]
     public byte[]? RowVersion { get; set; }
 
