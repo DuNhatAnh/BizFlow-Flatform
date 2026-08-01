@@ -92,7 +92,7 @@ export default function AIDrafts({
   const compileDraftOrderPayload = (aiResponse: any, source: "AI_Voice" | "AI_Text") => {
     const stored = localStorage.getItem("bizflow_user");
     if (!stored) return null;
-    const userObj = JSON.parse(stored);
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     // 1. Resolve Customer ID
     const searchCustomerName = aiResponse.customer_name?.toLowerCase();
@@ -149,7 +149,7 @@ export default function AIDrafts({
       setIsProcessingAI(false);
       return;
     }
-    const userObj = JSON.parse(stored);
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     let aiResponse;
     try {
@@ -209,7 +209,7 @@ export default function AIDrafts({
       setIsProcessingAI(false);
       return;
     }
-    const userObj = JSON.parse(stored);
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     let aiResponse;
     try {
@@ -284,7 +284,7 @@ export default function AIDrafts({
     if (!selectedDraftForFeedback) return;
     const stored = localStorage.getItem("bizflow_user");
     if (!stored) return;
-    const userObj = JSON.parse(stored);
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     const draft = selectedDraftForFeedback;
     const orderItemsSummary = draft.items.map((i: any) => `${i.name} (${i.qty} ${i.unit})`).join(", ");

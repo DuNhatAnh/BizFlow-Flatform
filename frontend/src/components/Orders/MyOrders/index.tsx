@@ -89,7 +89,7 @@ export default function MyOrders({ onOrderChange, onCancelOrderOptimistic, onRet
   useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const userObj = JSON.parse(stored);
+      const userObj = stored === "undefined" ? null : JSON.parse(stored);
       setUser(userObj);
       fetchOrders(userObj);
     }

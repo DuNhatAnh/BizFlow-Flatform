@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import * as signalR from "@microsoft/signalr";
 import Sidebar from "@/components/Layout/Sidebar";
 import Header from "@/components/Layout/Header";
@@ -26,14 +27,16 @@ import TaxReportsTT88 from "@/components/Reports/TT88";
 import { LedgerS4HKDTab } from "@/components/Taxes/LedgerS4HKDTab";
 import { parseDescriptionMetadata } from "@/utils/metadata";
 // Admin components
-import TenantsManagement from "@/components/Admin/TenantsManagement";
+import TenantsManagement from "@/components/Admin/Tenants";
 import SubscriptionPlansManagement from "@/components/Admin/SubscriptionPlansManagement";
 import PlatformAnalytics from "@/components/Admin/PlatformAnalytics";
 import SystemConfigManager from "@/components/Admin/SystemConfigManager";
 import AiChatbotWidget from "@/components/Dashboard/Widgets/AiChatbotWidget";
 import OwnerSubscription from "@/components/Settings/OwnerSubscription";
+import LandingPage from "@/components/LandingPage/LandingPage";
 
 export default function Home() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [authorized, setAuthorized] = useState(false);
   const [user, setUser] = useState<{
@@ -215,41 +218,44 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem("bizflow_user");
-    if (!stored || stored === "undefined") {
-      window.location.href = "/login";
-    } else {
-      try {
-        const parsedUser = JSON.parse(stored);
-        if (!parsedUser) {
-          window.location.href = "/login";
-          return;
-        }
-        setUser(parsedUser);
-        setAuthorized(true);
-
-        const savedTab = localStorage.getItem("bizflow_active_tab");
-        if (savedTab) {
-          setActiveTab(savedTab);
-        } else {
-          if (parsedUser.username === "employee@bizflow.com") {
-            setActiveTab("pos");
-          } else if (parsedUser.username === "admin@bizflow.com") {
-            setActiveTab("overview");
-          } else {
-            setActiveTab("overview");
-          }
-        }
-
-        fetchProducts(parsedUser);
-        fetchCustomers(parsedUser);
-        fetchDrafts(parsedUser);
-        fetchCategories(parsedUser);
-      } catch (e) {
-        console.error("Error parsing user storage", e);
-        localStorage.removeItem("bizflow_user");
-        window.location.href = "/login";
+    try {
+      const stored = localStorage.getItem("bizflow_user");
+      if (!stored || stored === "undefined") {
+        setIsCheckingAuth(false);
+        return;
       }
+      const parsedUser = stored === "undefined" ? null : JSON.parse(stored);
+      if (!parsedUser) {
+        setIsCheckingAuth(false);
+        return;
+      }
+      setUser(parsedUser);
+      setAuthorized(true);
+
+      const savedTab = localStorage.getItem("bizflow_active_tab");
+      if (savedTab) {
+        setActiveTab(savedTab);
+      } else {
+        if (parsedUser.username === "employee@bizflow.com") {
+          setActiveTab("pos");
+        } else if (parsedUser.username === "admin@bizflow.com") {
+          setActiveTab("overview");
+        } else {
+          setActiveTab("overview");
+        }
+      }
+
+      fetchProducts(parsedUser);
+      fetchCustomers(parsedUser);
+      fetchDrafts(parsedUser);
+      fetchCategories(parsedUser);
+      setIsCheckingAuth(false);
+    } catch (e) {
+      console.error("Error parsing user storage", e);
+      try {
+        localStorage.removeItem("bizflow_user");
+      } catch(e2) {}
+      setIsCheckingAuth(false);
     }
   }, []);
 
@@ -478,8 +484,8 @@ export default function Home() {
     setValidationErrors({});
 
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) return;
-    const userObj = JSON.parse(stored);
+    if (!stored || stored === "undefined") return;
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     let subtotalAmount = 0;
     let totalVatAmount = 0;
@@ -586,8 +592,8 @@ export default function Home() {
 
   const approveDraft = async (draft: any) => {
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) return;
-    const userObj = JSON.parse(stored);
+    if (!stored || stored === "undefined") return;
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     const raw = draft.rawDraft;
     const paymentMethod =
@@ -660,8 +666,8 @@ export default function Home() {
 
   const rejectDraft = async (draftId: string) => {
     const stored = localStorage.getItem("bizflow_user");
-    if (!stored) return;
-    const userObj = JSON.parse(stored);
+    if (!stored || stored === "undefined") return;
+    const userObj = stored === "undefined" ? null : JSON.parse(stored);
 
     const previousDrafts = [...aiDrafts];
     // OPTIMISTIC UI: Remove draft instantly and notify
@@ -742,11 +748,7 @@ export default function Home() {
   };
 
   if (!authorized || !user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   // --- RENDER CONTENT BY ROLE & TAB ---
@@ -999,6 +1001,18 @@ export default function Home() {
   };
 
   const headerInfo = getTabHeader();
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-on-surface-variant font-medium">Đang tải cấu hình...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-background">

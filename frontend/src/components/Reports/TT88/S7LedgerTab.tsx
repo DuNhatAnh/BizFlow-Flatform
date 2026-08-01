@@ -10,7 +10,7 @@ const getAuthInfo = () => {
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       return { tenantId: user.tenantId || "11111111-1111-1111-1111-111111111111", token: user.token };
     }
   }

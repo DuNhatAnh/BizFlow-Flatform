@@ -225,59 +225,6 @@ export default function SystemConfigManager() {
             </div>
           </div>
 
-          {/* Tax Rates */}
-          <div>
-            <h4 className="text-sm font-bold text-on-surface mb-3">Mức Thuế Suất Mặc định</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1 block">Thuế suất GTGT (%)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={tt88.accounting.defaultVatRate}
-                    onChange={e => setTt88({ ...tt88, accounting: { ...tt88.accounting, defaultVatRate: parseFloat(e.target.value) || 0 } })}
-                    className="flex-1 border border-surface-container-high rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <span className="text-sm font-bold text-on-surface-variant">%</span>
-                </div>
-                <p className="text-xs text-on-surface-variant mt-1 flex items-center gap-1">
-                  <Info className="w-3 h-3" />Thuế GTGT theo Thông tư 40/2021/TT-BTC. Xác nhận với kế toán cho ngành cụ thể.
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1 block">Thuế suất TNCN (%)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={tt88.accounting.defaultPersonalIncomeTaxRate}
-                    onChange={e => setTt88({ ...tt88, accounting: { ...tt88.accounting, defaultPersonalIncomeTaxRate: parseFloat(e.target.value) || 0 } })}
-                    className="flex-1 border border-surface-container-high rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <span className="text-sm font-bold text-on-surface-variant">%</span>
-                </div>
-                <p className="text-xs text-on-surface-variant mt-1 flex items-center gap-1">
-                  <Info className="w-3 h-3" />Thuế TNCN theo phương pháp kê khai. Xác nhận với kế toán.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Warning */}
-          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-amber-800">Lưu ý pháp lý</p>
-              <p className="text-xs text-amber-700 mt-1">
-                Mức thuế suất GTGT/TNCN áp dụng phụ thuộc vào ngành nghề kinh doanh cụ thể và có thể thay đổi theo quy định mới. Hệ thống chỉ sử dụng các giá trị này làm mặc định gợi ý — Chủ hộ/kế toán viên cần xác nhận lại với cơ quan thuế địa phương trước khi sử dụng chính thức.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 

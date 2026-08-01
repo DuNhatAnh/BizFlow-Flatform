@@ -26,7 +26,7 @@ export default function AttendanceReport() {
       setLoading(true);
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) return;
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
 
       const res = await fetch("http://localhost:5178/api/attendance", {
         headers: {

@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
-      <body className="antialiased min-h-screen bg-background text-on-background">
+    <html lang="vi" suppressHydrationWarning>
+      <body className="antialiased min-h-screen bg-background text-on-background" suppressHydrationWarning>
         <QueryProvider>
           <NextTopLoader
             color="#10b981"

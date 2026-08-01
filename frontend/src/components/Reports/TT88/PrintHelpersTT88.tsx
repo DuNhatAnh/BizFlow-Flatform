@@ -4,7 +4,7 @@ const getAuthInfo = () => {
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       return { tenantId: user.tenantId || "11111111-1111-1111-1111-111111111111", token: user.token };
     }
   }
@@ -25,7 +25,7 @@ export const PrintHeaderTT88 = ({ formId, title, showTaxCode = true, showStoreNa
       const stored = localStorage.getItem("bizflow_user");
       if (stored) {
         try {
-          const user = JSON.parse(stored);
+          const user = stored === "undefined" ? null : JSON.parse(stored);
           setOwnerName(user.fullname || user.name || ".......................................");
           if (user.address) {
             setStoreInfo(prev => ({...prev, address: user.address}));
@@ -125,7 +125,7 @@ export const PrintFooterTT88 = ({ totalRows = 0, openDate = "", hideNotes = fals
       const stored = localStorage.getItem("bizflow_user");
       if (stored) {
         try {
-          const user = JSON.parse(stored);
+          const user = stored === "undefined" ? null : JSON.parse(stored);
           if (user.fullname) setUserName(user.fullname);
           else if (user.name) setUserName(user.name);
         } catch(e) {}

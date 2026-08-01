@@ -26,7 +26,7 @@ export default function UserProfile() {
   useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const parsedUser = JSON.parse(stored);
+      const parsedUser = stored === "undefined" ? null : JSON.parse(stored);
       setUser(parsedUser);
       fetchProfile(parsedUser.token);
     }
@@ -57,7 +57,7 @@ export default function UserProfile() {
           
           const stored = localStorage.getItem("bizflow_user");
           if (stored) {
-             const pUser = JSON.parse(stored);
+             const pUser = stored === "undefined" ? null : JSON.parse(stored);
              pUser.fullname = updated.fullname;
              pUser.avatarUrl = updated.avatarUrl;
              localStorage.setItem("bizflow_user", JSON.stringify(pUser));

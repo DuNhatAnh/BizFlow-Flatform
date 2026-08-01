@@ -43,7 +43,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
     const loadUser = () => {
       const stored = localStorage.getItem("bizflow_user");
       if (stored) {
-        setUser(JSON.parse(stored));
+        setUser(stored === "undefined" ? null : JSON.parse(stored));
       }
     };
     
@@ -64,7 +64,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
       try {
         const stored = localStorage.getItem("bizflow_user");
         if (!stored) return;
-        const userObj = JSON.parse(stored);
+        const userObj = stored === "undefined" ? null : JSON.parse(stored);
         const res = await fetch(`http://localhost:5178/api/orders/drafts?tenantId=${userObj.tenantId || "11111111-1111-1111-1111-111111111111"}`, {
           headers: { 
             "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
@@ -104,7 +104,7 @@ export default function Sidebar({ activeTab, setActiveTab, draftCount: propDraft
         return [
           { type: "header", label: "HỆ THỐNG" },
           { id: "overview", label: "Hệ thống tổng quan", icon: LayoutDashboard },
-          { id: "tenants", label: "Quản lý Tenant", icon: Building2 },
+          { id: "tenants", label: "Quản lý Doanh nghiệp", icon: Building2 },
           { id: "subscriptions", label: "Gói thuê bao SaaS", icon: Gem },
           { type: "header", label: "CẤU HÌNH" },
           { id: "tt88-config", label: "Cấu hình sổ sách TT88", icon: FileSpreadsheet },

@@ -46,6 +46,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 // Register NotificationService and AuthService
 builder.Services.AddScoped<BizFlow.Application.Interfaces.INotificationService, BizFlow.WebApi.Services.NotificationService>();
 builder.Services.AddScoped<BizFlow.Application.Interfaces.IAuthService, BizFlow.Infrastructure.Services.AuthService>();
+builder.Services.AddScoped<BizFlow.Application.Interfaces.ITenantManagementService, BizFlow.Application.Services.TenantManagementService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

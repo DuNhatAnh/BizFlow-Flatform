@@ -165,7 +165,7 @@ export default function StaffManagement() {
   const getAuthInfo = () => {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       return { tenantId: user.tenantId || "11111111-1111-1111-1111-111111111111", token: user.token };
     }
     return { tenantId: "11111111-1111-1111-1111-111111111111", token: "" };
@@ -176,7 +176,7 @@ export default function StaffManagement() {
   useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       setIsOwner(user.role === "Owner");
     }
   }, []);

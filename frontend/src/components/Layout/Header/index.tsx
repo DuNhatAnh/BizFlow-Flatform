@@ -34,7 +34,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
+        const parsed = stored === "undefined" ? null : JSON.parse(stored);
         setUserRole(parsed.role);
         if (parsed.role === "Employee") {
           fetchTodayShift();
@@ -67,7 +67,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     try {
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) return;
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       
       const res = await fetch("http://localhost:5178/api/notifications", {
         headers: { "Authorization": `Bearer ${user.token}` }
@@ -110,7 +110,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     try {
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) return;
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
 
       const res = await fetch(`http://localhost:5178/api/notifications/${id}/read`, {
         method: 'PUT',
@@ -130,7 +130,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     try {
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) return;
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       
       const res = await fetch("http://localhost:5178/api/shifts/my-shift-today", {
         headers: {
@@ -209,7 +209,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     try {
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) throw new Error("Chưa đăng nhập");
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       
       let finalPhoto = photoData;
       
@@ -278,7 +278,7 @@ export default function Header({ showGreeting = true, title, subtitle }: HeaderP
     try {
       const stored = localStorage.getItem("bizflow_user");
       if (!stored) throw new Error("Chưa đăng nhập");
-      const user = JSON.parse(stored);
+      const user = stored === "undefined" ? null : JSON.parse(stored);
       
       const payload = {
         IpAddress: "192.168.1.10",

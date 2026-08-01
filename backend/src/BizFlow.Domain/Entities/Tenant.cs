@@ -18,6 +18,10 @@ public class Tenant
     public BizFlow.Domain.Enums.CogsMethod CogsMethod { get; set; } = BizFlow.Domain.Enums.CogsMethod.WeightedAverage;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public DateTime? SubscriptionStartDate { get; set; }
+    public DateTime? SubscriptionEndDate { get; set; }
+    public decimal TotalSpent { get; set; } = 0;
+
     // Navigation properties
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public SubscriptionPlan? PendingSubscriptionPlan { get; set; }

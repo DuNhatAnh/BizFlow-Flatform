@@ -43,7 +43,7 @@ export default function StoreSettings({ onNavigate }: { onNavigate?: (tab: strin
   useEffect(() => {
     const stored = localStorage.getItem("bizflow_user");
     if (stored) {
-      const parsedUser = JSON.parse(stored);
+      const parsedUser = stored === "undefined" ? null : JSON.parse(stored);
       setUser(parsedUser);
       fetchStoreInfo(parsedUser);
     }

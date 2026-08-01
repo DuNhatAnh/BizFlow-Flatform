@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5178/a
 const getAuthHeaders = () => {
   const stored = localStorage.getItem("bizflow_user");
   if (!stored) throw new Error("Unauthorized");
-  const userObj = JSON.parse(stored);
+  const userObj = stored === "undefined" ? null : JSON.parse(stored);
   return {
     "X-Tenant-Id": userObj.tenantId || "11111111-1111-1111-1111-111111111111",
     "Authorization": `Bearer ${userObj.token}`,
